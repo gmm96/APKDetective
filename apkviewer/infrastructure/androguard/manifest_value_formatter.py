@@ -8,39 +8,97 @@ turned back into their names.
 from apkviewer.infrastructure.androguard.resource_reference_resolver import ResourceReferenceResolver
 
 _ENUMS: dict[str, dict[int, str]] = {
-    "launchMode": {0: "standard", 1: "singleTop", 2: "singleTask", 3: "singleInstance",
-                   4: "singleInstancePerTask"},
-    "screenOrientation": {
-        -1: "unspecified", 0: "landscape", 1: "portrait", 2: "user", 3: "behind", 4: "sensor",
-        5: "nosensor", 6: "sensorLandscape", 7: "sensorPortrait", 8: "reverseLandscape",
-        9: "reversePortrait", 10: "fullSensor", 11: "userLandscape", 12: "userPortrait",
-        13: "fullUser", 14: "locked",
+    "launchMode": {
+        0: "standard",
+        1: "singleTop",
+        2: "singleTask",
+        3: "singleInstance",
+        4: "singleInstancePerTask"
     },
-    "documentLaunchMode": {0: "none", 1: "intoExisting", 2: "always", 3: "never"},
-    "persistableMode": {0: "persistRootOnly", 1: "persistAcrossReboots", 2: "persistNever"},
+    "screenOrientation": {
+        -1: "unspecified",
+        0: "landscape",
+        1: "portrait",
+        2: "user",
+        3: "behind",
+        4: "sensor",
+        5: "nosensor",
+        6: "sensorLandscape",
+        7: "sensorPortrait",
+        8: "reverseLandscape",
+        9: "reversePortrait",
+        10: "fullSensor",
+        11: "userLandscape",
+        12: "userPortrait",
+        13: "fullUser",
+        14: "locked",
+    },
+    "documentLaunchMode": {
+        0: "none",
+        1: "intoExisting",
+        2: "always",
+        3: "never"
+    },
+    "persistableMode": {
+        0: "persistRootOnly",
+        1: "persistAcrossReboots",
+        2: "persistNever"
+    },
 }
 
 _FLAGS: dict[str, dict[int, str]] = {
     "configChanges": {
-        0x0001: "mcc", 0x0002: "mnc", 0x0004: "locale", 0x0008: "touchscreen", 0x0010: "keyboard",
-        0x0020: "keyboardHidden", 0x0040: "navigation", 0x0080: "orientation", 0x0100: "screenLayout",
-        0x0200: "uiMode", 0x0400: "screenSize", 0x0800: "smallestScreenSize", 0x1000: "density",
-        0x2000: "layoutDirection", 0x4000: "colorMode", 0x8000: "grammaticalGender",
-        0x10000000: "fontWeightAdjustment", 0x40000000: "fontScale",
+        0x0001: "mcc",
+        0x0002: "mnc",
+        0x0004: "locale",
+        0x0008: "touchscreen",
+        0x0010: "keyboard",
+        0x0020: "keyboardHidden",
+        0x0040: "navigation",
+        0x0080: "orientation",
+        0x0100: "screenLayout",
+        0x0200: "uiMode",
+        0x0400: "screenSize",
+        0x0800: "smallestScreenSize",
+        0x1000: "density",
+        0x2000: "layoutDirection",
+        0x4000: "colorMode",
+        0x8000: "grammaticalGender",
+        0x10000000: "fontWeightAdjustment",
+        0x40000000: "fontScale",
     },
     "foregroundServiceType": {
-        0x1: "dataSync", 0x2: "mediaPlayback", 0x4: "phoneCall", 0x8: "location",
-        0x10: "connectedDevice", 0x20: "mediaProjection", 0x40: "camera", 0x80: "microphone",
-        0x100: "health", 0x200: "remoteMessaging", 0x400: "systemExempted", 0x800: "shortService",
-        0x1000: "fileManagement", 0x2000: "mediaProcessing", 0x40000000: "specialUse",
+        0x1: "dataSync",
+        0x2: "mediaPlayback",
+        0x4: "phoneCall",
+        0x8: "location",
+        0x10: "connectedDevice",
+        0x20: "mediaProjection",
+        0x40: "camera",
+        0x80: "microphone",
+        0x100: "health",
+        0x200: "remoteMessaging",
+        0x400: "systemExempted",
+        0x800: "shortService",
+        0x1000: "fileManagement",
+        0x2000: "mediaProcessing",
+        0x40000000: "specialUse",
     },
 }
 
 _SOFT_INPUT_STATE: dict[int, str] = {
-    1: "stateUnchanged", 2: "stateHidden", 3: "stateAlwaysHidden", 4: "stateVisible",
+    1: "stateUnchanged",
+    2: "stateHidden",
+    3: "stateAlwaysHidden",
+    4: "stateVisible",
     5: "stateAlwaysVisible",
 }
-_SOFT_INPUT_ADJUST: dict[int, str] = {0x10: "adjustResize", 0x20: "adjustPan", 0x30: "adjustNothing"}
+
+_SOFT_INPUT_ADJUST: dict[int, str] = {
+    0x10: "adjustResize",
+    0x20: "adjustPan",
+    0x30: "adjustNothing"
+}
 
 
 class ManifestValueFormatter:

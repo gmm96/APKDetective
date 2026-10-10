@@ -86,7 +86,12 @@ class SecurityInfoExtractor:
 
     @staticmethod
     def _signature_algorithm(cert: Any) -> str:
-        scheme = {"rsassa_pkcs1v15": "RSA", "rsassa_pss": "RSASSA-PSS", "ecdsa": "ECDSA", "dsa": "DSA"}
+        scheme = {
+            "rsassa_pkcs1v15": "RSA",
+            "rsassa_pss": "RSASSA-PSS",
+            "ecdsa": "ECDSA",
+            "dsa": "DSA"
+        }
         return f"{cert.hash_algo.upper()}with{scheme.get(cert.signature_algo, cert.signature_algo.upper())}"
 
     @staticmethod

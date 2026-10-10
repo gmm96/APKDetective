@@ -55,15 +55,19 @@ class InfoPanel(FormPanel):
         file_section.add_entry("File Size", self._format_size(application.file_size))
         file_section.add_entry("Last Modified", self._format_date(application))
 
+        flags_section = self.add_section("Flags")
+        flags_section.add_entry("Debuggable", application.debuggable)
+        flags_section.add_entry("Allow Backup", application.allow_backup)
+        flags_section.add_entry("Test Only", application.test_only)
+        flags_section.add_entry("Hardware Accelerated", application.hardware_accelerated)
+        flags_section.add_entry("Extract Native Libs", application.extract_native_libs)
+        flags_section.add_entry("Cleartext Traffic Permitted", application.cleartext_traffic_permitted)
+        flags_section.add_entry("Trusts User Certificates", application.trust_user_certificates)
+        flags_section.add_entry("Certificate Pinning Enforced", application.certificate_pinning_enforced)
+
         section = self.add_section("Configuration")
-        section.add_entry(
-            "Architectures",
-            ", ".join(configuration.architectures) or "None / Unknown (Java only)",
-        )
-        section.add_list(
-            "Hardware Requirements",
-            [feature.as_text() for feature in configuration.hardware_requirements],
-        )
+        section.add_entry("Architectures", ", ".join(configuration.architectures) or "None / Unknown (Java only)")
+        section.add_list("Hardware Requirements", [feature.as_text() for feature in configuration.hardware_requirements])
         section.add_list("Supported Locales", configuration.locales)
         section.add_list("Screen Densities", configuration.screen_densities)
 

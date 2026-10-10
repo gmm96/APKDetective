@@ -43,7 +43,9 @@ class ComponentsExtractor:
     _DEDICATED_ATTRIBUTES: frozenset[str] = frozenset({"name", "exported", "permission"})
 
     def extract(
-        self, apk: APK, warnings: AnalysisWarningCollector | None = None
+        self,
+        apk: APK,
+        warnings: AnalysisWarningCollector | None = None
     ) -> DeclaredComponents:
         pkg_name = apk.get_package() or ""
         target_sdk = self._target_sdk(apk)
@@ -52,11 +54,16 @@ class ComponentsExtractor:
         try:
             xml_root = apk.get_android_manifest_xml()
             if xml_root is None:
-                self._warn(warnings, "The manifest is missing or corrupted: no components could be listed.")
+                self._warn(
+                    warnings,
+                    "The manifest is missing or corrupted: no components could be listed."
+                )
                 return DeclaredComponents()
             for tag, kind in self._KINDS.items():
                 for node in xml_root.iter(tag):
-                    components.append(self._to_component(node, kind, pkg_name, target_sdk, formatter))
+                    components.append(
+                        self._to_component(node, kind, pkg_name, target_sdk, formatter)
+                    )
         except Exception as exc:
             self._warn(
                 warnings,

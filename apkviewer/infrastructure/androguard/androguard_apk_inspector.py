@@ -78,17 +78,23 @@ class AndroguardApkInspector(ApkInspector):
                     lambda: self._dex_reader.read(apk, warnings), DexContents())
         return ApkInspection(
             application=guard(
-                warnings, "The application data", (info,),
-                lambda: self._application.extract(apk),
-                ApplicationInfo("", "", None, None, None, None, None, None, None, None, None),
+                warnings,
+                "The application data",
+                (info,),
+                lambda: self._application.extract(apk, warnings),
+                ApplicationInfo("", "", None, None, None, None, None, None, None, None, None, None, None),
             ),
             configuration=guard(
-                warnings, "The configuration", (info,),
+                warnings,
+                "The configuration",
+                (info,),
                 lambda: self._configuration.extract(apk, warnings),
                 ConfigurationInfo((), (), (), ()),
             ),
             embedded_content=guard(
-                warnings, "The embedded content", (info,),
+                warnings,
+                "The embedded content",
+                (info,),
                 lambda: self._embedded_content.extract(dex), EmbeddedContent(()),
             ),
             security=guard(

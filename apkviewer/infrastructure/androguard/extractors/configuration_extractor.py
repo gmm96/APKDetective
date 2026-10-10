@@ -51,7 +51,9 @@ class ConfigurationExtractor:
     }
 
     def extract(
-        self, apk: APK, warnings: AnalysisWarningCollector | None = None
+        self,
+        apk: APK,
+        warnings: AnalysisWarningCollector | None = None
     ) -> ConfigurationInfo:
         if warnings is not None and not self._has_resource_table(apk):
             warnings.add(
