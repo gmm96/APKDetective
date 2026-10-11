@@ -185,7 +185,6 @@ class FormPanel(ttk.Frame):
         labels.extend([label for section in self._sections for label in section._list_labels])
         if not labels:
             return 0
-
         max_width = 0
         for label in labels:
             font_spec = label.cget("font") or ttk.Style(label).lookup("TLabel", "font") or "TkDefaultFont"
@@ -233,13 +232,12 @@ class FormSection:
         self._entries: list[tuple[ttk.Label, CopyableEntry, int]] = []
         self._list_labels: list[ttk.Label] = []
         self._has_non_entry_content = False
-        
         self.frame.bind("<Configure>", self._on_resize, add="+")
 
     def add_group(self, title: str) -> None:
         """Add a small caption that starts a group of rows."""
         self._has_non_entry_content = True
-        
+
         # Spans across label (1), gap (2), and value (3) columns
         self._panel.create_muted_label(self.frame, title.upper()).grid(
             row=self._row, column=1, columnspan=3, sticky="w",
@@ -259,20 +257,16 @@ class FormSection:
 
     def add_list(self, label_text: str, items: Sequence[str], separator: str = "\n") -> None:
         self._has_non_entry_content = True
-        
         # Position label in column 1 to align with entry labels
         label = ttk.Label(self.frame, text=f"{label_text} ({len(items)})", width=-1, anchor="w")
         label.grid(row=self._row, column=1, sticky="nw", pady=self.LIST_VERTICAL_PADDING_PX)
         self._list_labels.append(label)
-        
         text, line_count = _build_display_text(items, separator)
         container = ttk.Frame(self.frame)
-        
         # Position container in column 3 to align with entry values
         container.grid(row=self._row, column=3, sticky="ew", pady=self.LIST_VERTICAL_PADDING_PX)
         container.columnconfigure(0, weight=1)
         container.rowconfigure(0, weight=1)
-        
         self._panel.build_list_widget(container, text, line_count, copy_text=separator.join(items) if items else None)
         self._row += 1
         self._panel._refresh_section_layouts()
@@ -309,20 +303,17 @@ class FormSection:
         """Preserve the original layout for sections containing groups or lists, aligning with responsive layout."""
         self._reset_columns()
         label_width = self._panel._shared_entry_label_width_px()
-        
         # Explicit column definition mimicking a 1-column responsive layout
         self.frame.columnconfigure(0, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
         self.frame.columnconfigure(1, weight=0, minsize=label_width)
         self.frame.columnconfigure(2, weight=0, minsize=self.LABEL_VALUE_GAP_PX)
         self.frame.columnconfigure(3, weight=1, minsize=0)
         self.frame.columnconfigure(4, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
-
         # Re-grid entries using the new responsive-aligned columns
         for label, field, original_row in self._entries:
             label.configure(width=-1, wraplength=label_width, anchor="w")
             label.grid(row=original_row, column=1, sticky="w", pady=self.FIELD_VERTICAL_PADDING_PX)
             field.grid(row=original_row, column=3, sticky="ew", pady=self.FIELD_VERTICAL_PADDING_PX)
-            
         # Update dynamically stored list labels
         for lst_label in self._list_labels:
             lst_label.configure(wraplength=label_width)

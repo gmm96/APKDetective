@@ -66,7 +66,7 @@ class InfoPanel(FormPanel):
         flags_section.add_entry("Certificate Pinning Enforced", application.certificate_pinning_enforced)
 
         section = self.add_section("Configuration")
-        section.add_entry("Architectures", ", ".join(configuration.architectures) or "None / Unknown (Java only)")
+        section.add_list("Architectures", configuration.architectures or ("None / Unknown (Java only)",))
         section.add_list("Hardware Requirements", [feature.as_text() for feature in configuration.hardware_requirements])
         section.add_list("Supported Locales", configuration.locales)
         section.add_list("Screen Densities", configuration.screen_densities)
