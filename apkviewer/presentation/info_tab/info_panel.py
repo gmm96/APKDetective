@@ -39,7 +39,7 @@ class InfoPanel(FormPanel):
         embedded_content: EmbeddedContent,
     ) -> None:
         self.clear()
-        app_section = self.add_section("Application")
+        app_section = self.add_section("Application", responsive=True, max_columns=2)
         app_section.add_entry("App Name", application.app_name)
         app_section.add_entry("Package Name", application.package_name)
         app_section.add_entry("Version Name", application.version_name)
@@ -49,13 +49,13 @@ class InfoPanel(FormPanel):
         if application.max_sdk:
             app_section.add_entry("Max SDK", application.max_sdk)
 
-        file_section = self.add_section("File")
+        file_section = self.add_section("File", responsive=True, max_columns=2)
         file_section.add_entry("File Name", application.file_name or "Unknown")
         file_section.add_entry("File Path", application.file_path or "Unknown")
         file_section.add_entry("File Size", self._format_size(application.file_size))
         file_section.add_entry("Last Modified", self._format_date(application))
 
-        flags_section = self.add_section("Flags")
+        flags_section = self.add_section("Flags", responsive=True, max_columns=2)
         flags_section.add_entry("Debuggable", application.debuggable)
         flags_section.add_entry("Allow Backup", application.allow_backup)
         flags_section.add_entry("Test Only", application.test_only)
