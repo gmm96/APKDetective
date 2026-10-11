@@ -51,10 +51,6 @@ class CopyIconOverlay:
         self._icon.bind("<Button-1>", self.copy)
         self.refresh()
 
-    @property
-    def is_shown(self) -> bool:
-        return bool(self._icon.winfo_manager())
-
     def refresh_icons(self) -> None:
         """Re-read the icon after a theme change."""
         self._icon.configure(image=self._icons.copy)
@@ -66,6 +62,8 @@ class CopyIconOverlay:
     # --- Visibility ----------------------------------------------------------------------------
 
     def refresh(self) -> None:
+        if not (self._target.winfo_exists() and self._icon.winfo_exists()):
+            return  # destroyed while an idle callback was still pending
         if self._focused or self._pointer_inside():
             if self._top_offset is None:
                 self._icon.place(in_=self._target, relx=1.0, x=-8, rely=0.5, anchor="e")
@@ -103,4 +101,5 @@ class CopyIconOverlay:
 
     def _restore_icon(self) -> None:
         self._restore_job = None
-        self._icon.configure(image=self._icons.copy)
+        if self._icon.winfo_exists():
+            self._icon.configure(image=self._icons.copy)

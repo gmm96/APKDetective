@@ -1,11 +1,8 @@
 """
 Shared behaviour for the app's Toplevel popup dialogs: centering on the
 parent window, and forcing focus so a Toplevel actually behaves like a
-modal dialog.
-
-FileDetailsDialog and IntentDetailsDialog both needed exactly this logic,
-byte-for-byte identical - it lives here once instead of being copy-pasted
-into every dialog class.
+modal dialog. It lives here once instead of being copy-pasted into every
+dialog class (FileDetailsDialog, AboutDialog...).
 """
 
 import tkinter as tk

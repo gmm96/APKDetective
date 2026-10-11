@@ -6,19 +6,14 @@ of the entities: no Tk involved, so they are easy to test.
 from collections.abc import Sequence
 from dataclasses import replace
 
+from apkviewer.domain.entities.component import Component
 from apkviewer.domain.entities.component_kind import ComponentKind
-from apkviewer.domain.entities.components import (
-    Component,
-    DeclaredComponents,
-    IntentFilter,
-    ManifestElement,
-)
+from apkviewer.domain.entities.declared_components import DeclaredComponents
 from apkviewer.domain.entities.export_state import ExportState
 from apkviewer.domain.entities.exported_intent import ExportedIntent
+from apkviewer.domain.entities.intent_filter import IntentFilter
+from apkviewer.domain.entities.manifest_element import ManifestElement
 from apkviewer.presentation.common.tree.record_node import RecordNode
-
-
-_MAX_SUMMARY: int = 110
 
 
 class ComponentTreeBuilder:
@@ -37,6 +32,7 @@ class ComponentTreeBuilder:
         ComponentKind.PROVIDER: "provider",
     }
 
+    _MAX_SUMMARY: int = 110
     _MAX_INLINE_ATTRIBUTES: int = 3
     _EXPORT_LABELS: dict[ExportState, str] = {
         ExportState.EXPORTED: "yes",
@@ -139,13 +135,13 @@ class ComponentTreeBuilder:
             ),
         )
 
-    @staticmethod
-    def _filter_summary(intent_filter: IntentFilter, data: list[str]) -> str:
+    @classmethod
+    def _filter_summary(cls, intent_filter: IntentFilter, data: list[str]) -> str:
         """What tells one filter from another when it is closed: its actions and its data."""
         parts = [", ".join(intent_filter.actions), ", ".join(data)]
         summary = " · ".join(part for part in parts if part)
-        if len(summary) > _MAX_SUMMARY:
-            summary = summary[: _MAX_SUMMARY - 1] + "…"
+        if len(summary) > cls._MAX_SUMMARY:
+            summary = summary[: cls._MAX_SUMMARY - 1] + "…"
         return f"Intent filter: {summary}" if summary else "Intent filter"
 
     @staticmethod

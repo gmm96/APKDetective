@@ -18,7 +18,7 @@ from apkviewer.application.export_icon import ExportIcon
 from apkviewer.application.extract_apk_entries import ExtractApkEntries
 from apkviewer.application.resolve_color_scheme import ResolveColorScheme
 from apkviewer.domain.entities.analysis_result import AnalysisResult
-from apkviewer.domain.entities.analysis_warning import AnalysisArea
+from apkviewer.domain.entities.analysis_section import AnalysisSection
 from apkviewer.domain.entities.color_mode import ColorMode
 from apkviewer.domain.interfaces.url_opener import UrlOpener
 from apkviewer.domain.interfaces.size_formatter import SizeFormatter
@@ -52,6 +52,24 @@ _ICONS_DIR = "assets/icons/outline"
 class ApkAnalyzerApp:
     # Menu items that only make sense once an APK has been analyzed.
     _ANALYSIS_DEPENDENT_ITEMS: tuple[str, ...] = ("export_app_info", "extract_apk", "extract_icon")
+
+    # Which parts of the analysis each tab reports problems for. The analysis only says WHAT it
+    # could not read; deciding where the user is told is the job of the presentation.
+    _INFO_SECTIONS: tuple[AnalysisSection, ...] = (
+        AnalysisSection.APPLICATION,
+        AnalysisSection.CONFIGURATION,
+        AnalysisSection.EMBEDDED_CONTENT,
+        AnalysisSection.ICON,
+    )
+    _SECURITY_SECTIONS: tuple[AnalysisSection, ...] = (
+        AnalysisSection.SIGNATURES,
+        AnalysisSection.THIRD_PARTY,
+    )
+    _PERMISSIONS_SECTIONS: tuple[AnalysisSection, ...] = (AnalysisSection.PERMISSIONS,)
+    _COMPONENTS_SECTIONS: tuple[AnalysisSection, ...] = (  # also for the Intents tab, derived from them
+        AnalysisSection.COMPONENTS,
+        AnalysisSection.MANIFEST,
+    )
 
     def __init__(
         self,
@@ -250,7 +268,7 @@ class ApkAnalyzerApp:
     def _analyze_in_background(self, apk_path: str) -> None:
         try:
             result = self._analyze_apk.execute(apk_path)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-except
             # `exc` is unbound once the except block ends, so keep its text.
             self._report_failure(str(exc))
         else:
@@ -304,10 +322,13 @@ class ApkAnalyzerApp:
         self.intents_panel.render(inspection.components.exported_intents())
         self.manifest_panel.render(result.manifest_xml)
         self.files_panel.render(result.apk_path, result.file_tree)
-        components_warnings = result.warning_messages(AnalysisArea.COMPONENTS)
-        self.info_panel.show_warnings(result.warning_messages(AnalysisArea.INFO, AnalysisArea.ICON))
-        self.security_panel.show_warnings(result.warning_messages(AnalysisArea.SECURITY))
-        self.permissions_panel.show_warnings(result.warning_messages(AnalysisArea.PERMISSIONS))
+        self._show_warnings(result)
+        self.menu_bar.set_enabled(self._ANALYSIS_DEPENDENT_ITEMS, True)
+
+    def _show_warnings(self, result: AnalysisResult) -> None:
+        components_warnings = result.warning_messages(*self._COMPONENTS_SECTIONS)
+        self.info_panel.show_warnings(result.warning_messages(*self._INFO_SECTIONS))
+        self.security_panel.show_warnings(result.warning_messages(*self._SECURITY_SECTIONS))
+        self.permissions_panel.show_warnings(result.warning_messages(*self._PERMISSIONS_SECTIONS))
         self.components_panel.show_warnings(components_warnings)
         self.intents_panel.show_warnings(components_warnings)
-        self.menu_bar.set_enabled(self._ANALYSIS_DEPENDENT_ITEMS, True)

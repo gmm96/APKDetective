@@ -10,10 +10,12 @@ fingerprint is something to copy: VirusTotal, `apksigner` comparisons...
 from datetime import datetime, timezone
 from tkinter import ttk
 
-from apkviewer.domain.entities.security_info import Certificate, SecurityInfo
+from apkviewer.domain.entities.certificate import Certificate
+from apkviewer.domain.entities.security_info import SecurityInfo
 from apkviewer.domain.entities.third_party_info import ThirdPartyInfo
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
-from apkviewer.presentation.common.form_panel import FormPanel, FormSection
+from apkviewer.presentation.common.form_panel import FormPanel
+from apkviewer.presentation.common.form_section import FormSection
 from apkviewer.presentation.common.text_context_menu import TextContextMenu
 from apkviewer.presentation.common.text_line_marker import TextLineMarker
 

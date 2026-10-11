@@ -10,7 +10,7 @@ intent filters.
 import tkinter as tk
 from tkinter import ttk
 
-from apkviewer.domain.entities.components import DeclaredComponents
+from apkviewer.domain.entities.declared_components import DeclaredComponents
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.tree.record_table_panel import RecordTablePanel
 from apkviewer.presentation.common.tree.tree_column import TreeColumn
@@ -55,10 +55,10 @@ class ComponentsPanel(ttk.Frame):
         self._pills: dict[str, ttk.Radiobutton] = {}
         toolbar = self._table.toolbar  # the table's first line; its buttons are already at the right
         assert toolbar is not None
-        for key, value in self._pill_labels.items():
+        for key, label in self._pill_labels.items():
             pill = ttk.Radiobutton(
                 toolbar,
-                text=value,
+                text=label,
                 value=key,
                 variable=self._selected,
                 style=_PILL_STYLE,

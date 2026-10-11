@@ -11,16 +11,14 @@ from typing import Any
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis_warning import AnalysisArea
+from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.component import Component
 from apkviewer.domain.entities.component_kind import ComponentKind
-from apkviewer.domain.entities.components import (
-    Component,
-    DeclaredComponents,
-    IntentFilter,
-    ManifestElement,
-)
+from apkviewer.domain.entities.declared_components import DeclaredComponents
 from apkviewer.domain.entities.export_state import ExportState
-from apkviewer.domain.entities.exported_intent import IntentData
+from apkviewer.domain.entities.intent_data import IntentData
+from apkviewer.domain.entities.intent_filter import IntentFilter
+from apkviewer.domain.entities.manifest_element import ManifestElement
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS
 from apkviewer.infrastructure.androguard.manifest_value_formatter import ManifestValueFormatter
@@ -43,9 +41,7 @@ class ComponentsExtractor:
     _DEDICATED_ATTRIBUTES: frozenset[str] = frozenset({"name", "exported", "permission"})
 
     def extract(
-        self,
-        apk: APK,
-        warnings: AnalysisWarningCollector | None = None
+        self, apk: APK, warnings: AnalysisWarningCollector | None = None
     ) -> DeclaredComponents:
         pkg_name = apk.get_package() or ""
         target_sdk = self._target_sdk(apk)
@@ -54,17 +50,12 @@ class ComponentsExtractor:
         try:
             xml_root = apk.get_android_manifest_xml()
             if xml_root is None:
-                self._warn(
-                    warnings,
-                    "The manifest is missing or corrupted: no components could be listed."
-                )
+                self._warn(warnings, "The manifest is missing or corrupted: no components could be listed.")
                 return DeclaredComponents()
             for tag, kind in self._KINDS.items():
                 for node in xml_root.iter(tag):
-                    components.append(
-                        self._to_component(node, kind, pkg_name, target_sdk, formatter)
-                    )
-        except Exception as exc:
+                    components.append(self._to_component(node, kind, pkg_name, target_sdk, formatter))
+        except Exception as exc:  # pylint: disable=broad-except
             self._warn(
                 warnings,
                 f"The manifest could not be read completely ({type(exc).__name__}): "
@@ -80,7 +71,7 @@ class ComponentsExtractor:
     @staticmethod
     def _warn(warnings: AnalysisWarningCollector | None, message: str) -> None:
         if warnings is not None:
-            warnings.add(message, AnalysisArea.COMPONENTS)
+            warnings.add(message, AnalysisSection.COMPONENTS)
 
     @staticmethod
     def _target_sdk(apk: APK) -> int | None:
@@ -88,7 +79,7 @@ class ComponentsExtractor:
         for getter in (apk.get_target_sdk_version, apk.get_min_sdk_version):
             try:
                 raw = getter()
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 continue
             if raw is None:
                 continue

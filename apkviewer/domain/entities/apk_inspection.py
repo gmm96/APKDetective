@@ -7,10 +7,10 @@ from dataclasses import dataclass
 
 from apkviewer.domain.entities.analysis_warning import AnalysisWarning
 from apkviewer.domain.entities.application_info import ApplicationInfo
-from apkviewer.domain.entities.components import DeclaredComponents
 from apkviewer.domain.entities.configuration_info import ConfigurationInfo
+from apkviewer.domain.entities.declared_components import DeclaredComponents
 from apkviewer.domain.entities.embedded_content import EmbeddedContent
-from apkviewer.domain.entities.permission import PermissionsInfo
+from apkviewer.domain.entities.permissions_info import PermissionsInfo
 from apkviewer.domain.entities.security_info import SecurityInfo
 from apkviewer.domain.entities.third_party_info import ThirdPartyInfo
 

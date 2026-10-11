@@ -5,16 +5,7 @@ screen densities. Empty tuples mean "nothing found".
 
 from dataclasses import dataclass
 
-
-@dataclass(frozen=True)
-class HardwareFeature:
-    """A <uses-feature>; `required` is None when android:required can't be resolved."""
-    name: str
-    required: bool | None = True  # android:required defaults to true
-
-    def as_text(self) -> str:
-        status = {True: "Required", False: "Optional", None: "Required status unknown"}[self.required]
-        return f"{self.name} ({status})"
+from apkviewer.domain.entities.hardware_feature import HardwareFeature
 
 
 @dataclass(frozen=True)

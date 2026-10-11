@@ -2,7 +2,6 @@
 Formats an APK's AndroidManifest.xml into pretty-printed text.
 """
 
-import os
 from xml.dom import minidom
 
 from androguard.core.apk import APK
@@ -23,6 +22,7 @@ class ManifestFormatter:
 
             raw_xml = self._serializer.serialize(xml_root)
             pretty = minidom.parseString(raw_xml).toprettyxml(indent="    ")
-            return os.linesep.join(line for line in pretty.splitlines() if line.strip())
-        except Exception as exc:
+            # "\n" and not os.linesep: this text goes into a Tk Text widget, where a "\r" would be a stray character.
+            return "\n".join(line for line in pretty.splitlines() if line.strip())
+        except Exception as exc:  # pylint: disable=broad-except
             return f"Error processing Manifest:\n{exc}"

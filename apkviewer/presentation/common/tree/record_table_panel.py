@@ -27,7 +27,6 @@ class RecordTablePanel(BaseTreePanel[RecordNode]):
         columns: Sequence[TreeColumn],
         item_noun: str = "items",
         empty_text: str = "Nothing to show.",
-        filter_on_top: bool = True,
         row_styles: Mapping[str, Callable[[ThemePalette], str]] | None = None,
         toolbar_row: bool = False,
         expand_buttons: bool = False,
@@ -39,8 +38,13 @@ class RecordTablePanel(BaseTreePanel[RecordNode]):
         self._category: str | None = None
         self._column_ids: tuple[str, ...] = tuple(column.id for column in columns)
         super().__init__(
-            parent, palette, columns, filter_on_top=filter_on_top, toolbar_row=toolbar_row,
-            expand_buttons=expand_buttons, item_noun=item_noun, empty_text=empty_text,
+            parent,
+            palette,
+            columns,
+            toolbar_row=toolbar_row,
+            expand_buttons=expand_buttons,
+            item_noun=item_noun,
+            empty_text=empty_text,
         )
 
     # --- Public API ------------------------------------------------------------

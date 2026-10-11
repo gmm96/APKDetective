@@ -15,8 +15,9 @@ from androguard.core.apk import APK
 from babel import Locale
 from babel.core import UnknownLocaleError
 
-from apkviewer.domain.entities.analysis_warning import AnalysisArea
-from apkviewer.domain.entities.configuration_info import ConfigurationInfo, HardwareFeature
+from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.configuration_info import ConfigurationInfo
+from apkviewer.domain.entities.hardware_feature import HardwareFeature
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS
 from apkviewer.infrastructure.androguard.manifest_value_formatter import ManifestValueFormatter
@@ -51,25 +52,27 @@ class ConfigurationExtractor:
     }
 
     def extract(
-        self,
-        apk: APK,
-        warnings: AnalysisWarningCollector | None = None
+        self, apk: APK, warnings: AnalysisWarningCollector | None = None
     ) -> ConfigurationInfo:
         if warnings is not None and not self._has_resource_table(apk):
             warnings.add(
                 "The resource table (resources.arsc) is missing or unreadable: "
                 "locales and screen densities may be missing or incomplete.",
-                AnalysisArea.INFO,
+                AnalysisSection.CONFIGURATION,
             )
         return ConfigurationInfo(
             architectures=self._architectures(apk),
-            hardware_requirements=self._hardware_features(apk),
+            hardware_requirements=self._hardware_features(apk, warnings),
             locales=self._extract_locales(apk),
             screen_densities=self._extract_densities(apk),
         )
 
-    @staticmethod
-    def _hardware_features(apk: APK) -> tuple[HardwareFeature, ...]:
+    # --- Hardware requirements -----------------------------------------------------------
+
+    @classmethod
+    def _hardware_features(
+        cls, apk: APK, warnings: AnalysisWarningCollector | None
+    ) -> tuple[HardwareFeature, ...]:
         """The <uses-feature> declarations, each with whether the app requires it."""
         try:
             root = apk.get_android_manifest_xml()
@@ -78,19 +81,20 @@ class ConfigurationExtractor:
             formatter = ManifestValueFormatter(ResourceReferenceResolver(apk))
             features: dict[str, HardwareFeature] = {}
             for node in root.iter("uses-feature"):
-                name = node.get(f"{ANDROID_NS}name") or ConfigurationExtractor._gl_version(
-                    node.get(f"{ANDROID_NS}glEsVersion")
-                )
+                name = node.get(f"{ANDROID_NS}name") or cls._gl_version(node.get(f"{ANDROID_NS}glEsVersion"))
                 if not name:
                     continue
-                required = ConfigurationExtractor._parse_required(
-                    formatter.declared(node.get(f"{ANDROID_NS}required"))
-                )
+                required = cls._parse_required(formatter.declared(node.get(f"{ANDROID_NS}required")))
                 known = features.get(name)
                 if known is None or (required is not False and known.required is False):
                     features[name] = HardwareFeature(name, required)  # "required" wins over "optional"
             return tuple(sorted(features.values(), key=lambda feature: feature.name.lower()))
-        except Exception:
+        except Exception as exc:  # pylint: disable=broad-except
+            if warnings is not None:
+                warnings.add(
+                    f"The hardware requirements could not be read ({type(exc).__name__}).",
+                    AnalysisSection.CONFIGURATION,
+                )
             return ()
 
     @staticmethod
@@ -107,13 +111,7 @@ class ConfigurationExtractor:
             return None
         return None if number is None else f"OpenGL ES {number >> 16}.{number & 0xFFFF}"
 
-    @staticmethod
-    def _has_resource_table(apk: APK) -> bool:
-        try:
-            arsc = apk.get_android_resources()
-            return bool(arsc and arsc.get_packages_names())
-        except Exception:
-            return False
+    # --- Architectures --------------------------------------------------------------------
 
     @staticmethod
     def _architectures(apk: APK) -> tuple[str, ...]:
@@ -123,6 +121,32 @@ class ConfigurationExtractor:
             if len(parts) > 2
         }
         return tuple(sorted(archs))
+
+    # --- Resource table: locales and densities ---------------------------------------------
+
+    @staticmethod
+    def _has_resource_table(apk: APK) -> bool:
+        try:
+            arsc = apk.get_android_resources()
+            return bool(arsc and arsc.get_packages_names())
+        except Exception:  # pylint: disable=broad-except
+            return False
+
+    @staticmethod
+    def _per_package(apk: APK, read: Callable[[Any, str], Any]) -> list[Any]:
+        """Apply `read(arsc, package)` to every package of the resource table, skipping failures."""
+        try:
+            arsc = apk.get_android_resources()
+            packages = arsc.get_packages_names() if arsc else []
+        except Exception:  # pylint: disable=broad-except
+            return []
+        results: list[Any] = []
+        for package in packages:
+            try:
+                results.append(read(arsc, package))
+            except Exception:  # pylint: disable=broad-except
+                continue
+        return results
 
     @classmethod
     def _extract_locales(cls, apk: APK) -> tuple[str, ...]:
@@ -135,22 +159,6 @@ class ConfigurationExtractor:
                 if loc:
                     locales.add(cls._format_locale_name(loc))
         return tuple(sorted(locales))
-
-    @staticmethod
-    def _per_package(apk: APK, read: Callable[[Any, str], Any]) -> list[Any]:
-        """Apply `read(arsc, package)` to every package of the resource table, skipping failures."""
-        try:
-            arsc = apk.get_android_resources()
-            packages = arsc.get_packages_names() if arsc else []
-        except Exception:
-            return []
-        results: list[Any] = []
-        for package in packages:
-            try:
-                results.append(read(arsc, package))
-            except Exception:
-                continue
-        return results
 
     @classmethod
     def _format_locale_name(cls, raw_locale: str) -> str:
@@ -179,7 +187,7 @@ class ConfigurationExtractor:
                         names.add(name)
         if not names:  # no resource table: fall back to the folder names
             for filename in apk.get_files():
-                match = filename.startswith("res/") and cls._DENSITY_PATTERN.search(filename)
+                match = cls._DENSITY_PATTERN.search(filename) if filename.startswith("res/") else None
                 if match:
                     names.add(match.group(1))
         return tuple(sorted(f"{name} ({cls._DENSITY_MEANINGS.get(name, 'Unknown')})" for name in names))

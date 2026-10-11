@@ -2,16 +2,18 @@
 Collects the warnings raised by the extractors while one APK is analyzed.
 """
 
-from apkviewer.domain.entities.analysis_warning import AnalysisArea, AnalysisWarning
+from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis_warning import AnalysisWarning
 
 
 class AnalysisWarningCollector:
     def __init__(self) -> None:
         self._warnings: list[AnalysisWarning] = []
 
-    def add(self, message: str, *areas: AnalysisArea) -> None:
-        for area in areas:
-            warning = AnalysisWarning(area, message)
+    def add(self, message: str, *sections: AnalysisSection) -> None:
+        """Record that `message` concerns each of those sections of the analysis."""
+        for section in sections:
+            warning = AnalysisWarning(section, message)
             if warning not in self._warnings:
                 self._warnings.append(warning)
 

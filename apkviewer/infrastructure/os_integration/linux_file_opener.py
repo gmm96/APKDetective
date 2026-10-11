@@ -13,8 +13,11 @@ from apkviewer.domain.interfaces.os_file_opener import OsFileOpener
 
 class LinuxFileOpener(OsFileOpener):
     def open(self, path: str) -> None:
-        with subprocess.Popen(["xdg-open", path]):
-            pass
+        # Not waited for: the Tk window must not freeze until the other application is closed.
+        subprocess.Popen(  # pylint: disable=consider-using-with
+            ["xdg-open", path],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+        )
 
     def open_with(self, path: str) -> None:
         asyncio.run(self._open_with_portal(path))

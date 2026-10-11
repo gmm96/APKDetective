@@ -16,8 +16,8 @@ and their icons when the color mode changes.
 
 import tkinter as tk
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from functools import partial
 from tkinter import ttk
-from typing import Optional
 
 from PIL import Image, ImageTk
 
@@ -43,7 +43,7 @@ class AppToolbar:
         root: tk.Tk,
         menus: Mapping[str, Sequence[MenuEntry]],
         palette: ThemePalette,
-        icon_loader: Optional[IconLoader] = None,
+        icon_loader: IconLoader | None = None,
     ) -> None:
         self._root: tk.Tk = root
         self._palette: ThemePalette = palette
@@ -121,16 +121,16 @@ class AppToolbar:
         # clicking the button of an open menu closes it instead of
         # immediately re-opening it.
         button.bind("<ButtonPress-1>", lambda _event: self._remember_state(title), add="+")
-        button.bind(
-            "<Enter>",
-            lambda _event: self._toggle(title)
-                if (PopupMenuController._open_controller is not None and not self._popups[title].is_open)
-                else None
-        )
+        button.bind("<Enter>", lambda _event: self._switch_open_menu_to(title))
         return button
 
     def _remember_state(self, title: str) -> None:
         self._was_open_on_press[title] = self._popups[title].is_open
+
+    def _switch_open_menu_to(self, title: str) -> None:
+        """While a menu is open, moving over another menu's button opens that one (as in any menu bar)."""
+        if PopupMenuController.is_any_open() and not self._popups[title].is_open:
+            self._toggle(title)
 
     def _toggle(self, title: str) -> None:
         popup = self._popups[title]
@@ -166,7 +166,7 @@ class AppToolbar:
     def _add_item(self, menu: tk.Menu, item: AppToolbarItem, use_icons: bool) -> None:
         options: dict = {
             "label": f"{item.label:<30}",
-            "command": lambda key=item.key: self._invoke(key),
+            "command": partial(self._invoke, item.key),
         }
         if item.accelerator:
             options["accelerator"] = item.accelerator
@@ -182,10 +182,7 @@ class AppToolbar:
         if item.icon_path:
             self._entry_icons.append((menu, index, item.icon_path))
         if item.shortcut:
-            self._root.bind(
-                item.shortcut,
-                lambda _event, key=item.key: self._invoke(key)  # type: ignore
-            )
+            self._root.bind(item.shortcut, partial(self._on_shortcut, item.key))
 
     def _add_choice_group(self, menu: tk.Menu, group: AppToolbarChoiceGroup, use_icons: bool) -> None:
         """A disabled title followed by radio entries (exactly one selected)."""
@@ -233,6 +230,9 @@ class AppToolbar:
     def _create_blank_icon(self) -> ImageTk.PhotoImage:
         width = self._ICON_SIZE[0] + 2 * self._ICON_PADDING
         return ImageTk.PhotoImage(Image.new("RGBA", (width, self._ICON_SIZE[1]), (0, 0, 0, 0)))
+
+    def _on_shortcut(self, key: str, _event: tk.Event) -> None:
+        self._invoke(key)
 
     def _invoke(self, key: str) -> None:
         # Keyboard shortcuts bypass the menu's own disabled state, so check it here.

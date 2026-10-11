@@ -6,22 +6,14 @@ from apkviewer.domain.interfaces.size_formatter import SizeFormatter
 
 
 class HumanReadableSizeFormatter(SizeFormatter):
-    _UNITS: tuple[str, str, str, str] = ("B", "KB", "MB", "GB")
+    _UNITS: tuple[str, ...] = ("B", "KB", "MB", "GB", "TB")
 
     def format(self, num_bytes: int, full_mode: bool = False) -> str:
-        try:
-            num = float(num_bytes)
-        except (TypeError, ValueError):
-            return "-"
-        total_bytes = int(num)
+        size = float(num_bytes)
+        unit = self._UNITS[0]
         for unit in self._UNITS:
-            if num < 1024.0:
-                readable = f"{num:.0f} {unit}" if unit == "B" else f"{num:.1f} {unit}"
-                if full_mode:
-                    return f"{readable} ({total_bytes:,} B)"
-                return readable
-            num /= 1024.0
-        readable = f"{num:.1f} TB"
-        if full_mode:
-            return f"{readable} ({total_bytes:,} B)"
-        return readable
+            if size < 1024.0 or unit == self._UNITS[-1]:
+                break
+            size /= 1024.0
+        readable = f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        return f"{readable} ({num_bytes:,} B)" if full_mode else readable

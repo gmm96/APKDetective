@@ -19,8 +19,6 @@ class CopyableEntry(ttk.Frame):
         font: tuple | None = None,
     ) -> None:
         super().__init__(parent)
-        self._text: str = text
-
         FieldIcons.configure_entry_style()
         self.entry: ttk.Entry = ttk.Entry(self, style=ENTRY_STYLE)
         if font is not None:
@@ -28,10 +26,7 @@ class CopyableEntry(ttk.Frame):
         self.entry.insert(0, text)
         self.entry.configure(state="readonly")
         self.entry.pack(fill=tk.X, expand=True)
-        self.overlay: CopyIconOverlay = CopyIconOverlay(self.entry, icons, lambda: self._text)
-
-    def get(self) -> str:
-        return self._text
+        self.overlay: CopyIconOverlay = CopyIconOverlay(self.entry, icons, lambda: text)
 
     def refresh_icons(self) -> None:
         """Re-read the icons after a theme change."""

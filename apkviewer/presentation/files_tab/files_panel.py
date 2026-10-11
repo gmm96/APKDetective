@@ -14,8 +14,9 @@ from datetime import datetime
 from PIL import ImageTk
 
 from apkviewer.application.entry_previewer import EntryPreviewer
+from apkviewer.application.file_sort_key import FileSortKey
 from apkviewer.application.file_tree_filter import FileTreeFilter
-from apkviewer.application.file_tree_sorter import FileSortKey, FileTreeSorter
+from apkviewer.application.file_tree_sorter import FileTreeSorter
 from apkviewer.domain.entities.file_node import FileNode
 from apkviewer.domain.interfaces.size_formatter import SizeFormatter
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
@@ -23,10 +24,9 @@ from apkviewer.presentation.common.extract_to_dialog import ExtractToDialog
 from apkviewer.presentation.common.tree.base_tree_panel import BaseTreePanel
 from apkviewer.presentation.common.tree.tree_column import TreeColumn
 from apkviewer.presentation.config.theme import FONT_MONO_SMALL
+from apkviewer.presentation.files_tab.files_context_menu import FilesContextMenu
 from apkviewer.presentation.formatting.human_readable_size_formatter import HumanReadableSizeFormatter
 from apkviewer.presentation.icons.icon_loader import IconLoader
-
-from .files_context_menu import FilesContextMenu
 
 _COLUMNS: tuple[TreeColumn, ...] = (
     TreeColumn("#0", "Name", width=380, min_width=200, stretch=True),
@@ -86,8 +86,7 @@ class FilesPanel(BaseTreePanel[FileNode]):
         super().__init__(
             parent,
             palette,
-            _COLUMNS,  # fills the available space (no row limit)
-            filter_on_top=True,
+            _COLUMNS,
             expand_buttons=True,
             item_noun="files",
             empty_text="This APK contains no files.",
@@ -140,9 +139,6 @@ class FilesPanel(BaseTreePanel[FileNode]):
 
     def _node_iid(self, node: FileNode) -> str:
         return node.path
-
-    def _default_open(self, node: FileNode) -> bool:
-        return False
 
     def _item_count(self, node: FileNode) -> int:
         """The counter counts files, not folders."""

@@ -8,8 +8,9 @@ from typing import Any
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis_warning import AnalysisArea
-from apkviewer.domain.entities.security_info import Certificate, SecurityInfo
+from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.certificate import Certificate
+from apkviewer.domain.entities.security_info import SecurityInfo
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 
 
@@ -39,11 +40,11 @@ class SecurityInfoExtractor:
             try:
                 if method():
                     found.append(label)
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-except
                 if warnings is not None:
                     warnings.add(
                         f"The {label} signature could not be checked ({type(exc).__name__}).",
-                        AnalysisArea.SECURITY,
+                        AnalysisSection.SIGNATURES,
                     )
         return tuple(found)
 
@@ -56,9 +57,9 @@ class SecurityInfoExtractor:
             issuer=cls._attempt(lambda: cert.issuer.human_friendly),
             subject=cls._attempt(lambda: cert.subject.human_friendly),
             serial_number=cls._attempt(lambda: f"{cert.serial_number:X}"),
-            md5=cls._fingerprint("md5", der),
-            sha1=cls._fingerprint("sha1", der),
-            sha256=cls._fingerprint("sha256", der),
+            md5=cls._attempt(lambda: cls._fingerprint("md5", der)),  # md5 is refused on FIPS systems
+            sha1=cls._attempt(lambda: cls._fingerprint("sha1", der)),
+            sha256=cls._attempt(lambda: cls._fingerprint("sha256", der)),
             signature_algorithm=cls._attempt(lambda: cls._signature_algorithm(cert)),
             public_key=cls._attempt(lambda: cls._public_key(cert)),
             valid_from=cls._attempt(lambda: cls._moment(validity["not_before"])),
@@ -69,7 +70,7 @@ class SecurityInfoExtractor:
     def _attempt(read: Any) -> Any:
         try:
             return read()
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return None
 
     @staticmethod
@@ -86,12 +87,7 @@ class SecurityInfoExtractor:
 
     @staticmethod
     def _signature_algorithm(cert: Any) -> str:
-        scheme = {
-            "rsassa_pkcs1v15": "RSA",
-            "rsassa_pss": "RSASSA-PSS",
-            "ecdsa": "ECDSA",
-            "dsa": "DSA"
-        }
+        scheme = {"rsassa_pkcs1v15": "RSA", "rsassa_pss": "RSASSA-PSS", "ecdsa": "ECDSA", "dsa": "DSA"}
         return f"{cert.hash_algo.upper()}with{scheme.get(cert.signature_algo, cert.signature_algo.upper())}"
 
     @staticmethod

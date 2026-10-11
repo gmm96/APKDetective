@@ -8,17 +8,16 @@ declares itself, those come from the manifest, with resource references
 resolved through the app's resource table.
 """
 
+from dataclasses import replace
 from typing import Any
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis_warning import AnalysisArea
-from apkviewer.domain.entities.permission import (
-    Permission,
-    PermissionOrigin,
-    PermissionsInfo,
-    parse_protection_level,
-)
+from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.permission import Permission
+from apkviewer.domain.entities.permission_origin import PermissionOrigin
+from apkviewer.domain.entities.permissions_info import PermissionsInfo
+from apkviewer.domain.entities.protection_level import ProtectionLevel
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.aosp_permission_catalog import AospPermissionCatalog
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS
@@ -30,51 +29,58 @@ class PermissionsExtractor:
         self._catalog: AospPermissionCatalog = catalog or AospPermissionCatalog()
 
     def extract(self, apk: APK, warnings: AnalysisWarningCollector | None = None) -> PermissionsInfo:
-        self._catalog.set_fallback(dict(getattr(apk, "permission_module", {}) or {}))
-        try:
-            root = apk.get_android_manifest_xml()
-        except Exception:
-            root = None
+        root = self._manifest_root(apk)
         if root is None:
             if warnings is not None:
                 warnings.add(
                     "The manifest is missing or corrupted: no permissions could be listed.",
-                    AnalysisArea.PERMISSIONS,
+                    AnalysisSection.PERMISSIONS,
                 )
             return PermissionsInfo()
 
-        resolver = ResourceReferenceResolver(apk)
         requested = self._requested(root)
-        declared = self._declared(root, resolver)
+        declared = self._declared(root, ResourceReferenceResolver(apk))
+        # The database of the app's own targetSdk still lists permissions that later Android
+        # versions dropped, so it is consulted when the newest database doesn't know a name.
+        target_entries: dict[str, Any] = getattr(apk, "permission_module", None) or {}
 
         framework: list[Permission] = []
         app_ops: list[Permission] = []
         custom: dict[str, Permission] = {}
         for name, max_sdk in requested.items():
-            entry = self._catalog.lookup(name)
             if name in declared:
-                custom[name] = self._with_origin(declared[name], max_sdk, PermissionOrigin.DECLARED_AND_REQUESTED)
-            elif entry is None:
-                custom[name] = Permission(name, None, max_sdk=max_sdk)
-            else:
-                permission = Permission(
-                    name=name,
-                    protection=parse_protection_level(entry.get("protectionLevel")),
-                    label=self._clean(entry.get("label")) or self._clean(entry.get("description")),
-                    max_sdk=max_sdk,
+                custom[name] = replace(
+                    declared[name], max_sdk=max_sdk, origin=PermissionOrigin.DECLARED_AND_REQUESTED
                 )
-                (app_ops if permission.is_app_op else framework).append(permission)
+                continue
+            entry = self._catalog.lookup(name) or target_entries.get(name)
+            if entry is None:
+                custom[name] = Permission(name, max_sdk=max_sdk)
+                continue
+            permission = Permission(
+                name=name,
+                protection=ProtectionLevel.parse(entry.get("protectionLevel")),
+                label=self._clean(entry.get("label")) or self._clean(entry.get("description")),
+                max_sdk=max_sdk,
+            )
+            (app_ops if permission.is_app_op else framework).append(permission)
         for name, permission in declared.items():
             custom.setdefault(name, permission)
 
-        by_name = lambda permission: permission.name.lower()  # noqa: E731
         return PermissionsInfo(
-            permissions=tuple(sorted(framework, key=by_name)),
-            app_ops=tuple(sorted(app_ops, key=by_name)),
-            custom_permissions=tuple(sorted(custom.values(), key=by_name)),
+            permissions=tuple(sorted(framework, key=self._by_name)),
+            app_ops=tuple(sorted(app_ops, key=self._by_name)),
+            custom_permissions=tuple(sorted(custom.values(), key=self._by_name)),
         )
 
     # --- Manifest ---------------------------------------------------------------------------
+
+    @staticmethod
+    def _manifest_root(apk: APK) -> Any:
+        try:
+            return apk.get_android_manifest_xml()
+        except Exception:  # pylint: disable=broad-except
+            return None
 
     @staticmethod
     def _requested(root: Any) -> dict[str, str | None]:
@@ -98,29 +104,28 @@ class PermissionsExtractor:
                 continue
             declared[name] = Permission(
                 name=name,
-                protection=parse_protection_level(node.get(f"{ANDROID_NS}protectionLevel")),
+                protection=ProtectionLevel.parse(node.get(f"{ANDROID_NS}protectionLevel")),
                 label=self._text(node.get(f"{ANDROID_NS}label"), resolver)
                 or self._text(node.get(f"{ANDROID_NS}description"), resolver),
                 origin=PermissionOrigin.DECLARED,
             )
         return declared
 
+    # --- Helpers ---------------------------------------------------------------------------------
+
     @staticmethod
-    def _text(value: str | None, resolver: ResourceReferenceResolver) -> str | None:
+    def _by_name(permission: Permission) -> str:
+        return permission.name.lower()
+
+    @classmethod
+    def _text(cls, value: str | None, resolver: ResourceReferenceResolver) -> str | None:
         if not value:
             return None
         text = resolver.literal(value)
-        return PermissionsExtractor._clean(text if text is not None else value)
+        return cls._clean(text if text is not None else value)
 
     @staticmethod
     def _clean(text: Any) -> str | None:
         if not isinstance(text, str):
             return None
-        collapsed = " ".join(text.split())
-        return collapsed or None
-
-    @staticmethod
-    def _with_origin(permission: Permission, max_sdk: str | None, origin: PermissionOrigin) -> Permission:
-        return Permission(
-            permission.name, permission.protection, permission.label, max_sdk, origin,
-        )
+        return " ".join(text.split()) or None

@@ -6,10 +6,9 @@ different unit system be swapped in without touching any widget code.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 
 class SizeFormatter(ABC):
     @abstractmethod
-    def format(self, num_bytes: Any, full_mode: bool = False) -> str:
+    def format(self, num_bytes: int, full_mode: bool = False) -> str:
         raise NotImplementedError

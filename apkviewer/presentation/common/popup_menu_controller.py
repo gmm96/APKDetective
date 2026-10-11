@@ -49,6 +49,11 @@ class PopupMenuController:
     def is_open(self) -> bool:
         return bool(self._menu.winfo_ismapped())
 
+    @classmethod
+    def is_any_open(cls) -> bool:
+        """Whether some popup of the application (this one or another) is currently posted."""
+        return cls._open_controller is not None
+
     def post(self, x_root: int, y_root: int) -> None:
         self.close_open_popup()
         PopupMenuController._open_controller = self

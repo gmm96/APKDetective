@@ -19,9 +19,10 @@ from androguard.core.apk import APK
 from androguard.core.axml import AXMLPrinter
 from PIL import Image
 
-from apkviewer.domain.entities.analysis_warning import AnalysisArea
+from apkviewer.domain.entities.analysis_section import AnalysisSection
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS, DPI_SCORES
+from apkviewer.infrastructure.androguard.unrenderable_layer_error import UnrenderableLayerError
 
 _RASTER: tuple[str, ...] = (".png", ".webp", ".jpg", ".jpeg")
 # Densities from this value up are "anydpi"/"nodpi": not a real screen density.
@@ -31,10 +32,6 @@ _ADAPTIVE_CANVAS: int = 108
 _ADAPTIVE_VISIBLE: int = 72
 
 Layer = Image.Image | tuple[int, int, int, int] | None  # an image, a solid RGBA color, or absent
-
-
-class _UnrenderableLayer(Exception):
-    """A layer of an adaptive icon that is not an image or a color (e.g. a vector drawable)."""
 
 
 class IconExtractor:
@@ -53,7 +50,7 @@ class IconExtractor:
             image, reason = None, f"The launcher icon could not be read ({type(exc).__name__})."
         if image is None:
             if warnings is not None and reason:
-                warnings.add(reason, AnalysisArea.ICON)
+                warnings.add(reason, AnalysisSection.ICON)
             return None
         return self._encode_png(image)
 
@@ -92,7 +89,7 @@ class IconExtractor:
             if main_activity:
                 reference = apk.get_attribute_value("activity", "icon", name=main_activity)
             return reference or apk.get_attribute_value("application", "icon")
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return None
 
     def _resolved_values(self, apk: APK) -> list[tuple[int, str]]:
@@ -111,7 +108,7 @@ class IconExtractor:
                 return []
             res_id = int(reference[1:].split(":")[-1], 16)
             resolved = resources.get_resolved_res_configs(res_id)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return []
         values = [(self._density_rank(config), value) for config, value in resolved if isinstance(value, str)]
         return sorted(values, key=lambda item: item[0], reverse=True)  # stable for equal densities
@@ -120,7 +117,7 @@ class IconExtractor:
     def _density_rank(config: Any) -> int:
         try:
             density = int(config.get_density())
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return 0
         return -1 if density >= _NON_DENSITY else density
 
@@ -129,7 +126,7 @@ class IconExtractor:
         try:
             data = apk.get_file(path)
             return IconExtractor._load(data) if data else None
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return None
 
     # --- Adaptive icons -----------------------------------------------------------------
@@ -141,14 +138,14 @@ class IconExtractor:
                 continue
             try:
                 root = AXMLPrinter(apk.get_file(path)).get_xml_obj()
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 continue
             if root is None or root.tag != "adaptive-icon":
                 continue
             try:
                 background = self._load_layer(apk, root, "background")
                 foreground = self._load_layer(apk, root, "foreground")
-            except _UnrenderableLayer:
+            except UnrenderableLayerError:
                 reason = (
                     "The launcher icon is an adaptive icon made of vector drawables, "
                     "which can't be rendered."
@@ -171,7 +168,7 @@ class IconExtractor:
         if reference.startswith("#"):
             color = self._parse_color(reference)
             if color is None:
-                raise _UnrenderableLayer(reference)
+                raise UnrenderableLayerError(reference)
             return color
 
         for _, value in self._resolve_reference(apk, reference):
@@ -183,7 +180,7 @@ class IconExtractor:
                 color = self._parse_color(value)
                 if color is not None:
                     return color
-        raise _UnrenderableLayer(reference)  # vector drawable, gradient, or unresolvable
+        raise UnrenderableLayerError(reference)  # vector drawable, gradient, or unresolvable
 
     @staticmethod
     def _parse_color(value: str) -> tuple[int, int, int, int] | None:

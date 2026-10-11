@@ -10,7 +10,8 @@ from androguard.core.apk import APK
 from androguard.core.axml import AXMLPrinter
 
 from apkviewer.domain.entities.application_info import ApplicationInfo
-from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector, AnalysisArea
+from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS
 
 
@@ -149,7 +150,7 @@ class ApplicationInfoExtractor:
     @staticmethod
     def _warn(warnings: AnalysisWarningCollector | None, message: str) -> None:
         if warnings is not None:
-            warnings.add(message, AnalysisArea.COMPONENTS)
+            warnings.add(message, AnalysisSection.COMPONENTS)
 
     @staticmethod
     def _parse_flag(node: Any, attr: str, default: bool) -> bool:

@@ -3,35 +3,26 @@ Windows implementation of OsFileOpener: default-app open via os.startfile,
 and the native "Open with..." picker via shell32's SHOpenWithDialog.
 """
 
+import ctypes
 import os
+from ctypes import wintypes
 
 from apkviewer.domain.interfaces.os_file_opener import OsFileOpener
+from apkviewer.infrastructure.os_integration.windows_open_as_info import OpenAsInfo
 
 
 class WindowsFileOpener(OsFileOpener):
+    _OAIF_EXEC: int = 0x00000004
+    _OAIF_HIDE_REGISTRATION: int = 0x00000020
+
     def open(self, path: str) -> None:
-        getattr(os, "startfile")(path)
+        getattr(os, "startfile")(path)  # only exists on Windows
 
     def open_with(self, path: str) -> None:
-        # pylint: disable=import-outside-toplevel
-        # pylint: disable=invalid-name
-        import ctypes
-        from ctypes import wintypes
-
-        class OPENASINFO(ctypes.Structure):
-            _fields_ = [
-                ("pcszFile", wintypes.LPCWSTR),
-                ("pcszClass", wintypes.LPCWSTR),
-                ("oaifInFlags", wintypes.DWORD),
-            ]
-
-        OAIF_EXEC = 0x00000004
-        OAIF_HIDE_REGISTRATION = 0x00000020
-        info = OPENASINFO(path, None, OAIF_EXEC | OAIF_HIDE_REGISTRATION)
-        WinDLL = getattr(ctypes, "WinDLL")
-        shell32 = WinDLL("shell32", use_last_error=True)
-        shell32.SHOpenWithDialog.argtypes = [wintypes.HWND, ctypes.POINTER(OPENASINFO)]
+        info = OpenAsInfo(path, None, self._OAIF_EXEC | self._OAIF_HIDE_REGISTRATION)
+        shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+        shell32.SHOpenWithDialog.argtypes = [wintypes.HWND, ctypes.POINTER(OpenAsInfo)]
         shell32.SHOpenWithDialog.restype = wintypes.LONG
-        hr = shell32.SHOpenWithDialog(None, ctypes.byref(info))
-        if hr != 0:
-            raise OSError(f"SHOpenWithDialog failed with HRESULT 0x{hr & 0xffffffff:08X}")
+        result = shell32.SHOpenWithDialog(None, ctypes.byref(info))
+        if result != 0:
+            raise OSError(f"SHOpenWithDialog failed with HRESULT 0x{result & 0xffffffff:08X}")

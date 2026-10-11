@@ -7,7 +7,7 @@ from androguard.core.apk import APK
 
 from apkviewer.domain.entities.third_party_info import ThirdPartyInfo
 from apkviewer.infrastructure.androguard.config.trackers import KNOWN_TRACKERS
-from apkviewer.infrastructure.androguard.dex_reader import DexContents
+from apkviewer.infrastructure.androguard.dex_contents import DexContents
 
 
 class TrackerDetector:

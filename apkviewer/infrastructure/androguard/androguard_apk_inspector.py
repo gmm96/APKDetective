@@ -13,19 +13,20 @@ from typing import TypeVar
 
 from loguru import logger
 
-from apkviewer.domain.entities.analysis_warning import AnalysisArea
+from apkviewer.domain.entities.analysis_section import AnalysisSection
 from apkviewer.domain.entities.apk_inspection import ApkInspection
 from apkviewer.domain.entities.application_info import ApplicationInfo
-from apkviewer.domain.entities.components import DeclaredComponents
 from apkviewer.domain.entities.configuration_info import ConfigurationInfo
+from apkviewer.domain.entities.declared_components import DeclaredComponents
 from apkviewer.domain.entities.embedded_content import EmbeddedContent
-from apkviewer.domain.entities.permission import PermissionsInfo
+from apkviewer.domain.entities.permissions_info import PermissionsInfo
 from apkviewer.domain.entities.security_info import SecurityInfo
 from apkviewer.domain.entities.third_party_info import ThirdPartyInfo
 from apkviewer.domain.interfaces.apk_inspector import ApkInspector
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.apk_loader import ApkLoader
-from apkviewer.infrastructure.androguard.dex_reader import DexContents, DexReader
+from apkviewer.infrastructure.androguard.dex_contents import DexContents
+from apkviewer.infrastructure.androguard.dex_reader import DexReader
 from apkviewer.infrastructure.androguard.extractors.app_info_extractor import ApplicationInfoExtractor
 from apkviewer.infrastructure.androguard.extractors.components_extractor import ComponentsExtractor
 from apkviewer.infrastructure.androguard.extractors.configuration_extractor import ConfigurationExtractor
@@ -72,54 +73,78 @@ class AndroguardApkInspector(ApkInspector):
         warnings = AnalysisWarningCollector()
         apk = self._apk_loader.load(apk_path)  # an APK that can't even be opened is a real error
         guard = self._guarded
+        section = AnalysisSection
 
-        info, sec, comp = AnalysisArea.INFO, AnalysisArea.SECURITY, AnalysisArea.COMPONENTS
-        dex = guard(warnings, "The code (DEX) of the app", (info, sec),
-                    lambda: self._dex_reader.read(apk, warnings), DexContents())
+        dex = guard(
+            warnings,
+            "The code (DEX) of the app",
+            (section.EMBEDDED_CONTENT, section.THIRD_PARTY),
+            lambda: self._dex_reader.read(apk, warnings),
+            DexContents(),
+        )
         return ApkInspection(
             application=guard(
                 warnings,
                 "The application data",
-                (info,),
+                (section.APPLICATION,),
                 lambda: self._application.extract(apk, warnings),
                 ApplicationInfo("", "", None, None, None, None, None, None, None, None, None, None, None),
             ),
             configuration=guard(
                 warnings,
                 "The configuration",
-                (info,),
+                (section.CONFIGURATION,),
                 lambda: self._configuration.extract(apk, warnings),
                 ConfigurationInfo((), (), (), ()),
             ),
             embedded_content=guard(
                 warnings,
                 "The embedded content",
-                (info,),
-                lambda: self._embedded_content.extract(dex), EmbeddedContent(()),
+                (section.EMBEDDED_CONTENT,),
+                lambda: self._embedded_content.extract(dex),
+                EmbeddedContent(()),
             ),
             security=guard(
-                warnings, "The signatures", (sec,),
-                lambda: self._security.extract(apk, warnings), SecurityInfo(()),
+                warnings,
+                "The signatures",
+                (section.SIGNATURES,),
+                lambda: self._security.extract(apk, warnings),
+                SecurityInfo(()),
             ),
             permissions=guard(
-                warnings, "The permissions", (AnalysisArea.PERMISSIONS,),
-                lambda: self._permissions.extract(apk, warnings), PermissionsInfo(),
+                warnings,
+                "The permissions",
+                (section.PERMISSIONS,),
+                lambda: self._permissions.extract(apk, warnings),
+                PermissionsInfo(),
             ),
             third_party=guard(
-                warnings, "The third-party code", (sec,),
-                lambda: self._trackers.extract(apk, dex), ThirdPartyInfo((), ()),
+                warnings,
+                "The third-party code",
+                (section.THIRD_PARTY,),
+                lambda: self._trackers.extract(apk, dex),
+                ThirdPartyInfo((), ()),
             ),
             components=guard(
-                warnings, "The components", (comp,),
-                lambda: self._components.extract(apk, warnings), DeclaredComponents(),
+                warnings,
+                "The components",
+                (section.COMPONENTS,),
+                lambda: self._components.extract(apk, warnings),
+                DeclaredComponents(),
             ),
             icon_png=guard(
-                warnings, "The icon", (AnalysisArea.ICON,),
-                lambda: self._icon_extractor.extract(apk, warnings), None,
+                warnings,
+                "The icon",
+                (section.ICON,),
+                lambda: self._icon_extractor.extract(apk, warnings),
+                None,
             ),
             manifest_xml=guard(
-                warnings, "The manifest", (comp,),
-                lambda: self._manifest_formatter.format(apk), "",
+                warnings,
+                "The manifest",
+                (section.MANIFEST,),
+                lambda: self._manifest_formatter.format(apk),
+                "",
             ),
             warnings=warnings.as_tuple(),
         )
@@ -128,12 +153,12 @@ class AndroguardApkInspector(ApkInspector):
     def _guarded(
         warnings: AnalysisWarningCollector,
         what: str,
-        areas: tuple[AnalysisArea, ...],
+        sections: tuple[AnalysisSection, ...],
         read: Callable[[], T],
         default: T,
     ) -> T:
         try:
             return read()
         except Exception as exc:  # pylint: disable=broad-except
-            warnings.add(f"{what} could not be read ({type(exc).__name__}: {exc}).", *areas)
+            warnings.add(f"{what} could not be read ({type(exc).__name__}: {exc}).", *sections)
             return default

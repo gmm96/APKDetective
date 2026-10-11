@@ -3,8 +3,8 @@ Linux implementation of ClipboardFileCopier: tries the X11 clipboard
 (xclip) first, then falls back to Wayland (wl-copy).
 """
 
-import os
 import subprocess
+from pathlib import Path
 
 from apkviewer.domain.interfaces.clipboard_file_copier import ClipboardFileCopier
 
@@ -16,7 +16,8 @@ class LinuxClipboardFileCopier(ClipboardFileCopier):
     )
 
     def copy(self, file_paths: list[str]) -> bool:
-        payload = "\n".join(f"file://{os.path.abspath(p)}" for p in file_paths).encode("utf-8")
+        # as_uri() percent-encodes the path: names with spaces or accents are not valid URIs as they are.
+        payload = "\n".join(Path(path).absolute().as_uri() for path in file_paths).encode("utf-8")
         return any(self._try_run(command, payload) for command in self._COMMANDS)
 
     @staticmethod

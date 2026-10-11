@@ -10,21 +10,15 @@ are needed. It also keeps working with DEX versions the library can't parse.
 """
 
 import struct
-from dataclasses import dataclass
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis_warning import AnalysisArea
+from apkviewer.domain.entities.analysis_section import AnalysisSection
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
+from apkviewer.infrastructure.androguard.dex_contents import DexContents
 
 _HEADER_SIZE: int = 0x70
 _CLASS_DEF_WORDS: int = 8  # a class_def_item is 8 uint32 (32 bytes); the first is the class type
-
-
-@dataclass(frozen=True)
-class DexContents:
-    strings: tuple[str, ...] = ()
-    class_names: tuple[str, ...] = ()  # type descriptors, e.g. "Lcom/example/Main;"
 
 
 class DexReader:
@@ -38,7 +32,7 @@ class DexReader:
             if problem and warnings is not None:
                 warnings.add(
                     f"DEX file #{number} {problem}: embedded URLs and trackers may be incomplete.",
-                    AnalysisArea.INFO, AnalysisArea.SECURITY,
+                    AnalysisSection.EMBEDDED_CONTENT, AnalysisSection.THIRD_PARTY,
                 )
         return DexContents(strings=tuple(strings), class_names=tuple(class_names))
 

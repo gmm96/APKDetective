@@ -8,12 +8,15 @@ from datetime import datetime
 
 from apkviewer.domain.entities.analysis_result import AnalysisResult
 from apkviewer.domain.entities.application_info import ApplicationInfo
+from apkviewer.domain.entities.component import Component
 from apkviewer.domain.entities.component_kind import ComponentKind
-from apkviewer.domain.entities.components import Component, DeclaredComponents
 from apkviewer.domain.entities.configuration_info import ConfigurationInfo
+from apkviewer.domain.entities.declared_components import DeclaredComponents
 from apkviewer.domain.entities.embedded_content import EmbeddedContent
 from apkviewer.domain.entities.exported_intent import ExportedIntent
-from apkviewer.domain.entities.permission import Permission, PermissionOrigin, PermissionsInfo
+from apkviewer.domain.entities.permission import Permission
+from apkviewer.domain.entities.permission_origin import PermissionOrigin
+from apkviewer.domain.entities.permissions_info import PermissionsInfo
 from apkviewer.domain.entities.security_info import SecurityInfo
 from apkviewer.domain.entities.third_party_info import ThirdPartyInfo
 from apkviewer.domain.interfaces.date_formatter import DateFormatter
@@ -47,7 +50,7 @@ class AppInfoSerializer:
             blocks.append(
                 self._block(
                     "Analysis warnings",
-                    [f"- [{warning.area.value}] {warning.message}" for warning in inspection.warnings],
+                    [f"- [{warning.section.value}] {warning.message}" for warning in inspection.warnings],
                 )
             )
         return "\n\n".join(blocks) + "\n"

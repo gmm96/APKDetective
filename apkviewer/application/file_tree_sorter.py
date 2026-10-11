@@ -1,23 +1,14 @@
 """
 Decides how the children of a file-tree node are ordered.
 
-This is pure ordering logic with no dependency on any UI toolkit: the
-front end only translates its own column identifiers into a FileSortKey.
+This is pure ordering logic with no dependency on any UI toolkit.
 """
 
 from datetime import datetime
-from enum import Enum
 from typing import Any
 
+from apkviewer.application.file_sort_key import FileSortKey
 from apkviewer.domain.entities.file_node import FileNode
-
-
-class FileSortKey(Enum):
-    NAME = "name"
-    TYPE = "type"
-    SIZE = "size"
-    COMPRESSED = "compressed"
-    MODIFIED = "modified"
 
 
 class FileTreeSorter:

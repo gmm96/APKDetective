@@ -14,16 +14,17 @@ permissions are written in the error color.
 import tkinter as tk
 from tkinter import ttk
 
-from apkviewer.domain.entities.permission import Permission, PermissionsInfo
+from apkviewer.domain.entities.permission import Permission
+from apkviewer.domain.entities.permissions_info import PermissionsInfo
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
-from apkviewer.presentation.common.tree.record_node import RecordNode
-from apkviewer.presentation.common.tree.record_table_panel import RecordTablePanel
 from apkviewer.presentation.common.tree.tree_column import TreeColumn
 from apkviewer.presentation.common.warning_banner import WarningBanner
-from apkviewer.presentation.permissions_tab.permission_rows import DANGEROUS_STYLE, PermissionRowBuilder
+from apkviewer.presentation.permissions_tab.permission_rows import PermissionRowBuilder
+from apkviewer.presentation.permissions_tab.permission_table_group import PermissionTableGroup
 
-# The permission name gets twice the width of every other column (weights 2 and 1). If the
-# window is too narrow for the minimum widths, the table scrolls horizontally instead.
+# Columns share the width in proportion to their weights (the permission name and the
+# summary get twice as much as the others). If the window is too narrow for the minimum
+# widths, the table scrolls horizontally instead.
 _NAME = TreeColumn("#0", "Permission", min_width=280, weight=2)
 _TYPE = TreeColumn("type", "Type", min_width=150, weight=1)
 _ORIGIN = TreeColumn("origin", "Origin", min_width=150, weight=1)
@@ -32,59 +33,6 @@ _SUMMARY = TreeColumn("summary", "Summary", min_width=220, weight=2)
 
 _STANDARD_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _MAX_SDK, _SUMMARY)
 _CUSTOM_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _ORIGIN, _MAX_SDK, _SUMMARY)
-
-_MIN_HEIGHT_WITH_ROWS: int = 170
-_MIN_HEIGHT_EMPTY: int = 95
-_MAX_WEIGHT: int = 30
-
-
-class _TableGroup:
-    """A titled frame (with the row count) holding one filterable table."""
-
-    def __init__(
-        self,
-        container: ttk.Frame,
-        row: int,
-        title: str,
-        columns: tuple[TreeColumn, ...],
-        noun: str,
-        empty_text: str,
-        palette: ThemePalette,
-    ) -> None:
-        self._container: ttk.Frame = container
-        self._row: int = row
-        self._title: str = title
-        self._frame: ttk.LabelFrame = ttk.LabelFrame(container, text=title)
-        self._frame.grid(row=row, column=0, sticky="nsew", padx=10, pady=(0, 6))
-        self._frame.rowconfigure(0, weight=1)
-        self._frame.columnconfigure(0, weight=1)
-        self.table: RecordTablePanel = RecordTablePanel(
-            self._frame,
-            palette,
-            columns,
-            item_noun=noun,
-            empty_text=empty_text,
-            row_styles={DANGEROUS_STYLE: lambda p: p.status_error},
-        )
-        self.table.tree.configure(height=3)  # the real height comes from the grid weights
-        self.table.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
-        self.clear()
-
-    def show(self, root: RecordNode) -> None:
-        count = len(root.children)
-        self.table.show(root)
-        self._frame.configure(text=f"{self._title} ({count})")
-        # A table with more rows gets more of the tab's height, but never less than a few rows.
-        self._container.rowconfigure(
-            self._row,
-            weight=min(max(count, 4), _MAX_WEIGHT) if count else 0,
-            minsize=_MIN_HEIGHT_WITH_ROWS if count else _MIN_HEIGHT_EMPTY,
-        )
-
-    def clear(self) -> None:
-        self.table.clear()
-        self._frame.configure(text=self._title)
-        self._container.rowconfigure(self._row, weight=0, minsize=_MIN_HEIGHT_EMPTY)
 
 
 class PermissionsPanel(ttk.Frame):
@@ -102,24 +50,24 @@ class PermissionsPanel(ttk.Frame):
         self._container.columnconfigure(0, weight=1)
         self._banner: WarningBanner = WarningBanner(self, palette, before=self._container)
 
-        self._permissions: _TableGroup = _TableGroup(
+        self._permissions: PermissionTableGroup = PermissionTableGroup(
             self._container, 0, "Permissions", _STANDARD_COLUMNS, "permissions",
             "No Android permissions requested.", palette,
         )
-        self._app_ops: _TableGroup = _TableGroup(
+        self._app_ops: PermissionTableGroup = PermissionTableGroup(
             self._container, 1, "AppOps (special access)", _STANDARD_COLUMNS, "app ops",
             "No special-access permissions requested.", palette,
         )
-        self._custom: _TableGroup = _TableGroup(
+        self._custom: PermissionTableGroup = PermissionTableGroup(
             self._container, 2, "Custom permissions", _CUSTOM_COLUMNS, "custom permissions",
             "No custom permissions requested or declared.", palette,
         )
-        self._groups: tuple[_TableGroup, ...] = (self._permissions, self._app_ops, self._custom)
+        self._groups: tuple[PermissionTableGroup, ...] = (self._permissions, self._app_ops, self._custom)
 
     def apply_palette(self, palette: ThemePalette) -> None:
         self._banner.apply_palette(palette)
         for group in self._groups:
-            group.table.apply_palette(palette)
+            group.apply_palette(palette)
 
     def show_warnings(self, messages: list[str]) -> None:
         self._banner.show(messages)
@@ -134,5 +82,5 @@ class PermissionsPanel(ttk.Frame):
         self._show(self._app_ops, info.app_ops, with_origin=False)
         self._show(self._custom, info.custom_permissions, with_origin=True)
 
-    def _show(self, group: _TableGroup, permissions: tuple[Permission, ...], with_origin: bool) -> None:
+    def _show(self, group: PermissionTableGroup, permissions: tuple[Permission, ...], with_origin: bool) -> None:
         group.show(self._row_builder.build(permissions, with_origin))
