@@ -100,7 +100,7 @@ class AppToolbar:
     # --- Styling -------------------------------------------------------------
 
     def _configure_button_style(self) -> None:
-        ttk.Style().configure(self._BUTTON_STYLE, padding=(10, 3))
+        ttk.Style().configure(self._BUTTON_STYLE, padding=(12,3))
 
     def _style_menus(self) -> None:
         for menu in self._menus.values():
@@ -114,6 +114,7 @@ class AppToolbar:
             text=title,
             style=self._BUTTON_STYLE,
             takefocus=False,
+            width=0,
             command=lambda: self._toggle(title),
         )
         button.pack(side=tk.LEFT)

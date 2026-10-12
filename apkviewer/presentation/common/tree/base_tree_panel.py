@@ -26,6 +26,7 @@ from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.auto_hide_scrollbar import AutoHideScrollbar
 from apkviewer.presentation.common.clearable_entry import ClearableEntry
 from apkviewer.presentation.common.tree.tree_column import TreeColumn
+from apkviewer.presentation.common.wrap_frame import WrapFrame
 from apkviewer.presentation.icons.field_icons import FieldIcons
 from apkviewer.presentation.icons.icon_loader import IconLoader
 
@@ -77,18 +78,14 @@ class BaseTreePanel(ttk.Frame, Generic[NodeT], ABC):
         self._filter_row: int = 1 if toolbar_row else 0
         self._tree_row: int = self._filter_row + 1
         self.toolbar: ttk.Frame | None = None
-
         self._field_icons: FieldIcons = FieldIcons(IconLoader(), palette)
-
         self.rowconfigure(self._tree_row, weight=1)
         self.columnconfigure(0, weight=1)
         self._build_tree(palette)
         if toolbar_row:
-            self.toolbar = ttk.Frame(self)
+            self.toolbar = WrapFrame(self, padding_x=4, padding_y=4)
             self.toolbar.grid(row=0, column=0, columnspan=2, sticky="ew", padx=5, pady=(5, 0))
-            if expand_buttons:
-                self._pack_expand_buttons(self.toolbar)
-        self._build_filter_bar(expand_buttons and not toolbar_row)
+        self._build_filter_bar(expand_buttons)
         self._empty_label: ttk.Label = ttk.Label(self, text=empty_text)
         self._update_heading_labels()
         self._fit_height()
