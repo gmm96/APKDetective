@@ -22,8 +22,8 @@ class WindowsClipboardFileCopier(ClipboardFileCopier):
             return False
 
     def _copy(self, file_paths: list[str]) -> bool:
-        user32 = ctypes.WinDLL("user32", use_last_error=True)
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        user32 = ctypes.WinDLL("user32", use_last_error=True)   # type: ignore[attr-defined]
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)   # type: ignore[attr-defined]
         self._declare_prototypes(user32, kernel32)
 
         file_bytes = ("\0".join(file_paths) + "\0\0").encode("utf-16le")

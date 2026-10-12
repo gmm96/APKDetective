@@ -20,7 +20,7 @@ class WindowsFileOpener(OsFileOpener):
 
     def open_with(self, path: str) -> None:
         info = OpenAsInfo(path, None, self._OAIF_EXEC | self._OAIF_HIDE_REGISTRATION)
-        shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+        shell32 = ctypes.WinDLL("shell32", use_last_error=True)     # type: ignore[attr-defined]
         shell32.SHOpenWithDialog.argtypes = [wintypes.HWND, ctypes.POINTER(OpenAsInfo)]
         shell32.SHOpenWithDialog.restype = wintypes.LONG
         result = shell32.SHOpenWithDialog(None, ctypes.byref(info))
