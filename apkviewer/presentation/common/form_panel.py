@@ -3,11 +3,13 @@ Base class of the tabs made of "form" sections: read-only fields for
 single values (with a copy icon) and read-only text boxes for lists. A tab
 builds its sections explicitly (`add_section(...).add_entry(...)`), so it
 decides what to show instead of rendering whatever a dictionary contains.
+
+The panel does not lay its sections out while they are being filled: every
+change only schedules ONE layout pass for when the UI is idle.
 """
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter import font as tkfont
 
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.appearance.tk_widget_styler import TkWidgetStyler
@@ -15,6 +17,7 @@ from apkviewer.presentation.common.auto_hide_scrollbar import AutoHideScrollbar
 from apkviewer.presentation.common.copy_icon_overlay import CopyIconOverlay
 from apkviewer.presentation.common.copyable_entry import CopyableEntry
 from apkviewer.presentation.common.form_section import FormSection
+from apkviewer.presentation.common.label_width_meter import LabelWidthMeter
 from apkviewer.presentation.common.scrollable_frame import ScrollableFrame
 from apkviewer.presentation.common.text_context_menu import TextContextMenu
 from apkviewer.presentation.common.text_line_marker import TextLineMarker
@@ -52,12 +55,14 @@ class FormPanel(ttk.Frame):
         self._context_menu: TextContextMenu = context_menu
         self._line_marker: TextLineMarker = line_marker or TextLineMarker()
         self._icons: FieldIcons = FieldIcons(icon_loader or IconLoader(), palette)
+        self._label_meter: LabelWidthMeter = LabelWidthMeter(self, self.LABEL_EXTRA_WIDTH_PX)
+        self._layout_job: str | None = None
         self._list_widgets: list[tk.Text] = []
         self._copy_entries: list[CopyableEntry] = []
         self._list_copy_icons: list[CopyIconOverlay] = []
         self._chips: list[tuple[tk.Label, str]] = []
         self._muted_labels: list[ttk.Label] = []
-        self._sections: list["FormSection"] = []
+        self._sections: list[FormSection] = []
         self._next_row: int = 0
 
         self.scroll_frame: ScrollableFrame = ScrollableFrame(self, palette)
@@ -87,6 +92,10 @@ class FormPanel(ttk.Frame):
 
     def clear(self) -> None:
         self._banner.show(())
+        if self._layout_job is not None:
+            self.after_cancel(self._layout_job)
+            self._layout_job = None
+        self._label_meter.reset()
         self._list_widgets.clear()
         self._copy_entries.clear()
         self._list_copy_icons.clear()
@@ -105,13 +114,24 @@ class FormPanel(ttk.Frame):
         max_columns: int = 1,
         min_field_width: int | None = None,
     ) -> FormSection:
-        """`badge`: optional (text, chip kind) shown on the section's title line, at its right."""
+        """
+        `badge`: optional (text, chip kind) shown on the section's title line, at its right.
+        `responsive`: lay the entries out in up to `max_columns` columns, as many as fit while
+        each value field keeps `min_field_width` pixels (sections with groups or lists use one).
+        """
         frame = ttk.LabelFrame(self.scroll_frame.inner_frame, text=title)
         frame.grid(row=self._next_row, column=0, sticky="ew", padx=self.SECTION_PAD_X, pady=self.SECTION_PAD_Y)
         self._next_row += 1
         if badge is not None:
             self.create_chip(frame, *badge).place(relx=1.0, x=self.BADGE_OFFSET_X, y=self.BADGE_OFFSET_Y, anchor="ne")
-        section = FormSection(self, frame, responsive, max_columns, min_field_width)
+        section = FormSection(
+            frame,
+            self,
+            self._label_meter,
+            self.refresh_section_layouts,
+            responsive, max_columns,
+            min_field_width,
+        )
         self._sections.append(section)
         return section
 
@@ -124,6 +144,8 @@ class FormPanel(ttk.Frame):
 
     def create_chip(self, parent: tk.Misc, text: str, kind: str) -> tk.Label:
         """`kind`: "success", "danger", "neutral" (filled) or "muted" (outlined)."""
+        if kind not in CHIP_KINDS:
+            raise ValueError(f"Unknown chip kind {kind!r}; expected one of {CHIP_KINDS}")
         chip = tk.Label(parent, text=text, padx=self.CHIP_PAD_X, pady=self.CHIP_PAD_Y, borderwidth=0)
         self._chips.append((chip, kind))
         self._style_chip(chip, kind)
@@ -180,21 +202,21 @@ class FormPanel(ttk.Frame):
         TkWidgetStyler.style_text(text_widget, self._palette)
         self._line_marker.apply_palette(text_widget, self._palette)
 
+    # --- Layout ------------------------------------------------------------------------------------
+
     def shared_entry_label_width_px(self) -> int:
-        """Measure the widest entry or list label across the whole panel, plus a small margin."""
-        labels = [label for section in self._sections for label, _field, _row in section.entries]
-        labels.extend([label for section in self._sections for label in section.list_labels])
-        if not labels:
-            return 0
-        max_width = 0
-        for label in labels:
-            font_spec = label.cget("font") or ttk.Style(label).lookup("TLabel", "font") or "TkDefaultFont"
-            font = tkfont.Font(root=self, font=font_spec)
-            max_width = max(max_width, font.measure(label.cget("text")))
-            del font
-        return max_width + self.LABEL_EXTRA_WIDTH_PX
+        """The width of the widest entry or list label of the panel, plus a small margin."""
+        return self._label_meter.width_px
 
     def refresh_section_layouts(self) -> None:
-        """Reflow sections because adding a label can change the shared label width."""
+        """
+        Ask for the sections to be laid out again. Many calls in a row (one per added row)
+        schedule a single pass, run when the UI is idle.
+        """
+        if self._layout_job is None:
+            self._layout_job = self.after_idle(self._reflow)
+
+    def _reflow(self) -> None:
+        self._layout_job = None
         for section in self._sections:
             section.apply_layout()

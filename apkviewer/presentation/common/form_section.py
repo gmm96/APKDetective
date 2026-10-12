@@ -1,19 +1,23 @@
 """
 One titled frame of a FormPanel; each call adds a row to it.
+
+Widgets are created as the rows are added but laid out later, by
+`apply_layout`: the panel asks for it once when the UI is idle, and the
+section asks for it again when its width changes. A layout that would come
+out the same as the last one is skipped, so resizing the window only costs
+something when the number of columns (or the shared label width) changes.
 """
 
-from __future__ import annotations
-
 import tkinter as tk
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from tkinter import ttk
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from apkviewer.presentation.config.layout import LABEL_WIDTH, MIN_LIST_LINES
+from apkviewer.presentation.common.column_planner import ColumnPlanner
 from apkviewer.presentation.common.copyable_entry import CopyableEntry
-
-if TYPE_CHECKING:
-    from apkviewer.presentation.common.form_panel import FormPanel
+from apkviewer.presentation.common.form_widget_factory import FormWidgetFactory
+from apkviewer.presentation.common.label_width_meter import LabelWidthMeter
+from apkviewer.presentation.config.layout import MIN_LIST_LINES
 
 
 class FormSection:
@@ -31,136 +35,158 @@ class FormSection:
     LIST_HORIZONTAL_PADDING_PX = 10
     LIST_VERTICAL_PADDING_PX = 5
 
+    _MIXED_LAYOUT: int = 0  # the layout of sections that contain groups or lists
+
     def __init__(
         self,
-        panel: FormPanel,
         frame: ttk.LabelFrame,
+        widgets: FormWidgetFactory,
+        label_meter: LabelWidthMeter,
+        on_changed: Callable[[], None],
         responsive: bool = False,
         max_columns: int = 1,
         min_field_width: int | None = None,
     ) -> None:
-        self._panel: FormPanel = panel
-        self.frame: ttk.LabelFrame = frame
-        self._responsive: bool = responsive
-        self._max_columns: int = max(1, max_columns)
-        self._min_field_width: int = max(1, min_field_width if min_field_width is not None else self.DEFAULT_MIN_FIELD_WIDTH_PX)
+        """`on_changed`: called when rows are added, so the owner can schedule the layout."""
+        self.frame: ttk.LabelFrame = frame  # for sections that lay out their own widgets
+        self._widgets: FormWidgetFactory = widgets
+        self._label_meter: LabelWidthMeter = label_meter
+        self._on_changed: Callable[[], None] = on_changed
+        min_width = self.DEFAULT_MIN_FIELD_WIDTH_PX if min_field_width is None else min_field_width
+        self._planner: ColumnPlanner = ColumnPlanner(
+            max_columns=max(1, max_columns) if responsive else 1,
+            min_field_width=max(1, min_width),
+            label_value_gap=self.LABEL_VALUE_GAP_PX,
+            column_gap=self.COLUMN_GAP_PX,
+            side_margins=2 * self.OUTER_HORIZONTAL_PADDING_PX + self.GRID_BORDER_RESERVE_PX,
+        )
         self._row: int = 0
-        self._column: int = 1
-        self.entries: list[tuple[ttk.Label, CopyableEntry, int]] = []
-        self.list_labels: list[ttk.Label] = []
-        self._has_non_entry_content = False
+        self._entries: list[tuple[ttk.Label, CopyableEntry, int]] = []  # (label, field, row it was added in)
+        self._list_labels: list[ttk.Label] = []
+        self._has_non_entry_content: bool = False
+        self._width: int = 0
+        self._dirty: bool = True  # rows were added since the last layout
+        self._applied: tuple[int, int] | None = None  # (columns, label width) of the last layout
         self.frame.bind("<Configure>", self._on_resize, add="+")
+
+    # --- Rows ----------------------------------------------------------------------------
 
     def add_group(self, title: str) -> None:
         """Add a small caption that starts a group of rows."""
         self._has_non_entry_content = True
-
-        # Spans across label (1), gap (2), and value (3) columns
-        self._panel.create_muted_label(self.frame, title.upper()).grid(
-            row=self._row, column=1, columnspan=3, sticky="w",
-            pady=(self.GROUP_TOP_PADDING_PX, 0)
+        # Spans the label (1), gap (2) and value (3) columns
+        self._widgets.create_muted_label(self.frame, title.upper()).grid(
+            row=self._row, column=1, columnspan=3, sticky="w", pady=(self.GROUP_TOP_PADDING_PX, 0)
         )
         self._row += 1
-        self._panel.refresh_section_layouts()
+        self._content_changed()
 
     def add_entry(self, label_text: str, value: Any, monospace: bool = False) -> None:
         """Add a selectable, read-only field with a copy icon."""
-        label = ttk.Label(self.frame, text=label_text, width=LABEL_WIDTH)
-        field = self._panel.create_copy_entry(self.frame, "" if value is None else str(value), monospace)
-        original_row = self._row
-        self.entries.append((label, field, original_row))
+        self._label_meter.register(label_text)
+        label = ttk.Label(self.frame, text=label_text, anchor="w")
+        field = self._widgets.create_copy_entry(self.frame, "" if value is None else str(value), monospace)
+        self._entries.append((label, field, self._row))
         self._row += 1
-        self._panel.refresh_section_layouts()
+        self._content_changed()
 
     def add_list(self, label_text: str, items: Sequence[str], separator: str = "\n") -> None:
         self._has_non_entry_content = True
-        # Position label in column 1 to align with entry labels
-        label = ttk.Label(self.frame, text=f"{label_text} ({len(items)})", width=-1, anchor="w")
+        text_label = f"{label_text} ({len(items)})"
+        self._label_meter.register(text_label)
+        # The label goes in column 1 and the box in column 3, aligned with the entries
+        label = ttk.Label(self.frame, text=text_label, anchor="w")
         label.grid(row=self._row, column=1, sticky="nw", pady=self.LIST_VERTICAL_PADDING_PX)
-        self.list_labels.append(label)
+        self._list_labels.append(label)
         text, line_count = self._display_text(items, separator)
         container = ttk.Frame(self.frame)
-        # Position container in column 3 to align with entry values
         container.grid(row=self._row, column=3, sticky="ew", pady=self.LIST_VERTICAL_PADDING_PX)
         container.columnconfigure(0, weight=1)
         container.rowconfigure(0, weight=1)
-        self._panel.build_list_widget(container, text, line_count, copy_text=separator.join(items) if items else None)
+        self._widgets.build_list_widget(
+            container, text, line_count, copy_text=separator.join(items) if items else None
+        )
         self._row += 1
-        self._panel.refresh_section_layouts()
+        self._content_changed()
 
-    def _on_resize(self, _event: tk.Event) -> None:
-        self.apply_layout()
+    def _content_changed(self) -> None:
+        self._dirty = True
+        self._on_changed()
+
+    # --- Layout --------------------------------------------------------------------------
+
+    def _on_resize(self, event: tk.Event) -> None:
+        # Only a change of WIDTH matters: laying the rows out changes the height, which would
+        # otherwise trigger this handler again.
+        if event.width != self._width:
+            self._width = event.width
+            self.apply_layout()
 
     def apply_layout(self) -> None:
-        """Lay out entry-only sections responsively; leave mixed sections on their original layout."""
+        """Grid the entries for the current width. Does nothing if the result would be the last one."""
+        label_width = self._label_meter.width_px
         if self._has_non_entry_content:
-            self._apply_default_layout()
-            return
-        if not self.entries:
-            return
-        self._apply_responsive_layout(self._column_count())
+            columns = self._MIXED_LAYOUT
+        elif self._entries:
+            width = self._width or self.frame.winfo_width()
+            if self._planner.is_responsive and width <= 1:
+                return  # no size yet: the first <Configure> lays it out
+            columns = self._planner.columns_for(width, label_width, len(self._entries))
+        else:
+            return  # nothing of its own to lay out (the owner may grid its widgets in `frame`)
 
-    def _column_count(self) -> int:
-        """Choose the most columns that still leave each value field enough room."""
-        if not self._responsive or self._max_columns <= 1:
-            return 1
-        frame_width = self.frame.winfo_width()
-        label_width = self._panel.shared_entry_label_width_px()
-        available_width = frame_width - 2 * self.OUTER_HORIZONTAL_PADDING_PX - self.GRID_BORDER_RESERVE_PX
-        min_pair_width = label_width + self.LABEL_VALUE_GAP_PX + self._min_field_width
-        fitting_columns = (available_width + self.COLUMN_GAP_PX) // (min_pair_width + self.COLUMN_GAP_PX)
-        return max(1, min(self._max_columns, len(self.entries), int(fitting_columns)))
+        state = (columns, label_width)
+        if not self._dirty and state == self._applied:
+            return
+        self._reset_columns()
+        if columns == self._MIXED_LAYOUT:
+            self._apply_mixed_layout(label_width)
+        else:
+            self._apply_columns_layout(columns, label_width)
+        self._applied = state
+        self._dirty = False
 
     def _reset_columns(self) -> None:
-        """Clear grid settings left by a previous responsive layout."""
-        for column in range(max(2, 4 * self._max_columns + 1)):
+        """Clear grid settings left by a previous layout."""
+        for column in range(max(2, 4 * self._planner.max_columns + 1)):
             self.frame.columnconfigure(column, weight=0, minsize=0, uniform="")
 
-    def _apply_default_layout(self) -> None:
-        """Preserve the original layout for sections containing groups or lists, aligning with responsive layout."""
-        self._reset_columns()
-        label_width = self._panel.shared_entry_label_width_px()
-        # Explicit column definition mimicking a 1-column responsive layout
+    def _apply_mixed_layout(self, label_width: int) -> None:
+        """Sections with groups or lists: one column of rows, aligned like a one-column responsive layout."""
         self.frame.columnconfigure(0, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
         self.frame.columnconfigure(1, weight=0, minsize=label_width)
         self.frame.columnconfigure(2, weight=0, minsize=self.LABEL_VALUE_GAP_PX)
         self.frame.columnconfigure(3, weight=1, minsize=0)
         self.frame.columnconfigure(4, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
-        # Re-grid entries using the new responsive-aligned columns
-        for label, field, original_row in self.entries:
-            label.configure(width=-1, wraplength=label_width, anchor="w")
-            label.grid(row=original_row, column=1, sticky="w", pady=self.FIELD_VERTICAL_PADDING_PX)
-            field.grid(row=original_row, column=3, sticky="ew", pady=self.FIELD_VERTICAL_PADDING_PX)
-        # Update dynamically stored list labels
-        for lst_label in self.list_labels:
-            lst_label.configure(wraplength=label_width)
+        for label, field, row in self._entries:
+            label.configure(wraplength=label_width)
+            label.grid(row=row, column=1, sticky="w", pady=self.FIELD_VERTICAL_PADDING_PX)
+            field.grid(row=row, column=3, sticky="ew", pady=self.FIELD_VERTICAL_PADDING_PX)
+        for list_label in self._list_labels:
+            list_label.configure(wraplength=label_width)
 
-    def _apply_responsive_layout(self, columns: int) -> None:
-        """Use fixed label/gutter widths and let only value columns absorb spare space."""
-        self._reset_columns()
-        label_width = self._panel.shared_entry_label_width_px()
+    def _apply_columns_layout(self, columns: int, label_width: int) -> None:
+        """Fixed label and gutter widths; only the value columns absorb the spare space."""
         self.frame.columnconfigure(0, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
         self.frame.columnconfigure(4 * columns, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
         for column in range(columns):
             label_column = 1 + 4 * column
-            gap_column = label_column + 1
             value_column = label_column + 2
             self.frame.columnconfigure(label_column, weight=0, minsize=label_width)
-            self.frame.columnconfigure(gap_column, weight=0, minsize=self.LABEL_VALUE_GAP_PX)
+            self.frame.columnconfigure(label_column + 1, weight=0, minsize=self.LABEL_VALUE_GAP_PX)
             self.frame.columnconfigure(value_column, weight=1, minsize=0, uniform="entry_values")
             if column < columns - 1:
                 self.frame.columnconfigure(value_column + 1, weight=0, minsize=self.COLUMN_GAP_PX)
-        last_row = (len(self.entries) - 1) // columns
-        for index, (label, field, _original_row) in enumerate(self.entries):
+        last_row = (len(self._entries) - 1) // columns
+        for index, (label, field, _row) in enumerate(self._entries):
             row, column = divmod(index, columns)
             label_column = 1 + 4 * column
-            value_column = label_column + 2
-            top_padding = (0 if row == 0 else self.FIELD_VERTICAL_PADDING_PX)
-            bottom_padding = (self.FIELD_VERTICAL_PADDING_PX * 2 if row == last_row else self.FIELD_VERTICAL_PADDING_PX)
+            top_padding = 0 if row == 0 else self.FIELD_VERTICAL_PADDING_PX
+            bottom_padding = self.FIELD_VERTICAL_PADDING_PX * (2 if row == last_row else 1)
             vertical_padding = (top_padding, bottom_padding)
-            label.configure(width=-1, wraplength=label_width, anchor="w")
+            label.configure(wraplength=label_width)
             label.grid(row=row, column=label_column, sticky="w", pady=vertical_padding)
-            field.grid(row=row, column=value_column, sticky="ew", pady=vertical_padding)
+            field.grid(row=row, column=label_column + 2, sticky="ew", pady=vertical_padding)
 
     @staticmethod
     def _display_text(items: Sequence[str], separator: str) -> tuple[str, int]:
