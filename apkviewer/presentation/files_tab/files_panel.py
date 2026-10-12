@@ -4,14 +4,12 @@ files flavour of BaseTreePanel (which provides the filter line with counter
 and expand / collapse buttons, header sorting and scrolling, exactly as the
 Components tab has them) plus a right-click context menu for Open / Open with /
 Copy / Extract to / Details. Everything starts collapsed; filtering opens the
-folders that hold matches.
+folders that hold matches. The icon of each row comes from FileIconProvider.
 """
 
 import tkinter as tk
 from collections.abc import Callable, Sequence
 from datetime import datetime
-
-from PIL import ImageTk
 
 from apkviewer.application.entry_previewer import EntryPreviewer
 from apkviewer.application.file_sort_key import FileSortKey
@@ -24,6 +22,7 @@ from apkviewer.presentation.common.extract_to_dialog import ExtractToDialog
 from apkviewer.presentation.common.tree.base_tree_panel import BaseTreePanel
 from apkviewer.presentation.common.tree.tree_column import TreeColumn
 from apkviewer.presentation.config.theme import FONT_MONO_SMALL
+from apkviewer.presentation.files_tab.file_icon_provider import FileIconProvider
 from apkviewer.presentation.files_tab.files_context_menu import FilesContextMenu
 from apkviewer.presentation.formatting.human_readable_size_formatter import HumanReadableSizeFormatter
 from apkviewer.presentation.icons.icon_loader import IconLoader
@@ -60,29 +59,16 @@ class FilesPanel(BaseTreePanel[FileNode]):
         size_formatter: SizeFormatter | None = None,
         sorter: FileTreeSorter | None = None,
         icon_loader: IconLoader | None = None,
+        file_icons: FileIconProvider | None = None,
     ) -> None:
         # State used by the base-class hooks: it must exist before the base builds the widgets.
         self._tree_filter: FileTreeFilter = tree_filter or FileTreeFilter()
         self._size_formatter: SizeFormatter = size_formatter or HumanReadableSizeFormatter()
         self._sorter: FileTreeSorter = sorter or FileTreeSorter()
         self._icon_loader: IconLoader = icon_loader or IconLoader()
+        self._file_icons: FileIconProvider = file_icons or FileIconProvider(self._icon_loader)
         self._entry_previewer: EntryPreviewer = entry_previewer
         self.apk_path: str | None = None
-        self._icon_file: ImageTk.PhotoImage = self._icon_loader.load_icon(
-            "assets/icons/color/file.png", padding_left=4, padding_right=8
-        )
-        self._icon_folder: ImageTk.PhotoImage = self._icon_loader.load_icon(
-            "assets/icons/color/directory.png", padding_left=4, padding_right=8
-        )
-        self._icon_xml: ImageTk.PhotoImage = self._icon_loader.load_icon(
-            "assets/icons/color/xml.png", padding_left=4, padding_right=8
-        )
-        self._icon_image: ImageTk.PhotoImage = self._icon_loader.load_icon(
-            "assets/icons/color/image.png", padding_left=4, padding_right=8
-        )
-        self._icon_rsa: ImageTk.PhotoImage = self._icon_loader.load_icon(
-            "assets/icons/color/rsa.png", padding_left=4, padding_right=8
-        )
         super().__init__(
             parent,
             palette,
@@ -159,30 +145,20 @@ class FilesPanel(BaseTreePanel[FileNode]):
         size_str = self._size_formatter.format(node.size)
         compressed_str = self._size_formatter.format(node.compressed_size)
         modified_str = self._format_modified(node.modified)
+        icon = self._file_icons.icon_for(node)
 
         if node.is_file:
             type_label = f"{node.extension} File" if node.extension else "File"
             self.tree.insert(
-                parent_iid, tk.END, iid=iid, text=node.name, image=self._get_icon(node),
+                parent_iid, tk.END, iid=iid, text=node.name, image=icon,
                 values=(type_label, size_str, compressed_str, modified_str), tags=("file",),
             )
         else:
             self.tree.insert(
-                parent_iid, tk.END, iid=iid, text=node.name, image=self._icon_folder,
+                parent_iid, tk.END, iid=iid, text=node.name, image=icon,
                 values=(f"Directory ({len(node.children)})", size_str, compressed_str, modified_str),
                 open=is_open, tags=("folder",),
             )
-
-    def _get_icon(self, node: FileNode) -> ImageTk.PhotoImage:
-        match node.extension:
-            case "XML":
-                return self._icon_xml
-            case "PNG" | "JPG" | "JPEG" | "GIF" | "WEBP" | "BMP" | "ICO" | "SVG":
-                return self._icon_image
-            case "RSA":
-                return self._icon_rsa
-            case _:
-                return self._icon_file
 
     @staticmethod
     def _format_modified(modified: datetime | None) -> str:
