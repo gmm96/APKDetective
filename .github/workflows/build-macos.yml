@@ -20,11 +20,6 @@ jobs:
           python-version: ${{ vars.PYTHON_VERSION }}
           cache: 'pip'
 
-      - name: 'Install system dependencies'
-        run: |
-          brew update
-          brew install ccache
-
       - name: 'Install Python dependencies'
         run: |
           "$pythonLocation/bin/python" -m pip install --upgrade pip
@@ -34,9 +29,7 @@ jobs:
       - name: 'Cache Nuitka & ccache'
         uses: actions/cache@v4
         with:
-          path: |
-            ~/Library/Caches/Nuitka
-            ~/Library/Caches/ccache
+          path: ~/Library/Caches/Nuitka
           key: ${{ runner.os }}-nuitka-${{ hashFiles('**/*.py', 'requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-nuitka-
