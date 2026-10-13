@@ -89,7 +89,7 @@ class ApkAnalyzerApp:
         self.root.title("APKViewer")
         self.root.minsize(600, 600)
         self.root.geometry("1000x750")
-        self.root.attributes("-zoomed", True)
+        self.maximize_window()
         self.root.protocol("WM_DELETE_WINDOW", self.exit_app)
 
         self._analyze_apk: AnalyzeApk = analyze_apk
