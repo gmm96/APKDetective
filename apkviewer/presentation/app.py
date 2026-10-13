@@ -242,6 +242,12 @@ class ApkAnalyzerApp:
         self.files_panel.cleanup()  # drop temp files extracted for Open / Open with / Copy
         self.root.destroy()
 
+    def maximize_window(self) -> None:
+        try:
+            self.root.state("zoomed")                 # Windows y macOS
+        except tk.TclError:
+            self.root.attributes("-zoomed", True)     # Linux (X11)
+
     def start_analysis(self, apk_path: str) -> None:
         if not os.path.exists(apk_path):
             messagebox.showerror("Error", f"File not found:\n{apk_path}")
