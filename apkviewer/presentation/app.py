@@ -244,9 +244,12 @@ class ApkAnalyzerApp:
 
     def maximize_window(self) -> None:
         try:
-            self.root.state("zoomed")                 # Windows y macOS
+            self.root.state("zoomed")   # Windows & macOS
         except tk.TclError:
-            self.root.attributes("-zoomed", True)     # Linux (X11)
+            try:
+                self.root.attributes("-zoomed", True)   # Linux
+            except tk.TclError:
+                self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0") # Fallback
 
     def start_analysis(self, apk_path: str) -> None:
         if not os.path.exists(apk_path):
