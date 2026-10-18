@@ -22,7 +22,7 @@ class WarningBanner(ttkb.Frame):
         self.apply_palette(palette)
 
     def apply_palette(self, palette: ThemePalette) -> None:
-        self._label.configure(foreground=palette.danger)
+        self._label.configure(foreground=palette.danger_text)
 
     def show(self, messages: Sequence[str]) -> None:
         """Show these messages, or hide the banner when there are none."""

@@ -173,8 +173,9 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
     def apply_palette(self, palette: ThemePalette) -> None:
         self._apply_tree_style(palette)
         self._filter_entry.update_colors(
+            icon_color=palette.muted_text,
+            background=palette.input_background,
             foreground=palette.foreground,
-            background=palette.input_background
         )
     def expand_all(self) -> None:
         """Open every row that is currently listed (respecting the filter / category)."""
@@ -267,6 +268,7 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         self._count_label.pack(side=tk.RIGHT, padx=(5, 8))
         self._filter_entry: ClearableEntry = ClearableEntry(
             filter_bar,
+            icon_color=palette.muted_text,
             on_clear=self._apply_filter,
             foreground=palette.foreground,
             background=palette.input_background

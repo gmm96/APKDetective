@@ -13,6 +13,7 @@ from apkviewer.application.resolve_color_scheme import ResolveColorScheme
 from apkviewer.domain.entities.color_mode import ColorMode
 from apkviewer.domain.entities.color_scheme import ColorScheme
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
+from apkviewer.presentation.appearance.theme_palette_builder import ThemePaletteBuilder
 from apkviewer.presentation.viewmodels.theme_custom_colors import ThemeCustomColors
 from apkviewer.presentation.config.theme import THEMES, CUSTOM_COLORS
 
@@ -32,6 +33,7 @@ class ThemeManager:
 
         self._style: ttkb.Style = ttkb.Style()
         self._listeners: list[Callable[[ThemePalette], None]] = []
+        self._palette_builder: ThemePaletteBuilder = ThemePaletteBuilder()
         self._palette: ThemePalette
         self._theme_name: str = ""
         self._base_theme: str = THEMES[0] if THEMES else "bootstrap"
@@ -129,28 +131,7 @@ class ThemeManager:
         custom_colors: ThemeCustomColors = CUSTOM_COLORS[color_scheme]
         try:
             colors: Any = self._style.colors
-            return ThemePalette(
-                primary=colors.primary,
-                secondary=colors.secondary,
-                success=colors.success,
-                info=colors.info,
-                warning=colors.warning,
-                danger=colors.danger,
-                light=colors.light,
-                dark=colors.dark,
-                background=colors.bg,
-                foreground=colors.fg,
-                select_background=colors.selectbg,
-                select_foreground=colors.selectfg,
-                border=colors.border,
-                input_background=colors.inputbg,
-                input_foreground=colors.inputfg,
-                active=colors.active,
-                xml_tag=custom_colors.xml_tag,
-                xml_attr=custom_colors.xml_attr,
-                xml_value=custom_colors.xml_value,
-                xml_comment=custom_colors.xml_comment,
-            )
+            return self._palette_builder.build(colors, custom_colors)
         except AttributeError as error:
             raise RuntimeError(
                 f"Failed to extract palette colors for theme '{self._theme_name}'. "
@@ -158,6 +139,16 @@ class ThemeManager:
             ) from error
 
     def _notify_listeners(self) -> None:
-        """Broadcast the updated palette to all registered listeners."""
+        """
+        Broadcast the updated palette to all registered listeners. A listener that fails does
+        not stop the rest from repainting: the first error is raised once all have run.
+        """
+        first_error: Exception | None = None
         for listener in tuple(self._listeners):
-            listener(self._palette)
+            try:
+                listener(self._palette)
+            except Exception as error:
+                if first_error is None:
+                    first_error = error
+        if first_error is not None:
+            raise first_error

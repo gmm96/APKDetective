@@ -3,7 +3,6 @@ from collections.abc import Callable
 from typing import Any
 
 import ttkbootstrap as ttkb
-import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.presentation.common.clear_icon_overlay import ClearIconOverlay
 from apkviewer.presentation.common.icon_entry import IconEntry
@@ -15,8 +14,8 @@ class ClearableEntry(IconEntry):
     def __init__(
         self,
         parent: tk.Misc,
+        icon_color: str,
         on_clear: Callable[[], None] | None = None,
-        icon_style: str = ttkb_constants.SECONDARY,
         background: str | None = None,
         **options: Any,
     ) -> None:
@@ -26,11 +25,19 @@ class ClearableEntry(IconEntry):
         self.overlay: ClearIconOverlay = ClearIconOverlay(
             target=self,
             variable=self._variable,
+            icon_color=icon_color,
             on_clear=on_clear,
-            icon_style=icon_style,
             background=background,
         )
 
-    def update_colors(self, icon_style: str | None = None, background: str | None = None) -> None:
+    def update_colors(
+        self,
+        icon_color: str | None = None,
+        background: str | None = None,
+        foreground: str | None = None,
+    ) -> None:
+        """`foreground`: the color of the text typed in the field."""
         self.configure_entry_style()
-        self.overlay.update_colors(icon_style=icon_style, background=background)
+        if foreground is not None:
+            self.configure(foreground=foreground)
+        self.overlay.update_colors(icon_color=icon_color, background=background)

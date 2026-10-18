@@ -1,8 +1,6 @@
 import tkinter as tk
 from collections.abc import Callable
 
-import ttkbootstrap.constants as ttkb_constants
-
 from apkviewer.presentation.common.action_icon_overlay import ActionIconOverlay
 
 
@@ -15,18 +13,18 @@ class ClearIconOverlay(ActionIconOverlay):
         self,
         target: tk.Widget,
         variable: tk.StringVar,
+        icon_color: str,
         on_clear: Callable[[], None] | None = None,
-        icon_style: str = ttkb_constants.SECONDARY,
         background: str | None = None,
     ) -> None:
         self._variable: tk.StringVar = variable
         self._on_clear: Callable[[], None] | None = on_clear
-        super().__init__(target, self._ICON, icon_style, background)
+        super().__init__(target, self._ICON, icon_color, background)
         variable.trace_add("write", lambda *_args: self.refresh())
         self.refresh()
 
-    def update_colors(self, icon_style: str | None = None, background: str | None = None) -> None:
-        self._icon.configure(icon_style=icon_style, background=background)
+    def update_colors(self, icon_color: str | None = None, background: str | None = None) -> None:
+        self._icon.configure(icon_color=icon_color, background=background)
 
     # --- Visibility ----------------------------------------------------------------------------
 

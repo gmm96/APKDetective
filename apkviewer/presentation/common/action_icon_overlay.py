@@ -17,7 +17,7 @@ class ActionIconOverlay(ABC):
         self,
         target: tk.Widget,
         icon_name: str,
-        icon_style: str,
+        icon_color: str,
         background: str | None = None,
         top_offset: int | None = None,
         right_offset: int | None = None,
@@ -26,7 +26,7 @@ class ActionIconOverlay(ABC):
         self._icon: OverlayIcon = OverlayIcon(
             target=target,
             icon_name=icon_name,
-            icon_style=icon_style,
+            icon_color=icon_color,
             background=background,
             on_click=self._activate,
             top_offset=top_offset,

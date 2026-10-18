@@ -12,7 +12,6 @@ from typing import Any
 import tkinter as tk
 
 import ttkbootstrap as ttkb
-import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.auto_scrolled_text import AutoScrolledText
@@ -27,12 +26,13 @@ from apkviewer.presentation.common.warning_banner import WarningBanner
 from apkviewer.presentation.config.theme import FONT_MONO_SMALL
 from apkviewer.presentation.config.layout import FIELD_PADX, FIELD_PADY
 from apkviewer.presentation.icons.icon_loader import IconLoader
+from apkviewer.presentation.viewmodels.color_pair import ColorPair
 
 
 class FormPanel(ttkb.Frame):
     """Base class for tabs containing read-only fields and lists."""
 
-    # Chip kinds: "success", "danger", "neutral" (filled) and "muted" (outlined).
+    # Chip kinds: "success", "danger", "neutral" and "muted"; all of them are filled.
     CHIP_KINDS: tuple[str, ...] = ("success", "danger", "neutral", "muted")
 
     SECTION_PAD_X = 15
@@ -73,19 +73,21 @@ class FormPanel(ttkb.Frame):
     def apply_palette(self, palette: ThemePalette) -> None:
         self._palette = palette
         self._banner.apply_palette(palette)
-        kwargs: dict[str, str] = {
-            "foreground": palette.info,
+        icon_colors: dict[str, str] = {
+            "icon_color": palette.info_text,
+            "active_icon_color": palette.success_text,
             "background": palette.input_background,
-            "active_foreground": palette.success
         }
         for entry in self._copy_entries:
-            entry.update_colors(**kwargs)
+            entry.update_colors(**icon_colors)
         for overlay in self._list_copy_icons:
-            overlay.update_colors(**kwargs)
+            overlay.update_colors(**icon_colors)
+        for text_widget in self._list_widgets:
+            self._style_list_widget(text_widget.text)
         for chip, kind in self._chips:
             self._style_chip(chip, kind)
         for label in self._muted_labels:
-            label.configure(foreground=palette.dark)
+            label.configure(foreground=palette.muted_text)
 
     def show_warnings(self, messages: list[str]) -> None:
         self._banner.show(messages)
@@ -142,16 +144,16 @@ class FormPanel(ttkb.Frame):
         entry = CopyableEntry(
             parent,
             text,
-            icon_style=ttkb_constants.INFO,
+            icon_color=self._palette.info_text,
+            active_icon_color=self._palette.success_text,
             background=self._palette.input_background,
-            active_icon_style=ttkb_constants.SUCCESS,
             font=FONT_MONO_SMALL if monospace else None
         )
         self._copy_entries.append(entry)
         return entry
 
     def create_chip(self, parent: tk.Misc, text: str, kind: str) -> ttkb.Label:
-        """`kind`: "success", "danger", "neutral" (filled) or "muted" (outlined)."""
+        """`kind`: one of CHIP_KINDS."""
         if kind not in self.CHIP_KINDS:
             raise ValueError(f"Unknown chip kind {kind!r}; expected one of {self.CHIP_KINDS}")
         chip = ttkb.Label(parent, text=text, padding=(self.CHIP_PAD_X, self.CHIP_PAD_Y), borderwidth=0)
@@ -160,18 +162,18 @@ class FormPanel(ttkb.Frame):
         return chip
 
     def create_muted_label(self, parent: tk.Misc, text: str) -> ttkb.Label:
-        label = ttkb.Label(parent, text=text, foreground=self._palette.secondary)
+        label = ttkb.Label(parent, text=text, foreground=self._palette.muted_text)
         self._muted_labels.append(label)
         return label
 
     def _style_chip(self, chip: ttkb.Label, kind: str) -> None:
-        bootstyle = {
-            "success": ttkb_constants.SUCCESS,
-            "danger": ttkb_constants.DANGER,
-            "neutral": ttkb_constants.WARNING,
-            "muted": ttkb_constants.DARK,
+        colors: ColorPair = {
+            "success": self._palette.chip_success,
+            "danger": self._palette.chip_danger,
+            "neutral": self._palette.chip_neutral,
+            "muted": self._palette.chip_muted,
         }[kind]
-        chip.configure(bootstyle=f"{bootstyle} {ttkb_constants.INVERSE}")
+        chip.configure(background=colors.background, foreground=colors.foreground)
 
     def build_list_widget(
         self,
@@ -190,9 +192,6 @@ class FormPanel(ttkb.Frame):
             font=FONT_MONO_SMALL,
             auto_hide=False
         )
-        #h_scroll = ttkb.Scrollbar(container, orient="horizontal", command=text_widget.xview)
-        #autohide = AutoHideScrollbar(h_scroll, {"row": 1, "column": 0, "sticky": "ew"})
-        #text_widget.configure(xscrollcommand=autohide.scroll_command)
         text_widget.grid(row=0, column=0, sticky="ew")
         text_widget.insert(tk.END, text)
         text_widget.configure(state="disabled")
@@ -205,16 +204,15 @@ class FormPanel(ttkb.Frame):
                 CopyIconOverlay(
                     text_widget,
                     lambda: copy_text,
-                    icon_style=ttkb_constants.INFO,
+                    icon_color=self._palette.info_text,
+                    active_icon_color=self._palette.success_text,
                     background=self._palette.input_background,
-                    active_icon_style=ttkb_constants.SUCCESS,
                     top_offset=FIELD_PADX,
                     right_offset=FIELD_PADY
                 )
             )
 
     def _style_list_widget(self, text_widget: tk.Text) -> None:
-        #TkWidgetStyler.style_text(text_widget, self._palette)
         self._line_marker.apply_palette(text_widget, self._palette)
 
     # --- Layout ------------------------------------------------------------------------------------

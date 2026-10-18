@@ -1,8 +1,6 @@
 import tkinter as tk
 from collections.abc import Callable
 
-import ttkbootstrap.constants as ttkb_constants
-
 from apkviewer.presentation.common.action_icon_overlay import ActionIconOverlay
 
 
@@ -17,17 +15,17 @@ class CopyIconOverlay(ActionIconOverlay):
         self,
         target: tk.Widget,
         get_text: Callable[[], str],
-        icon_style: str = ttkb_constants.INFO,
-        active_icon_style: str = ttkb_constants.SUCCESS,
+        icon_color: str,
+        active_icon_color: str,
         background: str | None = None,
         top_offset: int | None = None,
         right_offset: int | None = None,
     ) -> None:
         self._get_text: Callable[[], str] = get_text
-        self._icon_style: str = icon_style
-        self._active_icon_style: str = active_icon_style
+        self._icon_color: str = icon_color
+        self._active_icon_color: str = active_icon_color
         self._restore_job: str | None = None
-        super().__init__(target, self._ICON_IDLE, icon_style, background, top_offset, right_offset)
+        super().__init__(target, self._ICON_IDLE, icon_color, background, top_offset, right_offset)
 
         for widget in (target, self._icon.widget):
             widget.bind("<Enter>", self._schedule_refresh, add="+")
@@ -36,19 +34,19 @@ class CopyIconOverlay(ActionIconOverlay):
 
     def update_colors(
         self,
-        icon_style: str | None = None,
-        active_icon_style: str | None = None,
+        icon_color: str | None = None,
+        active_icon_color: str | None = None,
         background: str | None = None,
     ) -> None:
-        if icon_style is not None:
-            self._icon_style = icon_style
-        if active_icon_style is not None:
-            self._active_icon_style = active_icon_style
+        if icon_color is not None:
+            self._icon_color = icon_color
+        if active_icon_color is not None:
+            self._active_icon_color = active_icon_color
 
         copied = self._restore_job is not None
         self._icon.configure(
             icon_name=self._ICON_COPIED if copied else self._ICON_IDLE,
-            icon_style=self._active_icon_style if copied else self._icon_style,
+            icon_color=self._active_icon_color if copied else self._icon_color,
             background=background,
         )
 

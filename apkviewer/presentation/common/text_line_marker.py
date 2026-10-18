@@ -20,7 +20,11 @@ class TextLineMarker:
         text_widget.bind("<ButtonRelease-1>", self._on_release)
 
     def apply_palette(self, text_widget: tk.Text, palette: ThemePalette) -> None:
-        text_widget.tag_configure(self._tag_name, background=palette.select_foreground)
+        text_widget.tag_configure(
+            self._tag_name,
+            background=palette.marked_line.background,
+            foreground=palette.marked_line.foreground,
+        )
 
     def _on_release(self, event: tk.Event) -> None:
         widget = event.widget

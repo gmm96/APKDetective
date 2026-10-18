@@ -26,8 +26,8 @@ class StatusBar(ttkb.Frame):
         self._palette = palette
         colors = {
             StatusLevel.NEUTRAL: palette.foreground,
-            StatusLevel.INFO: palette.info,
-            StatusLevel.SUCCESS: palette.success,
-            StatusLevel.ERROR: palette.danger,
+            StatusLevel.INFO: palette.info_text,
+            StatusLevel.SUCCESS: palette.success_text,
+            StatusLevel.ERROR: palette.danger_text,
         }
         self.label.configure(foreground=colors[self._level])

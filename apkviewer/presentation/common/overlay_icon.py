@@ -23,7 +23,7 @@ class OverlayIcon:
         self,
         target: tk.Widget,
         icon_name: str,
-        icon_style: str,
+        icon_color: str,
         background: str | None = None,
         on_click: Callable[[tk.Event], str | None] | None = None,
         top_offset: int | None = None,
@@ -31,7 +31,7 @@ class OverlayIcon:
     ) -> None:
         self._target: tk.Widget = target
         self._icon_name: str = icon_name
-        self._icon_style: str = icon_style
+        self._icon_color: str = icon_color
         self._background: str | None = background  # explicit override; None = follow the target
         self._top_offset: int | None = top_offset
         self._right_offset: int = right_offset or 0
@@ -54,14 +54,14 @@ class OverlayIcon:
     def configure(
         self,
         icon_name: str | None = None,
-        icon_style: str | None = None,
+        icon_color: str | None = None,
         background: str | None = None,
     ) -> None:
-        """Changes the icon glyph, its color style or the background override. None keeps the current value."""
+        """Changes the icon glyph, its color or the background override. None keeps the current value."""
         if icon_name is not None:
             self._icon_name = icon_name
-        if icon_style is not None:
-            self._icon_style = icon_style
+        if icon_color is not None:
+            self._icon_color = icon_color
         if background is not None:
             self._background = background
         self._apply()
@@ -95,20 +95,19 @@ class OverlayIcon:
     def _apply(self) -> None:
         """Applies glyph, color and background, touching ttk only when something actually changed."""
         background = self._resolve_background()
-        state = (self._icon_name, self._icon_style, background)
+        state = (self._icon_name, self._icon_color, background)
         if state == self._applied:
             return
         self._applied = state
 
-        if background is None:
-            self._label.configure(icon=self._icon_name, bootstyle=self._icon_style)
-            return
-
-        # bootstyle first so ttkbootstrap builds "<style>.TLabel"; the derived style only overrides the background.
-        self._label.configure(bootstyle=self._icon_style)
-        clean_bg: str = re.sub(r'\W', '', background)
-        style_name = f"OverlayIcon.{clean_bg}.{self._icon_style}.TLabel"
-        ttkb.Style().configure(style_name, background=background)
+        # One derived style per background / color pair; the glyph is tinted with its foreground.
+        options: dict[str, str] = {"foreground": self._icon_color}
+        if background is not None:
+            options["background"] = background
+        clean_background: str = re.sub(r"\W", "", background or "none")
+        clean_color: str = re.sub(r"\W", "", self._icon_color)
+        style_name = f"OverlayIcon.{clean_background}.{clean_color}.TLabel"
+        ttkb.Style().configure(style_name, **options)
         self._label.configure(icon=self._icon_name, style=style_name)
 
     def _resolve_background(self) -> str | None:

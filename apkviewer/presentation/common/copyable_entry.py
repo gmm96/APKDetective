@@ -5,8 +5,6 @@ shows while the pointer is over the field.
 
 import tkinter as tk
 
-import ttkbootstrap.constants as ttkb_constants
-
 from apkviewer.presentation.common.copy_icon_overlay import CopyIconOverlay
 from apkviewer.presentation.common.icon_entry import IconEntry
 
@@ -16,8 +14,8 @@ class CopyableEntry(IconEntry):
         self,
         parent: tk.Misc,
         text: str,
-        icon_style: str = ttkb_constants.INFO,
-        active_icon_style: str = ttkb_constants.SUCCESS,
+        icon_color: str,
+        active_icon_color: str,
         background: str | None = None,
         font: tuple | None = None,
     ) -> None:
@@ -28,8 +26,8 @@ class CopyableEntry(IconEntry):
         self.overlay: CopyIconOverlay = CopyIconOverlay(
             target=self,
             get_text=lambda: text,
-            icon_style=icon_style,
-            active_icon_style=active_icon_style,
+            icon_color=icon_color,
+            active_icon_color=active_icon_color,
             background=background,
         )
 
@@ -40,14 +38,14 @@ class CopyableEntry(IconEntry):
 
     def update_colors(
         self,
-        icon_style: str | None = None,
-        active_icon_style: str | None = None,
+        icon_color: str | None = None,
+        active_icon_color: str | None = None,
         background: str | None = None,
     ) -> None:
         """Propagates theme color updates to the entry style and the overlay."""
         self.configure_entry_style()
         self.overlay.update_colors(
-            icon_style=icon_style,
-            active_icon_style=active_icon_style,
+            icon_color=icon_color,
+            active_icon_color=active_icon_color,
             background=background,
         )

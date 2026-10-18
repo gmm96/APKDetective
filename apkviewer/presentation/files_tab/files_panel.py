@@ -143,7 +143,12 @@ class FilesPanel(BaseTreePanel[FileNode]):
 
     def _configure_tags(self, palette: ThemePalette) -> None:
         self.tree.tag_configure("file", font=FONT_MONO_SMALL)
-        self.tree.tag_configure("folder", background=palette.select_background, font=FONT_MONO_SMALL)
+        self.tree.tag_configure(
+            "folder",
+            background=palette.folder_row.background,
+            foreground=palette.folder_row.foreground,
+            font=FONT_MONO_SMALL,
+        )
 
     def _insert(self, parent_iid: str, node: FileNode, iid: str, is_open: bool) -> None:
         size_str = self._size_formatter.format(node.size)

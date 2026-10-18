@@ -44,7 +44,7 @@ class PermissionTableGroup:
             columns,
             item_noun=noun,
             empty_text=empty_text,
-            row_styles={DANGEROUS_STYLE: lambda p: palette.danger},
+            row_styles={DANGEROUS_STYLE: lambda current: current.danger_text},
             bootstyle=bootstyle
         )
         self._table.tree.configure(height=3)  # the real height comes from the grid weights

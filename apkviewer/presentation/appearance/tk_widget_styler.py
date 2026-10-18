@@ -17,7 +17,9 @@ class TkWidgetStyler:
             insertbackground=palette.input_foreground,
             selectbackground=palette.select_background,
             selectforeground=palette.select_foreground,
-            inactiveselectbackground=palette.input_background,
+            # The selected text keeps `selectforeground` when the widget loses the focus, so the
+            # background has to stay one that contrasts with it.
+            inactiveselectbackground=palette.select_background,
             highlightbackground=palette.background,
             highlightcolor=palette.foreground,
         )
@@ -27,8 +29,8 @@ class TkWidgetStyler:
         menu.configure(
             background=palette.background,
             foreground=palette.foreground,
-            activebackground=palette.input_background,
+            activebackground=palette.select_background,
             activeforeground=palette.select_foreground,
-            disabledforeground=palette.background,
-            selectcolor=palette.select_foreground,
+            disabledforeground=palette.disabled_text,
+            selectcolor=palette.foreground,
         )
