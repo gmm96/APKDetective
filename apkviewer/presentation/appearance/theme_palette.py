@@ -36,7 +36,8 @@ class ThemePalette(ThemeCustomColors):
 
     # --- Derived from it ---
     muted_text: str      # quiet text: captions, notes, the clear icon (neutral: not every theme's secondary is)
-    info_text: str       # info as text or icon (status bar, copy icon)
+    info_text: str       # info as text (status bar)
+    primary_icon: str    # the theme's primary as an icon color (copy icon); only nudged if it is too faint
     success_text: str    # success as text or icon (status bar, "copied" icon)
     danger_text: str     # danger as text (errors, dangerous permissions)
     disabled_text: str   # disabled menu entries

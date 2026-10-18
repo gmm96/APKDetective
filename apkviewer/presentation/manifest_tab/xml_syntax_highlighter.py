@@ -31,6 +31,7 @@ class XmlSyntaxHighlighter:
             foreground=palette.xml_comment,
             font=FONT_MONO_SMALL_ITALIC
         )
+        self._keep_selection_on_top(text_widget)
 
     def highlight(self, text_widget: tk.Text, content: str) -> None:
         """`content` must be exactly the text inserted at the start of the widget."""
@@ -57,6 +58,15 @@ class XmlSyntaxHighlighter:
             if indices:
                 text_widget.tag_add(tag_name, *indices)
         text_widget.tag_raise("xml_comment")
+        self._keep_selection_on_top(text_widget)
+
+    @staticmethod
+    def _keep_selection_on_top(text_widget: tk.Text) -> None:
+        """
+        The tags created after `sel` outrank it, so their foreground would win over the selected
+        text color and the selection would be unreadable.
+        """
+        text_widget.tag_raise(tk.SEL)
 
     @staticmethod
     def _add(target: list[str], index: Callable[[int], str], start: int, end: int) -> None:

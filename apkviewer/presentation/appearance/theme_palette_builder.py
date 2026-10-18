@@ -17,6 +17,7 @@ from apkviewer.presentation.config.theme import (
     FOLDER_ROW_TINT,
     MARKED_LINE_TINT,
     MIN_COMMENT_CONTRAST,
+    MIN_ICON_CONTRAST,
     MIN_TEXT_CONTRAST,
     MUTED_TEXT_AMOUNT,
 )
@@ -62,6 +63,7 @@ class ThemePaletteBuilder:
             ),
             muted_text=readable(ContrastAdjuster.blend(colors.fg, colors.bg, MUTED_TEXT_AMOUNT)),
             info_text=readable(colors.info),
+            primary_icon=ContrastAdjuster.ensure_contrast(colors.primary, surfaces, MIN_ICON_CONTRAST),
             success_text=readable(colors.success),
             danger_text=readable(colors.danger),
             disabled_text=ContrastAdjuster.blend(colors.fg, colors.bg, DISABLED_TEXT_AMOUNT),

@@ -74,7 +74,7 @@ class FormPanel(ttkb.Frame):
         self._palette = palette
         self._banner.apply_palette(palette)
         icon_colors: dict[str, str] = {
-            "icon_color": palette.info_text,
+            "icon_color": palette.primary_icon,
             "active_icon_color": palette.success_text,
             "background": palette.input_background,
         }
@@ -144,7 +144,7 @@ class FormPanel(ttkb.Frame):
         entry = CopyableEntry(
             parent,
             text,
-            icon_color=self._palette.info_text,
+            icon_color=self._palette.primary_icon,
             active_icon_color=self._palette.success_text,
             background=self._palette.input_background,
             font=FONT_MONO_SMALL if monospace else None
@@ -204,7 +204,7 @@ class FormPanel(ttkb.Frame):
                 CopyIconOverlay(
                     text_widget,
                     lambda: copy_text,
-                    icon_color=self._palette.info_text,
+                    icon_color=self._palette.primary_icon,
                     active_icon_color=self._palette.success_text,
                     background=self._palette.input_background,
                     top_offset=FIELD_PADX,

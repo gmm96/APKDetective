@@ -23,6 +23,10 @@ class CopyableEntry(IconEntry):
         super().__init__(parent, **options)
         self.insert(0, text)
         self.configure(state="readonly")
+        # Tk selects the whole text of an entry that gets the focus by traversal, which is what
+        # happens to the first field of a tab when the Notebook switches to it. In a read-only
+        # field that only looks like a stray selection, so the class binding is skipped.
+        self.bind("<<TraverseIn>>", lambda _event: "break")
         self.overlay: CopyIconOverlay = CopyIconOverlay(
             target=self,
             get_text=lambda: text,

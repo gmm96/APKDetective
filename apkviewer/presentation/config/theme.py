@@ -39,6 +39,7 @@ THEMES: list[str] = [
 # --- Readability ---
 # What ThemePaletteBuilder derives the palette's text, icon and band colors with.
 MIN_TEXT_CONTRAST: float = 4.5      # WCAG AA for normal text
+MIN_ICON_CONTRAST: float = 3.0      # WCAG for non-text elements: the icons
 MIN_COMMENT_CONTRAST: float = 4.0   # XML comments are meant to be dimmer than the code (they are italic too)
 MARKED_LINE_TINT: float = 0.25      # share of the theme's primary color laid over the input background
 FOLDER_ROW_TINT: float = 0.12       # same, for the folder rows (a quieter band: there are many of them)
