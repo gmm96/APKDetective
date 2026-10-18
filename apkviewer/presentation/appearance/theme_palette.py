@@ -5,26 +5,24 @@ itself (classic Tk widgets, text tags, tinted icons, status messages).
 
 from dataclasses import dataclass
 
+from apkviewer.presentation.viewmodels.theme_custom_colors import ThemeCustomColors
+
 
 @dataclass(frozen=True)
-class ThemePalette:
-    window_bg: str
-    text_bg: str
-    text_fg: str
-    disabled_fg: str
-    secondary_fg: str
-    selection_bg: str
-    selection_fg: str
-    mark_bg: str
-    folder_bg: str
-    placeholder_bg: str
-    placeholder_border: str
-    icon_tint: str
-    xml_tag: str
-    xml_attr: str
-    xml_value: str
-    xml_comment: str
-    status_neutral: str
-    status_info: str
-    status_success: str
-    status_error: str
+class ThemePalette(ThemeCustomColors):
+    primary: str
+    secondary: str
+    success: str
+    info: str
+    warning: str
+    danger: str
+    light: str
+    dark: str
+    background: str
+    foreground: str
+    select_background: str
+    select_foreground: str
+    border: str
+    input_background: str
+    input_foreground: str
+    active: str

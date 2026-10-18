@@ -3,7 +3,7 @@
 content embedded in the code.
 """
 
-from tkinter import ttk
+import ttkbootstrap as ttkb
 
 from apkviewer.domain.entities.application_info import ApplicationInfo
 from apkviewer.domain.entities.configuration_info import ConfigurationInfo
@@ -21,7 +21,7 @@ from apkviewer.presentation.formatting.human_readable_size_formatter import Huma
 class InfoPanel(FormPanel):
     def __init__(
         self,
-        parent: ttk.Notebook,
+        parent: ttkb.Notebook,
         context_menu: TextContextMenu,
         palette: ThemePalette,
         line_marker: TextLineMarker | None = None,

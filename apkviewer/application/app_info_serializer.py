@@ -98,7 +98,7 @@ class AppInfoSerializer:
         lines: list[str] = []
         for label, group in (
             ("Permissions", info.permissions),
-            ("AppOps (special access)", info.app_ops),
+            ("AppOps", info.app_ops),
             ("Custom permissions", info.custom_permissions),
         ):
             lines += self._list(label, [self._permission_text(permission) for permission in group])

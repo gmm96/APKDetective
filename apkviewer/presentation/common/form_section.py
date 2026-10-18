@@ -10,8 +10,9 @@ something when the number of columns (or the shared label width) changes.
 
 import tkinter as tk
 from collections.abc import Callable, Sequence
-from tkinter import ttk
 from typing import Any
+
+import ttkbootstrap as ttkb
 
 from apkviewer.presentation.common.column_planner import ColumnPlanner
 from apkviewer.presentation.common.copyable_entry import CopyableEntry
@@ -39,7 +40,7 @@ class FormSection:
 
     def __init__(
         self,
-        frame: ttk.LabelFrame,
+        frame: ttkb.LabelFrame,
         widgets: FormWidgetFactory,
         label_meter: LabelWidthMeter,
         on_changed: Callable[[], None],
@@ -48,7 +49,7 @@ class FormSection:
         min_field_width: int | None = None,
     ) -> None:
         """`on_changed`: called when rows are added, so the owner can schedule the layout."""
-        self.frame: ttk.LabelFrame = frame  # for sections that lay out their own widgets
+        self.frame: ttkb.LabelFrame = frame
         self._widgets: FormWidgetFactory = widgets
         self._label_meter: LabelWidthMeter = label_meter
         self._on_changed: Callable[[], None] = on_changed
@@ -61,8 +62,8 @@ class FormSection:
             side_margins=2 * self.OUTER_HORIZONTAL_PADDING_PX + self.GRID_BORDER_RESERVE_PX,
         )
         self._row: int = 0
-        self._entries: list[tuple[ttk.Label, CopyableEntry, int]] = []  # (label, field, row it was added in)
-        self._list_labels: list[ttk.Label] = []
+        self._entries: list[tuple[ttkb.Label, CopyableEntry, int]] = []  # (label, field, row it was added in)
+        self._list_labels: list[ttkb.Label] = []
         self._has_non_entry_content: bool = False
         self._width: int = 0
         self._dirty: bool = True  # rows were added since the last layout
@@ -84,8 +85,8 @@ class FormSection:
     def add_entry(self, label_text: str, value: Any, monospace: bool = False) -> None:
         """Add a selectable, read-only field with a copy icon."""
         self._label_meter.register(label_text)
-        label = ttk.Label(self.frame, text=label_text, anchor="w")
-        field = self._widgets.create_copy_entry(self.frame, "" if value is None else str(value), monospace)
+        label = ttkb.Label(self.frame, text=label_text, anchor="w")
+        field = self._widgets.create_copy_entry(self.frame, self._format_entry_value(value), monospace)
         self._entries.append((label, field, self._row))
         self._row += 1
         self._content_changed()
@@ -95,11 +96,11 @@ class FormSection:
         text_label = f"{label_text} ({len(items)})"
         self._label_meter.register(text_label)
         # The label goes in column 1 and the box in column 3, aligned with the entries
-        label = ttk.Label(self.frame, text=text_label, anchor="w")
+        label = ttkb.Label(self.frame, text=text_label, anchor="w")
         label.grid(row=self._row, column=1, sticky="nw", pady=self.LIST_VERTICAL_PADDING_PX)
         self._list_labels.append(label)
         text, line_count = self._display_text(items, separator)
-        container = ttk.Frame(self.frame)
+        container = ttkb.Frame(self.frame)
         container.grid(row=self._row, column=3, sticky="ew", pady=self.LIST_VERTICAL_PADDING_PX)
         container.columnconfigure(0, weight=1)
         container.rowconfigure(0, weight=1)
@@ -194,3 +195,11 @@ class FormSection:
         line_count = max(text.count("\n") + 1, MIN_LIST_LINES)
         text += "\n" * (line_count - (text.count("\n") + 1))
         return text, line_count
+
+    @staticmethod
+    def _format_entry_value(value: Any) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, bool):
+            return str(value).lower()
+        return str(value)

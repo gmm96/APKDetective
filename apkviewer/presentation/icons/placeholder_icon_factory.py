@@ -13,11 +13,11 @@ class PlaceholderIconFactory:
         self._size: tuple[int, int] = size
 
     def create(self, palette: ThemePalette) -> ImageTk.PhotoImage:
-        img = Image.new("RGB", self._size, color=palette.placeholder_bg)
+        img = Image.new("RGB", self._size, color=palette.foreground)
         draw = ImageDraw.Draw(img)
         draw.rectangle(
             [0, 0, self._size[0] - 1, self._size[1] - 1],
-            outline=palette.placeholder_border,
+            outline=palette.border,
             width=2,
         )
         return ImageTk.PhotoImage(img)

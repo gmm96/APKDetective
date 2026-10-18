@@ -1,83 +1,68 @@
-"""
-A copy icon laid over the right end of a widget (a field or a list box).
-It shows only while the pointer is over the widget or the widget has the
-focus, and clicking it copies a text to the clipboard (the icon turns green
-for a moment as confirmation).
-"""
-
 import tkinter as tk
 from collections.abc import Callable
-from tkinter import ttk
 
-from apkviewer.presentation.icons.field_icons import FieldIcons
+import ttkbootstrap.constants as ttkb_constants
+
+from apkviewer.presentation.common.action_icon_overlay import ActionIconOverlay
 
 
-class CopyIconOverlay:
-    _FEEDBACK_MS: int = 900
+class CopyIconOverlay(ActionIconOverlay):
+    """Copy icon shown over any widget while the pointer is over it."""
+
+    _FEEDBACK_MS: int = 1500
+    _ICON_IDLE: str = "copy"
+    _ICON_COPIED: str = "check-circle-fill"
 
     def __init__(
         self,
         target: tk.Widget,
-        icons: FieldIcons,
         get_text: Callable[[], str],
+        icon_style: str = ttkb_constants.INFO,
+        active_icon_style: str = ttkb_constants.SUCCESS,
         background: str | None = None,
         top_offset: int | None = None,
+        right_offset: int | None = None,
     ) -> None:
-        """
-        `background`: color of the surface under the icon, when it isn't the window's
-        (e.g. a Text box). `top_offset`: put the icon that many pixels from the top
-        instead of centering it vertically (for tall widgets).
-        """
-        self._target: tk.Widget = target
-        self._icons: FieldIcons = icons
         self._get_text: Callable[[], str] = get_text
-        self._top_offset: int | None = top_offset
-        self._focused: bool = False
+        self._icon_style: str = icon_style
+        self._active_icon_style: str = active_icon_style
         self._restore_job: str | None = None
+        super().__init__(target, self._ICON_IDLE, icon_style, background, top_offset, right_offset)
 
-        parent = target.master  # a place() target must be the master or a child of it
-        if background is None:
-            self._icon: tk.Label | ttk.Label = ttk.Label(parent, image=icons.copy, cursor="hand2")
-        else:
-            self._icon = tk.Label(
-                parent, image=icons.copy, cursor="hand2",
-                background=background, borderwidth=0, highlightthickness=0,
-            )
-        for widget in (target, self._icon):
+        for widget in (target, self._icon.widget):
             widget.bind("<Enter>", self._schedule_refresh, add="+")
             widget.bind("<Leave>", self._schedule_refresh, add="+")
-        target.bind("<FocusIn>", lambda _event: self._set_focused(True), add="+")
-        target.bind("<FocusOut>", lambda _event: self._set_focused(False), add="+")
-        self._icon.bind("<Button-1>", self.copy)
         self.refresh()
 
-    def refresh_icons(self) -> None:
-        """Re-read the icon after a theme change."""
-        self._icon.configure(image=self._icons.copy)
+    def update_colors(
+        self,
+        icon_style: str | None = None,
+        active_icon_style: str | None = None,
+        background: str | None = None,
+    ) -> None:
+        if icon_style is not None:
+            self._icon_style = icon_style
+        if active_icon_style is not None:
+            self._active_icon_style = active_icon_style
 
-    def set_background(self, color: str) -> None:
-        if isinstance(self._icon, tk.Label):
-            self._icon.configure(background=color)
+        copied = self._restore_job is not None
+        self._icon.configure(
+            icon_name=self._ICON_COPIED if copied else self._ICON_IDLE,
+            icon_style=self._active_icon_style if copied else self._icon_style,
+            background=background,
+        )
 
     # --- Visibility ----------------------------------------------------------------------------
 
     def refresh(self) -> None:
-        if not (self._target.winfo_exists() and self._icon.winfo_exists()):
-            return  # destroyed while an idle callback was still pending
-        if self._focused or self._pointer_inside():
-            if self._top_offset is None:
-                self._icon.place(in_=self._target, relx=1.0, x=-8, rely=0.5, anchor="e")
-            else:
-                self._icon.place(in_=self._target, relx=1.0, x=-8, y=self._top_offset, anchor="ne")
+        if not (self._target.winfo_exists() and self._icon.widget.winfo_exists()):
+            return
+        if self._pointer_inside():
+            self._icon.show()
         else:
-            self._icon.place_forget()
-
-    def _set_focused(self, focused: bool) -> None:
-        self._focused = focused
-        self.refresh()
+            self._icon.hide()
 
     def _schedule_refresh(self, _event: tk.Event) -> None:
-        # Moving from the widget onto the icon fires Leave then Enter: judge by where the pointer is.
         self._target.after_idle(self.refresh)
 
     def _pointer_inside(self) -> bool:
@@ -88,18 +73,23 @@ class CopyIconOverlay:
             and top <= y < top + self._target.winfo_height()
         )
 
-    # --- Copy ------------------------------------------------------------------------------------
+    # --- Copy Action -----------------------------------------------------------------------------
 
     def copy(self, _event: tk.Event | None = None) -> str:
         self._target.clipboard_clear()
         self._target.clipboard_append(self._get_text())
-        self._icon.configure(image=self._icons.copied)
+
         if self._restore_job is not None:
             self._target.after_cancel(self._restore_job)
         self._restore_job = self._target.after(self._FEEDBACK_MS, self._restore_icon)
+
+        self.update_colors()
         return "break"
+
+    def _activate(self, event: tk.Event | None = None) -> str:
+        return self.copy(event)
 
     def _restore_icon(self) -> None:
         self._restore_job = None
-        if self._icon.winfo_exists():
-            self._icon.configure(image=self._icons.copy)
+        if self._icon.widget.winfo_exists():
+            self.update_colors()

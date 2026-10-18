@@ -12,23 +12,23 @@ class TkWidgetStyler:
     @staticmethod
     def style_text(widget: tk.Text, palette: ThemePalette) -> None:
         widget.configure(
-            background=palette.text_bg,
-            foreground=palette.text_fg,
-            insertbackground=palette.text_fg,
-            selectbackground=palette.selection_bg,
-            selectforeground=palette.selection_fg,
-            inactiveselectbackground=palette.selection_bg,
-            highlightbackground=palette.window_bg,
-            highlightcolor=palette.selection_bg,
+            background=palette.background,
+            foreground=palette.foreground,
+            insertbackground=palette.input_foreground,
+            selectbackground=palette.select_background,
+            selectforeground=palette.select_foreground,
+            inactiveselectbackground=palette.input_background,
+            highlightbackground=palette.background,
+            highlightcolor=palette.foreground,
         )
 
     @staticmethod
     def style_menu(menu: tk.Menu, palette: ThemePalette) -> None:
         menu.configure(
-            background=palette.window_bg,
-            foreground=palette.text_fg,
-            activebackground=palette.selection_bg,
-            activeforeground=palette.selection_fg,
-            disabledforeground=palette.disabled_fg,
-            selectcolor=palette.text_fg,
+            background=palette.background,
+            foreground=palette.foreground,
+            activebackground=palette.input_background,
+            activeforeground=palette.select_foreground,
+            disabledforeground=palette.background,
+            selectcolor=palette.select_foreground,
         )

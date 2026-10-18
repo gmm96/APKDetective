@@ -7,7 +7,7 @@ APK parser, another GUI toolkit, another storage) means changing this
 file and nothing else.
 """
 
-import tkinter as tk
+import ttkbootstrap as ttkb
 
 from apkviewer.application.analyze_apk import AnalyzeApk
 from apkviewer.application.app_info_serializer import AppInfoSerializer
@@ -27,7 +27,7 @@ from apkviewer.presentation.formatting.english_long_date_formatter import Englis
 from apkviewer.presentation.formatting.human_readable_size_formatter import HumanReadableSizeFormatter
 
 
-def build_app(root: tk.Tk) -> ApkAnalyzerApp:
+def build_app(root: ttkb.App) -> ApkAnalyzerApp:
     platform_services = PlatformServicesResolver().resolve()
     apk_extractor = ZipApkExtractor()
     file_writer = LocalFileWriter()

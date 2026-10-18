@@ -9,7 +9,10 @@ imports the infrastructure layer.
 import os
 import threading
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox
+
+import ttkbootstrap as ttkb
+import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.application.analyze_apk import AnalyzeApk
 from apkviewer.application.entry_previewer import EntryPreviewer
@@ -23,7 +26,6 @@ from apkviewer.domain.entities.color_mode import ColorMode
 from apkviewer.domain.interfaces.url_opener import UrlOpener
 from apkviewer.domain.interfaces.size_formatter import SizeFormatter
 from apkviewer.domain.interfaces.date_formatter import DateFormatter
-from apkviewer.presentation.appearance.forest_theme import ForestTheme
 from apkviewer.presentation.appearance.theme_manager import ThemeManager
 from apkviewer.presentation.common.extract_to_dialog import ExtractToDialog
 from apkviewer.presentation.common.status_bar import StatusBar
@@ -73,7 +75,7 @@ class ApkAnalyzerApp:
 
     def __init__(
         self,
-        root: tk.Tk,
+        root: ttkb.App,
         analyze_apk: AnalyzeApk,
         extract_entries: ExtractApkEntries,
         entry_previewer: EntryPreviewer,
@@ -85,7 +87,7 @@ class ApkAnalyzerApp:
         size_formatter: SizeFormatter | None = None,
         date_formatter: DateFormatter | None = None,
     ) -> None:
-        self.root: tk.Tk = root
+        self.root: ttkb.App = root
         self.root.title("APKViewer")
         self.root.minsize(600, 600)
         self.root.geometry("1000x750")
@@ -99,7 +101,7 @@ class ApkAnalyzerApp:
         self._date_formatter: DateFormatter | None = date_formatter
 
         # Activates the ttk theme (AUTO = follow the OS) before any widget exists.
-        self._theme: ThemeManager = ThemeManager(root, ForestTheme(root), resolve_color_scheme)
+        self._theme: ThemeManager = ThemeManager(root, resolve_color_scheme)
 
         # The analysis currently shown (None while nothing is loaded).
         self._result: AnalysisResult | None = None
@@ -138,15 +140,13 @@ class ApkAnalyzerApp:
             self._theme.subscribe(listener)
 
     def _build_layout(self) -> None:
-        top_frame = ttk.Frame(self.root)
+        top_frame = ttkb.Frame(self.root)
         top_frame.pack(side=tk.TOP, fill=tk.X, padx=15, pady=15)
-        self.header: AppHeader = AppHeader(
-            top_frame, on_load_click=self.load_apk, palette=self._theme.palette
-        )
+        self.header: AppHeader = AppHeader(top_frame, on_load_click=self.load_apk, palette=self._theme.palette)
         self.header.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.status_bar: StatusBar = StatusBar(self.root, self._theme.palette)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        notebook = ttk.Notebook(self.root)
+        notebook = ttkb.Notebook(self.root, bootstyle=ttkb_constants.SECONDARY)
         notebook.pack(expand=True, fill=tk.BOTH, padx=10, pady=(0, 10))
 
         palette = self._theme.palette

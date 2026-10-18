@@ -1,64 +1,163 @@
 """
-Owns the current color mode: resolves it into a scheme, activates the
-matching ttk theme and tells the interested widgets to re-apply their
-palette. Widgets never know about modes, only about palettes.
+Manages the application's ttkbootstrap theme and custom palette.
+
+The operating system preference is resolved dynamically when set to AUTO.
+Theme variants (light/dark) are automatically switched based on the active mode.
 """
 
-import tkinter as tk
-from collections.abc import Callable, Mapping
+from typing import Any
+from collections.abc import Callable
+import ttkbootstrap as ttkb
 
 from apkviewer.application.resolve_color_scheme import ResolveColorScheme
 from apkviewer.domain.entities.color_mode import ColorMode
 from apkviewer.domain.entities.color_scheme import ColorScheme
-
-from .forest_theme import ForestTheme
-from .palettes import PALETTES
-from .theme_palette import ThemePalette
-
-PaletteListener = Callable[[ThemePalette], None]
+from apkviewer.presentation.appearance.theme_palette import ThemePalette
+from apkviewer.presentation.viewmodels.theme_custom_colors import ThemeCustomColors
+from apkviewer.presentation.config.theme import THEMES, CUSTOM_COLORS
 
 
 class ThemeManager:
+    """Coordinates ttkbootstrap themes and application-specific colors."""
+
     def __init__(
         self,
-        root: tk.Tk,
-        forest_theme: ForestTheme,
+        root: ttkb.App,
         resolve_color_scheme: ResolveColorScheme,
         initial_mode: ColorMode = ColorMode.AUTO,
-        palettes: Mapping[ColorScheme, ThemePalette] | None = None,
     ) -> None:
-        self._root: tk.Tk = root
-        self._forest_theme: ForestTheme = forest_theme
-        self._resolve_color_scheme: ResolveColorScheme = resolve_color_scheme
-        self._palettes: Mapping[ColorScheme, ThemePalette] = palettes or PALETTES
-        self._listeners: list[PaletteListener] = []
-        self._palette: ThemePalette = self._activate(initial_mode)
-        self._mode: ColorMode = initial_mode
+        self._root: ttkb.App = root
+        self._system_color_scheme_detector: ResolveColorScheme = resolve_color_scheme
+        self._color_mode: ColorMode = initial_mode
+
+        self._style: ttkb.Style = ttkb.Style()
+        self._listeners: list[Callable[[ThemePalette], None]] = []
+        self._palette: ThemePalette
+        self._theme_name: str = ""
+        self._base_theme: str = THEMES[0] if THEMES else "bootstrap"
+
+        # Resolve initial setup
+        self._color_scheme: ColorScheme
+        self._update_theme_state()
 
     @property
-    def mode(self) -> ColorMode:
-        return self._mode
+    def color_mode(self) -> ColorMode:
+        """Return the selected color mode."""
+        return self._color_mode
+
+    @property
+    def color_scheme(self) -> ColorScheme:
+        """Return the selected color mode."""
+        return self._color_scheme
 
     @property
     def palette(self) -> ThemePalette:
+        """Return the palette associated with the active theme."""
         return self._palette
 
-    def subscribe(self, listener: PaletteListener) -> None:
-        self._listeners.append(listener)
+    @property
+    def theme_name(self) -> str:
+        """Return the currently active ttkbootstrap theme variant."""
+        return self._theme_name
 
-    def set_mode(self, mode: ColorMode) -> None:
-        # Activate first: if it fails, the previous mode stays in effect.
-        self._palette = self._activate(mode)
-        self._mode = mode
-        for listener in list(self._listeners):
+    @property
+    def base_theme(self) -> str:
+        """Return the active base theme name without light/dark suffixes."""
+        return self._base_theme
+
+    @property
+    def style(self) -> ttkb.Style:
+        """Expose ttkbootstrap's Style for application-specific styling."""
+        return self._style
+
+    def subscribe(self, listener: Callable[[ThemePalette], None]) -> None:
+        """Register a listener for palette changes."""
+        if listener not in self._listeners:
+            self._listeners.append(listener)
+
+    def unsubscribe(self, listener: Callable[[ThemePalette], None]) -> None:
+        """Remove a previously registered listener."""
+        if listener in self._listeners:
+            self._listeners.remove(listener)
+
+    def set_mode(self, color_mode: ColorMode) -> None:
+        """Apply a manually selected light/dark mode, or resolve AUTO."""
+        self._color_mode = color_mode
+        self._update_theme_state()
+
+    def set_theme(self, base_theme_name: str) -> None:
+        """Apply a base theme, selecting the correct variant based on the current mode."""
+        if THEMES and base_theme_name not in THEMES:
+            raise ValueError(f"Unsupported base theme: {base_theme_name!r}")
+        self._base_theme = base_theme_name
+        self._update_theme_state()
+
+    def _update_theme_state(self) -> None:
+        self._resolve_active_color_scheme()
+        target_theme: str = self._get_theme_variant(self._base_theme, self._color_scheme)
+        self._apply_theme(target_theme, self._color_scheme)
+
+    def _resolve_active_color_scheme(self) -> None:
+        """Determine the target ColorScheme based on the current ColorMode."""
+        if self._color_mode == ColorMode.AUTO:
+            scheme: ColorScheme = self._system_color_scheme_detector.execute(self._color_mode)
+            self._color_scheme = scheme if scheme in (ColorScheme.LIGHT, ColorScheme.DARK) else ColorScheme.LIGHT
+        else:
+            self._color_scheme = ColorScheme.DARK if self._color_mode == ColorMode.DARK else ColorScheme.LIGHT
+
+    def _get_theme_variant(self, base_theme: str, target_scheme: ColorScheme) -> str:
+        """Construct the theme variant name based on the target scheme."""
+        suffix: str = "-light" if target_scheme == ColorScheme.LIGHT else "-dark"
+        variant: str = f"{base_theme}{suffix}"
+        if variant in self._style.theme_names():
+            return variant
+        fallback_base: str = THEMES[0] if THEMES else "bootstrap"
+        return f"{fallback_base}{suffix}"
+
+    def _apply_theme(self, theme_name: str, color_scheme: ColorScheme) -> None:
+        """Apply the theme and notify listeners of palette changes."""
+        if theme_name not in self._style.theme_names():
+            raise ValueError(f"ttkbootstrap theme {theme_name!r} is not available.")
+        self._theme_name = theme_name
+        self._style.theme_use(theme_name)
+        self._palette = self._extract_theme_palette(color_scheme)
+        self._root.option_add("*Toplevel.background", self._palette.background)
+        self._notify_listeners()
+
+    def _extract_theme_palette(self, color_scheme: ColorScheme) -> ThemePalette:
+        """Create a ThemePalette combining ttkbootstrap colors and custom static colors."""
+        custom_colors: ThemeCustomColors = CUSTOM_COLORS[color_scheme]
+        try:
+            colors: Any = self._style.colors
+            return ThemePalette(
+                primary=colors.primary,
+                secondary=colors.secondary,
+                success=colors.success,
+                info=colors.info,
+                warning=colors.warning,
+                danger=colors.danger,
+                light=colors.light,
+                dark=colors.dark,
+                background=colors.bg,
+                foreground=colors.fg,
+                select_background=colors.selectbg,
+                select_foreground=colors.selectfg,
+                border=colors.border,
+                input_background=colors.inputbg,
+                input_foreground=colors.inputfg,
+                active=colors.active,
+                xml_tag=custom_colors.xml_tag,
+                xml_attr=custom_colors.xml_attr,
+                xml_value=custom_colors.xml_value,
+                xml_comment=custom_colors.xml_comment,
+            )
+        except AttributeError as error:
+            raise RuntimeError(
+                f"Failed to extract palette colors for theme '{self._theme_name}'. "
+                f"The theme might be corrupted or unsupported. Details: {error}"
+            ) from error
+
+    def _notify_listeners(self) -> None:
+        """Broadcast the updated palette to all registered listeners."""
+        for listener in tuple(self._listeners):
             listener(self._palette)
-
-    def _activate(self, mode: ColorMode) -> ThemePalette:
-        scheme = self._resolve_color_scheme.execute(mode)
-        self._forest_theme.apply(scheme)
-        palette = self._palettes[scheme]
-        self._root.configure(background=palette.window_bg)
-        # Toplevel dialogs are created on demand: the option database gives
-        # every new one the right background without any per-dialog code.
-        self._root.option_add("*Toplevel.background", palette.window_bg)
-        return palette

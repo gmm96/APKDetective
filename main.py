@@ -6,14 +6,14 @@ Usage:
 """
 
 import sys
-import tkinter
+import ttkbootstrap as ttkb
 
 from apkviewer.composition_root import build_app
 
 
 def main() -> None:
     """Entry point for the APKViewer project"""
-    root: tkinter.Tk = tkinter.Tk()
+    root: ttkb.App = ttkb.App()
     app = build_app(root)
 
     if len(sys.argv) > 1:

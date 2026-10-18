@@ -3,8 +3,9 @@
 """
 
 import tkinter as tk
-from tkinter import ttk
 from typing import Optional
+
+import ttkbootstrap as ttkb
 
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.appearance.tk_widget_styler import TkWidgetStyler
@@ -15,14 +16,14 @@ from apkviewer.presentation.common.text_context_menu import TextContextMenu
 from .xml_syntax_highlighter import XmlSyntaxHighlighter
 
 
-class ManifestPanel(ttk.Frame):
+class ManifestPanel(ttkb.Frame):
     def __init__(
-            self,
-            parent: ttk.Notebook,
-            context_menu: TextContextMenu,
-            palette: ThemePalette,
-            highlighter: Optional[XmlSyntaxHighlighter] = None
-        ) -> None:
+        self,
+        parent: ttkb.Notebook,
+        context_menu: TextContextMenu,
+        palette: ThemePalette,
+        highlighter: Optional[XmlSyntaxHighlighter] = None
+    ) -> None:
         super().__init__(parent)
         self._highlighter: XmlSyntaxHighlighter = highlighter or XmlSyntaxHighlighter()
 
@@ -30,8 +31,8 @@ class ManifestPanel(ttk.Frame):
         self.columnconfigure(0, weight=1)
 
         self.text: tk.Text = tk.Text(self, wrap=tk.NONE, font=FONT_MONO, borderwidth=0)
-        v_scroll = ttk.Scrollbar(self, orient="vertical", command=self.text.yview)
-        h_scroll = ttk.Scrollbar(self, orient="horizontal", command=self.text.xview)
+        v_scroll = ttkb.Scrollbar(self, orient="vertical", command=self.text.yview)
+        h_scroll = ttkb.Scrollbar(self, orient="horizontal", command=self.text.xview)
         autohide = AutoHideScrollbar(h_scroll, {"row": 1, "column": 0, "sticky": "ew"})
 
         self.text.configure(yscrollcommand=v_scroll.set, xscrollcommand=autohide.scroll_command)

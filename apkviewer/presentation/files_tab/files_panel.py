@@ -11,6 +11,8 @@ import tkinter as tk
 from collections.abc import Callable, Sequence
 from datetime import datetime
 
+import ttkbootstrap.constants as ttkb_constants
+
 from apkviewer.application.entry_previewer import EntryPreviewer
 from apkviewer.application.file_sort_key import FileSortKey
 from apkviewer.application.file_tree_filter import FileTreeFilter
@@ -20,32 +22,33 @@ from apkviewer.domain.interfaces.size_formatter import SizeFormatter
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.extract_to_dialog import ExtractToDialog
 from apkviewer.presentation.common.tree.base_tree_panel import BaseTreePanel
-from apkviewer.presentation.common.tree.tree_column import TreeColumn
+from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkviewer.presentation.config.theme import FONT_MONO_SMALL
 from apkviewer.presentation.files_tab.file_icon_provider import FileIconProvider
 from apkviewer.presentation.files_tab.files_context_menu import FilesContextMenu
 from apkviewer.presentation.formatting.human_readable_size_formatter import HumanReadableSizeFormatter
 from apkviewer.presentation.icons.icon_loader import IconLoader
 
-_COLUMNS: tuple[TreeColumn, ...] = (
-    TreeColumn("#0", "Name", width=380, min_width=200, stretch=True),
-    TreeColumn("type", "Type", width=120, min_width=80),
-    TreeColumn("size", "Size", width=100, min_width=70),
-    TreeColumn("compressed", "Compressed", width=120, min_width=100),
-    TreeColumn("modified", "Modified", width=150, min_width=130),
-)
-# Tree column id -> the (toolkit-agnostic) key the sorter understands.
-_COLUMN_SORT_KEYS: dict[str, FileSortKey] = {
-    "#0": FileSortKey.NAME,
-    "type": FileSortKey.TYPE,
-    "size": FileSortKey.SIZE,
-    "compressed": FileSortKey.COMPRESSED,
-    "modified": FileSortKey.MODIFIED,
-}
-_DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
-
 
 class FilesPanel(BaseTreePanel[FileNode]):
+
+    COLUMNS: tuple[TreeColumn, ...] = (
+        TreeColumn("#0", "Name", width=380, min_width=200, stretch=True),
+        TreeColumn("type", "Type", width=120, min_width=80),
+        TreeColumn("size", "Size", width=100, min_width=70),
+        TreeColumn("compressed", "Compressed", width=120, min_width=100),
+        TreeColumn("modified", "Modified", width=150, min_width=130),
+    )
+    # Tree column id -> the (toolkit-agnostic) key the sorter understands.
+    COLUMN_SORT_KEYS: dict[str, FileSortKey] = {
+        "#0": FileSortKey.NAME,
+        "type": FileSortKey.TYPE,
+        "size": FileSortKey.SIZE,
+        "compressed": FileSortKey.COMPRESSED,
+        "modified": FileSortKey.MODIFIED,
+    }
+    DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+
     _expand_on_filter = True
 
     def __init__(
@@ -72,10 +75,11 @@ class FilesPanel(BaseTreePanel[FileNode]):
         super().__init__(
             parent,
             palette,
-            _COLUMNS,
+            self.COLUMNS,
             expand_buttons=True,
             item_noun="files",
             empty_text="This APK contains no files.",
+            bootstyle=ttkb_constants.PRIMARY
         )
         self._context_menu: FilesContextMenu = FilesContextMenu(
             self.tree,
@@ -131,15 +135,15 @@ class FilesPanel(BaseTreePanel[FileNode]):
         return sum(1 if child.is_file else self._item_count(child) for child in node.children.values())
 
     def _sort_state(self) -> tuple[str, bool]:
-        column = next(col for col, key in _COLUMN_SORT_KEYS.items() if key == self._sorter.key)
+        column = next(col for col, key in self.COLUMN_SORT_KEYS.items() if key == self._sorter.key)
         return column, self._sorter.reverse
 
     def _toggle_sort(self, column_id: str) -> None:
-        self._sorter.toggle(_COLUMN_SORT_KEYS[column_id])
+        self._sorter.toggle(self.COLUMN_SORT_KEYS[column_id])
 
     def _configure_tags(self, palette: ThemePalette) -> None:
         self.tree.tag_configure("file", font=FONT_MONO_SMALL)
-        self.tree.tag_configure("folder", background=palette.folder_bg, font=FONT_MONO_SMALL)
+        self.tree.tag_configure("folder", background=palette.select_background, font=FONT_MONO_SMALL)
 
     def _insert(self, parent_iid: str, node: FileNode, iid: str, is_open: bool) -> None:
         size_str = self._size_formatter.format(node.size)
@@ -162,4 +166,4 @@ class FilesPanel(BaseTreePanel[FileNode]):
 
     @staticmethod
     def _format_modified(modified: datetime | None) -> str:
-        return modified.strftime(_DATE_FORMAT) if modified is not None else ""
+        return modified.strftime(FilesPanel.DATE_FORMAT) if modified is not None else ""

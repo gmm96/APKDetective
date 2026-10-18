@@ -8,12 +8,14 @@ The panel does not lay its sections out while they are being filled: every
 change only schedules ONE layout pass for when the UI is idle.
 """
 
+from typing import Any
 import tkinter as tk
-from tkinter import ttk
+
+import ttkbootstrap as ttkb
+import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
-from apkviewer.presentation.appearance.tk_widget_styler import TkWidgetStyler
-from apkviewer.presentation.common.auto_hide_scrollbar import AutoHideScrollbar
+from apkviewer.presentation.common.auto_scrolled_text import AutoScrolledText
 from apkviewer.presentation.common.copy_icon_overlay import CopyIconOverlay
 from apkviewer.presentation.common.copyable_entry import CopyableEntry
 from apkviewer.presentation.common.form_section import FormSection
@@ -23,15 +25,15 @@ from apkviewer.presentation.common.text_context_menu import TextContextMenu
 from apkviewer.presentation.common.text_line_marker import TextLineMarker
 from apkviewer.presentation.common.warning_banner import WarningBanner
 from apkviewer.presentation.config.theme import FONT_MONO_SMALL
-from apkviewer.presentation.icons.field_icons import FieldIcons
+from apkviewer.presentation.config.layout import FIELD_PADX, FIELD_PADY
 from apkviewer.presentation.icons.icon_loader import IconLoader
 
-# Chip kinds: "success", "danger", "neutral" (filled) and "muted" (outlined).
-CHIP_KINDS: tuple[str, ...] = ("success", "danger", "neutral", "muted")
 
-
-class FormPanel(ttk.Frame):
+class FormPanel(ttkb.Frame):
     """Base class for tabs containing read-only fields and lists."""
+
+    # Chip kinds: "success", "danger", "neutral" (filled) and "muted" (outlined).
+    CHIP_KINDS: tuple[str, ...] = ("success", "danger", "neutral", "muted")
 
     SECTION_PAD_X = 15
     SECTION_PAD_Y = 10
@@ -40,7 +42,6 @@ class FormPanel(ttk.Frame):
     LABEL_EXTRA_WIDTH_PX = 10
     CHIP_PAD_X = 8
     CHIP_PAD_Y = 1
-    LIST_COPY_ICON_TOP_OFFSET = 4
 
     def __init__(
         self,
@@ -54,38 +55,37 @@ class FormPanel(ttk.Frame):
         self._palette: ThemePalette = palette
         self._context_menu: TextContextMenu = context_menu
         self._line_marker: TextLineMarker = line_marker or TextLineMarker()
-        self._icons: FieldIcons = FieldIcons(icon_loader or IconLoader(), palette)
         self._label_meter: LabelWidthMeter = LabelWidthMeter(self, self.LABEL_EXTRA_WIDTH_PX)
         self._layout_job: str | None = None
-        self._list_widgets: list[tk.Text] = []
+        self._list_widgets: list[AutoScrolledText] = []
         self._copy_entries: list[CopyableEntry] = []
         self._list_copy_icons: list[CopyIconOverlay] = []
-        self._chips: list[tuple[tk.Label, str]] = []
-        self._muted_labels: list[ttk.Label] = []
+        self._chips: list[tuple[ttkb.Label, str]] = []
+        self._muted_labels: list[ttkb.Label] = []
         self._sections: list[FormSection] = []
         self._next_row: int = 0
 
         self.scroll_frame: ScrollableFrame = ScrollableFrame(self, palette)
         self.scroll_frame.pack(expand=True, fill=tk.BOTH)
         self.scroll_frame.inner_frame.columnconfigure(0, weight=1)
-        self._banner: WarningBanner = WarningBanner(self, palette, before=self.scroll_frame)
+        self._banner: WarningBanner = WarningBanner(self, palette, self.scroll_frame)
 
     def apply_palette(self, palette: ThemePalette) -> None:
         self._palette = palette
-        self.scroll_frame.apply_palette(palette)
         self._banner.apply_palette(palette)
-        self._icons.apply_palette(palette)
-        for widget in self._list_widgets:
-            self._style_list_widget(widget)
+        kwargs: dict[str, str] = {
+            "foreground": palette.info,
+            "background": palette.input_background,
+            "active_foreground": palette.success
+        }
         for entry in self._copy_entries:
-            entry.refresh_icons()
+            entry.update_colors(**kwargs)
         for overlay in self._list_copy_icons:
-            overlay.refresh_icons()
-            overlay.set_background(palette.text_bg)
+            overlay.update_colors(**kwargs)
         for chip, kind in self._chips:
             self._style_chip(chip, kind)
         for label in self._muted_labels:
-            label.configure(foreground=palette.secondary_fg)
+            label.configure(foreground=palette.dark)
 
     def show_warnings(self, messages: list[str]) -> None:
         self._banner.show(messages)
@@ -119,7 +119,7 @@ class FormPanel(ttk.Frame):
         `responsive`: lay the entries out in up to `max_columns` columns, as many as fit while
         each value field keeps `min_field_width` pixels (sections with groups or lists use one).
         """
-        frame = ttk.LabelFrame(self.scroll_frame.inner_frame, text=title)
+        frame = ttkb.LabelFrame(self.scroll_frame.inner_frame, text=title)
         frame.grid(row=self._next_row, column=0, sticky="ew", padx=self.SECTION_PAD_X, pady=self.SECTION_PAD_Y)
         self._next_row += 1
         if badge is not None:
@@ -129,7 +129,8 @@ class FormPanel(ttk.Frame):
             self,
             self._label_meter,
             self.refresh_section_layouts,
-            responsive, max_columns,
+            responsive,
+            max_columns,
             min_field_width,
         )
         self._sections.append(section)
@@ -138,68 +139,82 @@ class FormPanel(ttk.Frame):
     # --- Widgets shared by the sections ------------------------------------------------------
 
     def create_copy_entry(self, parent: tk.Misc, text: str, monospace: bool = False) -> CopyableEntry:
-        entry = CopyableEntry(parent, text, self._icons, font=FONT_MONO_SMALL if monospace else None)
+        entry = CopyableEntry(
+            parent,
+            text,
+            icon_style=ttkb_constants.INFO,
+            background=self._palette.input_background,
+            active_icon_style=ttkb_constants.SUCCESS,
+            font=FONT_MONO_SMALL if monospace else None
+        )
         self._copy_entries.append(entry)
         return entry
 
-    def create_chip(self, parent: tk.Misc, text: str, kind: str) -> tk.Label:
+    def create_chip(self, parent: tk.Misc, text: str, kind: str) -> ttkb.Label:
         """`kind`: "success", "danger", "neutral" (filled) or "muted" (outlined)."""
-        if kind not in CHIP_KINDS:
-            raise ValueError(f"Unknown chip kind {kind!r}; expected one of {CHIP_KINDS}")
-        chip = tk.Label(parent, text=text, padx=self.CHIP_PAD_X, pady=self.CHIP_PAD_Y, borderwidth=0)
+        if kind not in self.CHIP_KINDS:
+            raise ValueError(f"Unknown chip kind {kind!r}; expected one of {self.CHIP_KINDS}")
+        chip = ttkb.Label(parent, text=text, padding=(self.CHIP_PAD_X, self.CHIP_PAD_Y), borderwidth=0)
         self._chips.append((chip, kind))
         self._style_chip(chip, kind)
         return chip
 
-    def create_muted_label(self, parent: tk.Misc, text: str) -> ttk.Label:
-        label = ttk.Label(parent, text=text, foreground=self._palette.secondary_fg)
+    def create_muted_label(self, parent: tk.Misc, text: str) -> ttkb.Label:
+        label = ttkb.Label(parent, text=text, foreground=self._palette.secondary)
         self._muted_labels.append(label)
         return label
 
-    def _style_chip(self, chip: tk.Label, kind: str) -> None:
-        p = self._palette
-        foreground, background, border = {
-            "success": (p.status_success, p.mark_bg, p.mark_bg),
-            "danger": (p.status_error, p.folder_bg, p.folder_bg),
-            "neutral": (p.secondary_fg, p.folder_bg, p.folder_bg),
-            "muted": (p.secondary_fg, p.window_bg, p.placeholder_border),
+    def _style_chip(self, chip: ttkb.Label, kind: str) -> None:
+        bootstyle = {
+            "success": ttkb_constants.SUCCESS,
+            "danger": ttkb_constants.DANGER,
+            "neutral": ttkb_constants.WARNING,
+            "muted": ttkb_constants.DARK,
         }[kind]
-        chip.configure(
-            foreground=foreground,
-            background=background,
-            highlightthickness=1,
-            highlightbackground=border,
-            highlightcolor=border,
-        )
+        chip.configure(bootstyle=f"{bootstyle} {ttkb_constants.INVERSE}")
 
     def build_list_widget(
-        self, container: ttk.Frame, text: str, line_count: int, copy_text: str | None = None
+        self,
+        container: ttkb.Frame,
+        text: str,
+        line_count: int,
+        copy_text: str | None = None
     ) -> None:
         """`copy_text`: what the copy icon of the box copies (None: no icon, e.g. an empty list)."""
-        text_widget = tk.Text(container, height=line_count, wrap=tk.NONE, borderwidth=1, relief="solid", font=FONT_MONO_SMALL)
-        h_scroll = ttk.Scrollbar(container, orient="horizontal", command=text_widget.xview)
-        autohide = AutoHideScrollbar(h_scroll, {"row": 1, "column": 0, "sticky": "ew"})
-        text_widget.configure(xscrollcommand=autohide.scroll_command)
+        text_widget = AutoScrolledText(
+            container,
+            height=line_count,
+            wrap=tk.NONE,
+            borderwidth=1,
+            relief="solid",
+            font=FONT_MONO_SMALL,
+            auto_hide=False
+        )
+        #h_scroll = ttkb.Scrollbar(container, orient="horizontal", command=text_widget.xview)
+        #autohide = AutoHideScrollbar(h_scroll, {"row": 1, "column": 0, "sticky": "ew"})
+        #text_widget.configure(xscrollcommand=autohide.scroll_command)
         text_widget.grid(row=0, column=0, sticky="ew")
         text_widget.insert(tk.END, text)
         text_widget.configure(state="disabled")
-        self._line_marker.bind(text_widget)
+        self._line_marker.bind(text_widget.text)
         self._list_widgets.append(text_widget)
-        self._style_list_widget(text_widget)
-        self._context_menu.attach(text_widget)
+        self._style_list_widget(text_widget.text)
+        self._context_menu.attach(text_widget.text)
         if copy_text:
             self._list_copy_icons.append(
                 CopyIconOverlay(
                     text_widget,
-                    self._icons,
                     lambda: copy_text,
-                    background=self._palette.text_bg,
-                    top_offset=self.LIST_COPY_ICON_TOP_OFFSET
+                    icon_style=ttkb_constants.INFO,
+                    background=self._palette.input_background,
+                    active_icon_style=ttkb_constants.SUCCESS,
+                    top_offset=FIELD_PADX,
+                    right_offset=FIELD_PADY
                 )
             )
 
     def _style_list_widget(self, text_widget: tk.Text) -> None:
-        TkWidgetStyler.style_text(text_widget, self._palette)
+        #TkWidgetStyler.style_text(text_widget, self._palette)
         self._line_marker.apply_palette(text_widget, self._palette)
 
     # --- Layout ------------------------------------------------------------------------------------

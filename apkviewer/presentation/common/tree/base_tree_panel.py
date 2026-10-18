@@ -19,26 +19,27 @@ import tkinter as tk
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import partial
-from tkinter import ttk
 from typing import Generic, TypeVar
+
+import ttkbootstrap as ttkb
+import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.auto_hide_scrollbar import AutoHideScrollbar
 from apkviewer.presentation.common.clearable_entry import ClearableEntry
-from apkviewer.presentation.common.tree.tree_column import TreeColumn
+from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkviewer.presentation.common.wrap_frame import WrapFrame
-from apkviewer.presentation.icons.field_icons import FieldIcons
 from apkviewer.presentation.icons.icon_loader import IconLoader
 
 NodeT = TypeVar("NodeT")
 
-ARROW_UP: str = "⏶"
-ARROW_DOWN: str = "⏷"
-_WIDTH_MARGIN: int = 4        # first guess of the width the widget's borders take; then measured
-_DRAG_MIN_WIDTH: int = 40     # how narrow the user may drag a weighted column
 
+class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
+    ARROW_UP: str = "⏶"
+    ARROW_DOWN: str = "⏷"
+    _WIDTH_MARGIN: int = 4        # first guess of the width the widget's borders take; then measured
+    _DRAG_MIN_WIDTH: int = 40     # how narrow the user may drag a weighted column
 
-class BaseTreePanel(ttk.Frame, Generic[NodeT], ABC):
     # When True, filtering opens every node that has children (so matches are
     # visible) instead of restoring the user's own open/closed choices.
     _expand_on_filter: bool = False
@@ -54,6 +55,7 @@ class BaseTreePanel(ttk.Frame, Generic[NodeT], ABC):
         expand_buttons: bool = False,
         item_noun: str = "items",
         empty_text: str = "Nothing to show.",
+        bootstyle: str | None = None
     ) -> None:
         """
         `max_visible_rows=None` makes the tree fill the space it is given.
@@ -71,22 +73,22 @@ class BaseTreePanel(ttk.Frame, Generic[NodeT], ABC):
         self._filtering: bool = False
         self._item_noun: str = item_noun
         self._empty_text: str = empty_text
+        self._bootstyle: str | None = bootstyle
         self._total_items: int = 0
-        self._viewport_margin: int = _WIDTH_MARGIN  # widget width minus the width columns can use
+        self._viewport_margin: int = self._WIDTH_MARGIN  # widget width minus the width columns can use
         self._weights_frozen: bool = False          # the user resized a column by hand
         self._last_tree_width: int = 0
         self._filter_row: int = 1 if toolbar_row else 0
         self._tree_row: int = self._filter_row + 1
-        self.toolbar: ttk.Frame | None = None
-        self._field_icons: FieldIcons = FieldIcons(IconLoader(), palette)
+        self.toolbar: ttkb.Frame | None = None
         self.rowconfigure(self._tree_row, weight=1)
         self.columnconfigure(0, weight=1)
         self._build_tree(palette)
         if toolbar_row:
             self.toolbar = WrapFrame(self, padding_x=4, padding_y=4)
             self.toolbar.grid(row=0, column=0, columnspan=2, sticky="ew", padx=5, pady=(5, 0))
-        self._build_filter_bar(expand_buttons)
-        self._empty_label: ttk.Label = ttk.Label(self, text=empty_text)
+        self._build_filter_bar(expand_buttons, palette)
+        self._empty_label: ttkb.Label = ttkb.Label(self, text=empty_text)
         self._update_heading_labels()
         self._fit_height()
         self._after_rebuild(self._root_node)
@@ -170,9 +172,10 @@ class BaseTreePanel(ttk.Frame, Generic[NodeT], ABC):
 
     def apply_palette(self, palette: ThemePalette) -> None:
         self._apply_tree_style(palette)
-        self._field_icons.apply_palette(palette)
-        self._filter_entry.refresh_icons()
-
+        self._filter_entry.update_colors(
+            foreground=palette.foreground,
+            background=palette.input_background
+        )
     def expand_all(self) -> None:
         """Open every row that is currently listed (respecting the filter / category)."""
         self._set_all_open(True)
@@ -195,24 +198,29 @@ class BaseTreePanel(ttk.Frame, Generic[NodeT], ABC):
 
     def _build_tree(self, palette: ThemePalette) -> None:
         data_columns = [column.id for column in self._columns if column.id != "#0"]
-        options: dict = {"columns": data_columns, "show": "tree headings"}
+        options: dict = {
+            "columns": data_columns,
+            "show": "tree headings",
+        }
         if self._max_rows is not None:
             options["height"] = self._min_rows
-        self.tree: ttk.Treeview = ttk.Treeview(self, **options)
+        if self._bootstyle is not None:
+            options["bootstyle"] = self._bootstyle
+        self.tree: ttkb.Treeview = ttkb.Treeview(self, **options)
 
         for column in self._columns:
             self.tree.column(
                 column.id,
                 width=column.width,
                 # A weighted column's min_width only guides the automatic layout; dragging is freer.
-                minwidth=column.min_width if column.weight is None else min(column.min_width, _DRAG_MIN_WIDTH),
+                minwidth=column.min_width if column.weight is None else min(column.min_width, self._DRAG_MIN_WIDTH),
                 stretch=column.stretch and column.weight is None,
                 anchor="w",
             )
             self.tree.heading(column.id, anchor="w", command=partial(self._on_heading_click, column.id))
 
-        v_scroll = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        h_scroll = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
+        v_scroll = ttkb.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        h_scroll = ttkb.Scrollbar(self, orient="horizontal", command=self.tree.xview)
         v_auto = AutoHideScrollbar(v_scroll, {"row": self._tree_row, "column": 1, "sticky": "ns"})
         h_auto = AutoHideScrollbar(h_scroll, {"row": self._tree_row + 1, "column": 0, "sticky": "ew"})
         self.tree.configure(yscrollcommand=v_auto.scroll_command, xscrollcommand=h_auto.scroll_command)
@@ -229,27 +237,39 @@ class BaseTreePanel(ttk.Frame, Generic[NodeT], ABC):
 
     def _apply_tree_style(self, palette: ThemePalette) -> None:
         # ttk style settings are stored per theme: re-applied on every theme change.
-        ttk.Style().configure("Treeview.Heading", padding=(8, 6))
+        ttkb.Style().configure("Treeview.Heading", padding=(8, 6))
         self._configure_tags(palette)
 
-    def _pack_expand_buttons(self, parent: ttk.Frame) -> None:
+    def _pack_expand_buttons(self, parent: ttkb.Frame) -> None:
         """Place "Collapse all" and "Expand all" at the right end of `parent`."""
-        ttk.Button(parent, text="Expand all", command=self.expand_all, takefocus=False).pack(side=tk.RIGHT)
-        ttk.Button(parent, text="Collapse all", command=self.collapse_all, takefocus=False).pack(
-            side=tk.RIGHT, padx=(0, 4)
+        ttkb.Button(
+            parent,
+            text="Expand all",
+            command=self.expand_all,
+            bootstyle=f"{ttkb_constants.SUCCESS} {ttkb_constants.OUTLINE}"
+        ).pack(side=tk.RIGHT)
+        ttkb.Button(
+            parent,
+            text="Collapse all",
+            command=self.collapse_all,
+            bootstyle=f"{ttkb_constants.DANGER} {ttkb_constants.OUTLINE}"
+            ).pack(side=tk.RIGHT, padx=(0, 4)
         )
 
-    def _build_filter_bar(self, with_buttons: bool) -> None:
+    def _build_filter_bar(self, with_buttons: bool, palette: ThemePalette) -> None:
         """Left to right: "Filter:", the field (takes the free space), the counter, the buttons."""
-        filter_bar = ttk.Frame(self)
+        filter_bar = ttkb.Frame(self)
         filter_bar.grid(row=self._filter_row, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
-        ttk.Label(filter_bar, text="Filter:").pack(side=tk.LEFT)
+        ttkb.Label(filter_bar, text="Filter:").pack(side=tk.LEFT)
         if with_buttons:
             self._pack_expand_buttons(filter_bar)
-        self._count_label: ttk.Label = ttk.Label(filter_bar, text="")
+        self._count_label: ttkb.Label = ttkb.Label(filter_bar, text="")
         self._count_label.pack(side=tk.RIGHT, padx=(5, 8))
         self._filter_entry: ClearableEntry = ClearableEntry(
-            filter_bar, self._field_icons, on_clear=self._apply_filter
+            filter_bar,
+            on_clear=self._apply_filter,
+            foreground=palette.foreground,
+            background=palette.input_background
         )
         self._filter_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         self._filter_entry.bind("<KeyRelease>", lambda _event: self._apply_filter())
@@ -263,7 +283,7 @@ class BaseTreePanel(ttk.Frame, Generic[NodeT], ABC):
 
     def _update_heading_labels(self) -> None:
         sorted_column, reverse = self._sort_state()
-        arrow = f"  {ARROW_UP}" if reverse else f"  {ARROW_DOWN}"
+        arrow = f"  {self.ARROW_UP}" if reverse else f"  {self.ARROW_DOWN}"
         for column in self._columns:
             suffix = arrow if column.id == sorted_column else ""
             self.tree.heading(column.id, text=column.label + suffix)

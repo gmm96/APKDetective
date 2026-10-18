@@ -1,54 +1,36 @@
-"""
-Text field with an X at its right end that empties it. The X is shown
-whenever the field has text and hidden when it is empty.
-"""
-
 import tkinter as tk
 from collections.abc import Callable
-from tkinter import ttk
 from typing import Any
 
-from apkviewer.presentation.icons.field_icons import ENTRY_STYLE, FieldIcons
+import ttkbootstrap as ttkb
+import ttkbootstrap.constants as ttkb_constants
+
+from apkviewer.presentation.common.clear_icon_overlay import ClearIconOverlay
+from apkviewer.presentation.common.icon_entry import IconEntry
 
 
-class ClearableEntry(ttk.Entry):
+class ClearableEntry(IconEntry):
+    """Text field with a clear icon at its right end, visible only while the field has text."""
+
     def __init__(
         self,
         parent: tk.Misc,
-        icons: FieldIcons,
         on_clear: Callable[[], None] | None = None,
+        icon_style: str = ttkb_constants.SECONDARY,
+        background: str | None = None,
         **options: Any,
     ) -> None:
-        FieldIcons.configure_entry_style()
-        self._variable: tk.StringVar = tk.StringVar(master=parent)
-        super().__init__(parent, textvariable=self._variable, style=ENTRY_STYLE, **options)
-        self._icons: FieldIcons = icons
-        self._on_clear: Callable[[], None] | None = on_clear
+        self._variable: ttkb.StringVar = ttkb.StringVar(master=parent)
+        super().__init__(parent, textvariable=self._variable, **options)
 
-        # A sibling of the entry (a place() target must be its master or a child of it).
-        self._clear_label: ttk.Label = ttk.Label(parent, image=icons.clear, cursor="hand2")
-        self._clear_label.bind("<Button-1>", self._clear)
-        self._variable.trace_add("write", lambda *_args: self._refresh())
-        self._refresh()
+        self.overlay: ClearIconOverlay = ClearIconOverlay(
+            target=self,
+            variable=self._variable,
+            on_clear=on_clear,
+            icon_style=icon_style,
+            background=background,
+        )
 
-    def refresh_icons(self) -> None:
-        """Re-read the icon after a theme change."""
-        FieldIcons.configure_entry_style()
-        self._clear_label.configure(image=self._icons.clear)
-
-    def destroy(self) -> None:
-        self._clear_label.destroy()
-        super().destroy()
-
-    def _refresh(self) -> None:
-        if self._variable.get():
-            self._clear_label.place(in_=self, relx=1.0, x=-8, rely=0.5, anchor="e")
-        else:
-            self._clear_label.place_forget()
-
-    def _clear(self, _event: tk.Event | None = None) -> str:
-        self._variable.set("")
-        self.focus_set()
-        if self._on_clear is not None:
-            self._on_clear()
-        return "break"
+    def update_colors(self, icon_style: str | None = None, background: str | None = None) -> None:
+        self.configure_entry_style()
+        self.overlay.update_colors(icon_style=icon_style, background=background)

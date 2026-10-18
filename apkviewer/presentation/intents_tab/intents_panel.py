@@ -6,29 +6,31 @@ needed to launch it from adb, Tasker or another app.
 
 import tkinter as tk
 from collections.abc import Sequence
-from tkinter import ttk
+
+import ttkbootstrap as ttkb
+import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.domain.entities.exported_intent import ExportedIntent
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.tree.record_table_panel import RecordTablePanel
 from apkviewer.presentation.common.warning_banner import WarningBanner
-from apkviewer.presentation.common.tree.tree_column import TreeColumn
+from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkviewer.presentation.components_tab.component_tree_builder import ComponentTreeBuilder
 
-_COLUMNS: tuple[TreeColumn, ...] = (
-    TreeColumn("#0", "Action", width=280, min_width=160, stretch=True),
-    TreeColumn("component", "Component", width=300, min_width=140, stretch=True),
-    TreeColumn("type", "Type", width=100, min_width=70),
-    TreeColumn("categories", "Categories", width=190, min_width=100),
-    TreeColumn("data", "Data", width=220, min_width=100, stretch=True),
-    TreeColumn("verify", "Auto-verify", width=100, min_width=80),
-)
 
+class IntentsPanel(ttkb.Frame):
+    _COLUMNS: tuple[TreeColumn, ...] = (
+        TreeColumn("#0", "Action", width=280, min_width=160, stretch=True),
+        TreeColumn("component", "Component", width=300, min_width=140, stretch=True),
+        TreeColumn("type", "Type", width=100, min_width=70),
+        TreeColumn("categories", "Categories", width=190, min_width=100),
+        TreeColumn("data", "Data", width=220, min_width=100, stretch=True),
+        TreeColumn("verify", "Auto-verify", width=100, min_width=80),
+    )
 
-class IntentsPanel(ttk.Frame):
     def __init__(
         self,
-        parent: ttk.Notebook,
+        parent: ttkb.Notebook,
         palette: ThemePalette,
         tree_builder: ComponentTreeBuilder | None = None,
     ) -> None:
@@ -37,12 +39,13 @@ class IntentsPanel(ttk.Frame):
         self._table: RecordTablePanel = RecordTablePanel(
             self,
             palette,
-            _COLUMNS,
+            self._COLUMNS,
             item_noun="entry points",
             empty_text="No exported intents.",
+            bootstyle=ttkb_constants.PRIMARY
         )
         self._table.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self._banner: WarningBanner = WarningBanner(self, palette, before=self._table)
+        self._banner: WarningBanner = WarningBanner(self, palette, self._table)
 
     def apply_palette(self, palette: ThemePalette) -> None:
         self._table.apply_palette(palette)

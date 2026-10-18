@@ -1,34 +1,53 @@
 """
 Read-only text field with a copy icon at its right end. The icon only
-shows while the pointer is over the field or the field has the focus.
+shows while the pointer is over the field.
 """
 
 import tkinter as tk
-from tkinter import ttk
+
+import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.presentation.common.copy_icon_overlay import CopyIconOverlay
-from apkviewer.presentation.icons.field_icons import ENTRY_STYLE, FieldIcons
+from apkviewer.presentation.common.icon_entry import IconEntry
 
 
-class CopyableEntry(ttk.Frame):
+class CopyableEntry(IconEntry):
     def __init__(
         self,
         parent: tk.Misc,
         text: str,
-        icons: FieldIcons,
+        icon_style: str = ttkb_constants.INFO,
+        active_icon_style: str = ttkb_constants.SUCCESS,
+        background: str | None = None,
         font: tuple | None = None,
     ) -> None:
-        super().__init__(parent)
-        FieldIcons.configure_entry_style()
-        self.entry: ttk.Entry = ttk.Entry(self, style=ENTRY_STYLE)
-        if font is not None:
-            self.entry.configure(font=font)
-        self.entry.insert(0, text)
-        self.entry.configure(state="readonly")
-        self.entry.pack(fill=tk.X, expand=True)
-        self.overlay: CopyIconOverlay = CopyIconOverlay(self.entry, icons, lambda: text)
+        options = {} if font is None else {"font": font}
+        super().__init__(parent, **options)
+        self.insert(0, text)
+        self.configure(state="readonly")
+        self.overlay: CopyIconOverlay = CopyIconOverlay(
+            target=self,
+            get_text=lambda: text,
+            icon_style=icon_style,
+            active_icon_style=active_icon_style,
+            background=background,
+        )
 
-    def refresh_icons(self) -> None:
-        """Re-read the icons after a theme change."""
-        FieldIcons.configure_entry_style()
-        self.overlay.refresh_icons()
+    @property
+    def entry(self) -> "CopyableEntry":
+        """Kept for compatibility: the field used to be a frame wrapping an inner entry."""
+        return self
+
+    def update_colors(
+        self,
+        icon_style: str | None = None,
+        active_icon_style: str | None = None,
+        background: str | None = None,
+    ) -> None:
+        """Propagates theme color updates to the entry style and the overlay."""
+        self.configure_entry_style()
+        self.overlay.update_colors(
+            icon_style=icon_style,
+            active_icon_style=active_icon_style,
+            background=background,
+        )

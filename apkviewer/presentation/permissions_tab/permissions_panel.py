@@ -12,55 +12,75 @@ permissions are written in the error color.
 """
 
 import tkinter as tk
-from tkinter import ttk
+
+import ttkbootstrap as ttkb
+import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.domain.entities.permission import Permission
 from apkviewer.domain.entities.permissions_info import PermissionsInfo
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
-from apkviewer.presentation.common.tree.tree_column import TreeColumn
+from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkviewer.presentation.common.warning_banner import WarningBanner
 from apkviewer.presentation.permissions_tab.permission_rows import PermissionRowBuilder
 from apkviewer.presentation.permissions_tab.permission_table_group import PermissionTableGroup
 
-# Columns share the width in proportion to their weights (the permission name and the
-# summary get twice as much as the others). If the window is too narrow for the minimum
-# widths, the table scrolls horizontally instead.
-_NAME = TreeColumn("#0", "Permission", min_width=280, weight=4)
-_TYPE = TreeColumn("type", "Type", min_width=150, weight=2)
-_ORIGIN = TreeColumn("origin", "Origin", min_width=100, weight=2)
-_MAX_SDK = TreeColumn("max_sdk", "Max SDK", min_width=75, weight=1)
-_SUMMARY = TreeColumn("summary", "Summary", min_width=220, weight=3)
 
-_STANDARD_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _MAX_SDK, _SUMMARY)
-_CUSTOM_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _ORIGIN, _MAX_SDK, _SUMMARY)
+class PermissionsPanel(ttkb.Frame):
+    # Columns share the width in proportion to their weights (the permission name and the
+    # summary get twice as much as the others). If the window is too narrow for the minimum
+    # widths, the table scrolls horizontally instead.
+    _NAME = TreeColumn("#0", "Permission", min_width=280, weight=4)
+    _TYPE = TreeColumn("type", "Type", min_width=150, weight=2)
+    _ORIGIN = TreeColumn("origin", "Origin", min_width=100, weight=2)
+    _MAX_SDK = TreeColumn("max_sdk", "Max SDK", min_width=75, weight=1)
+    _SUMMARY = TreeColumn("summary", "Summary", min_width=220, weight=3)
 
+    _STANDARD_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _MAX_SDK, _SUMMARY)
+    _CUSTOM_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _ORIGIN, _MAX_SDK, _SUMMARY)
 
-class PermissionsPanel(ttk.Frame):
     def __init__(
         self,
-        parent: ttk.Notebook,
+        parent: ttkb.Notebook,
         palette: ThemePalette,
         row_builder: PermissionRowBuilder | None = None,
     ) -> None:
         super().__init__(parent)
         self._row_builder: PermissionRowBuilder = row_builder or PermissionRowBuilder()
 
-        self._container: ttk.Frame = ttk.Frame(self)
+        self._container: ttkb.Frame = ttkb.Frame(self)
         self._container.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
         self._container.columnconfigure(0, weight=1)
-        self._banner: WarningBanner = WarningBanner(self, palette, before=self._container)
+        self._banner: WarningBanner = WarningBanner(self, palette, self._container)
 
         self._permissions: PermissionTableGroup = PermissionTableGroup(
-            self._container, 0, "Permissions", _STANDARD_COLUMNS, "permissions",
-            "No Android permissions requested.", palette,
+            self._container,
+            0,
+            "Permissions",
+            self._STANDARD_COLUMNS,
+            "permissions",
+            "No Android permissions requested.",
+            palette,
+            bootstyle=ttkb_constants.PRIMARY
         )
         self._app_ops: PermissionTableGroup = PermissionTableGroup(
-            self._container, 1, "AppOps (special access)", _STANDARD_COLUMNS, "app ops",
-            "No special-access permissions requested.", palette,
+            self._container,
+            1,
+            "AppOps",
+            self._STANDARD_COLUMNS,
+            "app ops",
+            "No special-access permissions requested.",
+            palette,
+            bootstyle=ttkb_constants.PRIMARY
         )
         self._custom: PermissionTableGroup = PermissionTableGroup(
-            self._container, 2, "Custom permissions", _CUSTOM_COLUMNS, "custom permissions",
-            "No custom permissions requested or declared.", palette,
+            self._container,
+            2,
+            "Custom permissions",
+            self._CUSTOM_COLUMNS,
+            "custom permissions",
+            "No custom permissions requested or declared.",
+            palette,
+            bootstyle=ttkb_constants.PRIMARY
         )
         self._groups: tuple[PermissionTableGroup, ...] = (self._permissions, self._app_ops, self._custom)
 

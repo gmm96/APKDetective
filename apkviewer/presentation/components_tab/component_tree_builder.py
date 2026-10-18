@@ -13,7 +13,7 @@ from apkviewer.domain.entities.export_state import ExportState
 from apkviewer.domain.entities.exported_intent import ExportedIntent
 from apkviewer.domain.entities.intent_filter import IntentFilter
 from apkviewer.domain.entities.manifest_element import ManifestElement
-from apkviewer.presentation.common.tree.record_node import RecordNode
+from apkviewer.presentation.viewmodels.tree.record_node import RecordNode
 
 
 class ComponentTreeBuilder:

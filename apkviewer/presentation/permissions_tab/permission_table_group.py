@@ -4,12 +4,13 @@ The tab's grid gives each group a share of the height in proportion to its rows.
 """
 
 from collections.abc import Sequence
-from tkinter import ttk
+
+import ttkbootstrap as ttkb
 
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
-from apkviewer.presentation.common.tree.record_node import RecordNode
+from apkviewer.presentation.viewmodels.tree.record_node import RecordNode
 from apkviewer.presentation.common.tree.record_table_panel import RecordTablePanel
-from apkviewer.presentation.common.tree.tree_column import TreeColumn
+from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkviewer.presentation.permissions_tab.permission_rows import DANGEROUS_STYLE
 
 
@@ -21,18 +22,19 @@ class PermissionTableGroup:
 
     def __init__(
         self,
-        container: ttk.Frame,
+        container: ttkb.Frame,
         row: int,
         title: str,
         columns: Sequence[TreeColumn],
         noun: str,
         empty_text: str,
         palette: ThemePalette,
+        bootstyle: str | None = None
     ) -> None:
-        self._container: ttk.Frame = container
+        self._container: ttkb.Frame = container
         self._row: int = row
         self._title: str = title
-        self._frame: ttk.LabelFrame = ttk.LabelFrame(container, text=title)
+        self._frame: ttkb.LabelFrame = ttkb.LabelFrame(container, text=title)
         self._frame.grid(row=row, column=0, sticky="nsew", padx=10, pady=(0, 6))
         self._frame.rowconfigure(0, weight=1)
         self._frame.columnconfigure(0, weight=1)
@@ -42,7 +44,8 @@ class PermissionTableGroup:
             columns,
             item_noun=noun,
             empty_text=empty_text,
-            row_styles={DANGEROUS_STYLE: lambda p: p.status_error},
+            row_styles={DANGEROUS_STYLE: lambda p: palette.danger},
+            bootstyle=bootstyle
         )
         self._table.tree.configure(height=3)  # the real height comes from the grid weights
         self._table.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)

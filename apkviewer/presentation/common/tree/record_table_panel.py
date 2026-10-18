@@ -4,21 +4,24 @@ header sorting, a live filter, an optional category restriction and,
 for rows that have nested rows, an expander showing the detail.
 """
 
+from typing import Any
 import tkinter as tk
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 
+import ttkbootstrap as ttkb
+
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.tree.base_tree_panel import BaseTreePanel
-from apkviewer.presentation.common.tree.record_node import RecordNode
-from apkviewer.presentation.common.tree.tree_column import TreeColumn
+from apkviewer.presentation.viewmodels.tree.record_node import RecordNode
+from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkviewer.presentation.config.theme import FONT_MONO_SMALL
 
 _TAG: str = "record"
 
 
 class RecordTablePanel(BaseTreePanel[RecordNode]):
-    _expand_on_filter = True
+    _expand_on_filter: bool = True
 
     def __init__(
         self,
@@ -30,6 +33,7 @@ class RecordTablePanel(BaseTreePanel[RecordNode]):
         row_styles: Mapping[str, Callable[[ThemePalette], str]] | None = None,
         toolbar_row: bool = False,
         expand_buttons: bool = False,
+        bootstyle: str | None = None,
     ) -> None:
         """`row_styles`: style name -> function giving its text color from the palette."""
         self._row_styles: dict[str, Callable[[ThemePalette], str]] = dict(row_styles or {})
@@ -37,15 +41,15 @@ class RecordTablePanel(BaseTreePanel[RecordNode]):
         self._reverse: bool = False
         self._category: str | None = None
         self._column_ids: tuple[str, ...] = tuple(column.id for column in columns)
-        super().__init__(
-            parent,
-            palette,
-            columns,
-            toolbar_row=toolbar_row,
-            expand_buttons=expand_buttons,
-            item_noun=item_noun,
-            empty_text=empty_text,
-        )
+        super_kwargs: dict[str, Any] = {
+            "toolbar_row": toolbar_row,
+            "expand_buttons": expand_buttons,
+            "item_noun": item_noun,
+            "empty_text": empty_text,
+        }
+        if bootstyle is not None:
+            super_kwargs["bootstyle"] = bootstyle
+        super().__init__(parent, palette, columns, **super_kwargs)
 
     # --- Public API ------------------------------------------------------------
 
@@ -106,8 +110,18 @@ class RecordTablePanel(BaseTreePanel[RecordNode]):
 
     def _configure_tags(self, palette: ThemePalette) -> None:
         self.tree.tag_configure(_TAG, font=FONT_MONO_SMALL)
-        for style, color_of in self._row_styles.items():
-            self.tree.tag_configure(style, foreground=color_of(palette))
+        for row_style, color_of in self._row_styles.items():
+            self.tree.tag_configure(row_style, foreground=color_of(palette))
+        base_style: str = self.tree.cget("style")
+        unique_style: str = f"{self.__class__.__name__}.{base_style}"
+        style: ttkb.Style = ttkb.Style()
+        style.configure(
+            unique_style,
+            background=palette.input_background,
+            fieldbackground=palette.input_background,
+            foreground=palette.input_foreground,
+        )
+        self.tree.configure(style=unique_style)
 
     def _is_narrowed(self) -> bool:
         return self._filtering or self._category is not None

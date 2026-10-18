@@ -17,8 +17,8 @@ and their icons when the color mode changes.
 import tkinter as tk
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from functools import partial
-from tkinter import ttk
 
+import ttkbootstrap as ttkb
 from PIL import Image, ImageTk
 
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
@@ -40,12 +40,12 @@ class AppToolbar:
 
     def __init__(
         self,
-        root: tk.Tk,
+        root: ttkb.App,
         menus: Mapping[str, Sequence[MenuEntry]],
         palette: ThemePalette,
         icon_loader: IconLoader | None = None,
     ) -> None:
-        self._root: tk.Tk = root
+        self._root: ttkb.App = root
         self._palette: ThemePalette = palette
         self._icon_loader: IconLoader = icon_loader or IconLoader()
         self._icons: list[ImageTk.PhotoImage] = []
@@ -57,12 +57,12 @@ class AppToolbar:
         self._enabled: dict[str, bool] = {}
 
         self._configure_button_style()
-        self._bar: ttk.Frame = ttk.Frame(root)
+        self._bar: ttkb.Frame = ttkb.Frame(root)
         self._bar.pack(side=tk.TOP, fill=tk.X)
-        ttk.Separator(root, orient="horizontal").pack(side=tk.TOP, fill=tk.X)
+        ttkb.Separator(root, orient="horizontal").pack(side=tk.TOP, fill=tk.X)
 
         self._menus: dict[str, tk.Menu] = {}
-        self._buttons: dict[str, ttk.Button] = {}
+        self._buttons: dict[str, ttkb.Button] = {}
         self._popups: dict[str, PopupMenuController] = {}
         self._was_open_on_press: dict[str, bool] = {}
 
@@ -100,7 +100,7 @@ class AppToolbar:
     # --- Styling -------------------------------------------------------------
 
     def _configure_button_style(self) -> None:
-        ttk.Style().configure(self._BUTTON_STYLE, padding=(12,3))
+        ttkb.Style().configure(self._BUTTON_STYLE, padding=(12,3))
 
     def _style_menus(self) -> None:
         for menu in self._menus.values():
@@ -108,8 +108,8 @@ class AppToolbar:
 
     # --- Menu buttons --------------------------------------------------------
 
-    def _create_button(self, title: str) -> ttk.Button:
-        button = ttk.Button(
+    def _create_button(self, title: str) -> ttkb.Button:
+        button = ttkb.Button(
             self._bar,
             text=title,
             style=self._BUTTON_STYLE,
@@ -221,7 +221,7 @@ class AppToolbar:
         icon = self._icon_loader.load_icon(
             icon_path,
             size=self._ICON_SIZE,
-            hex_color=self._palette.icon_tint,
+            hex_color=self._palette.foreground,
             padding_left=self._ICON_PADDING,
             padding_right=self._ICON_PADDING,
         )

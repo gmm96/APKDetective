@@ -3,8 +3,10 @@ Popup dialog showing the parsed details of selected file(s) or folder(s).
 """
 
 import tkinter as tk
-from tkinter import ttk
 from typing import Optional
+
+import ttkbootstrap as ttkb
+import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.presentation.common.modal_dialog_positioner import ModalDialogPositioner
 
@@ -20,12 +22,11 @@ class FileDetailsDialog:
         if not items_data:
             return
 
-        dialog = tk.Toplevel(self._parent)
-        dialog.title("Item Details" if len(items_data) == 1 else "Multiple Items Details")
+        dialog = ttkb.Toplevel(title="Item Details" if len(items_data) == 1 else "Multiple Items Details")
         dialog.minsize(350, 180)
         dialog.transient(self._parent.winfo_toplevel())
 
-        main_frame = ttk.Frame(dialog)
+        main_frame = ttkb.Frame(dialog)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         if len(items_data) == 1:
@@ -33,14 +34,14 @@ class FileDetailsDialog:
         else:
             self._build_multi_item(main_frame, items_data, summary)
 
-        ttk.Button(main_frame, text="Close", command=dialog.destroy).grid(
+        ttkb.Button(main_frame, text="Close", command=dialog.destroy, bootstyle=ttkb_constants.PRIMARY).grid(
             row=10, column=0, columnspan=2, pady=(20, 0)
         )
 
         self._positioner.center_on_parent(dialog, self._parent)
         self._positioner.show_as_modal(dialog)
 
-    def _build_single_item(self, parent: ttk.Frame, item: dict) -> None:
+    def _build_single_item(self, parent: ttkb.Frame, item: dict) -> None:
         fields = {
             "Name:": item.get("name", ""),
             "Type:": item.get("type", ""),
@@ -52,7 +53,7 @@ class FileDetailsDialog:
 
     def _build_multi_item(
             self,
-            parent: ttk.Frame,
+            parent: ttkb.Frame,
             items: list,
             summary: Optional[dict] = None
         ) -> None:
@@ -75,12 +76,12 @@ class FileDetailsDialog:
         self._render_grid(parent, fields)
 
     @staticmethod
-    def _render_grid(parent: ttk.Frame, fields: dict) -> None:
+    def _render_grid(parent: ttkb.Frame, fields: dict) -> None:
         row_idx = 0
         for label_text, value_text in fields.items():
-            label = ttk.Label(parent, text=label_text, width=15, font=("", 0, "bold"))
+            label = ttkb.Label(parent, text=label_text, width=15, font=("", 0, "bold"))
             label.grid(row=row_idx, column=0, sticky="nw", pady=5)
-            value = ttk.Label(parent, text=str(value_text), wraplength=250)
+            value = ttkb.Label(parent, text=str(value_text), wraplength=250)
             value.grid(row=row_idx, column=1, sticky="w", pady=5, padx=(10, 0))
             row_idx += 1
         parent.columnconfigure(1, weight=1)

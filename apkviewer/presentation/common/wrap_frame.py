@@ -1,7 +1,9 @@
 import tkinter as tk
-from tkinter import ttk
 
-class WrapFrame(ttk.Frame):
+import ttkbootstrap as ttkb
+
+
+class WrapFrame(ttkb.Frame):
     """
     A frame that arranges its children like text, wrapping them to the next
     line when they reach the right edge.

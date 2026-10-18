@@ -5,20 +5,19 @@ section depends on this abstraction and not on FormPanel itself.
 """
 
 import tkinter as tk
-from tkinter import ttk
 from typing import Protocol
+
+import ttkbootstrap as ttkb
 
 from apkviewer.presentation.common.copyable_entry import CopyableEntry
 
 
 class FormWidgetFactory(Protocol):
-    def create_muted_label(self, parent: tk.Misc, text: str) -> ttk.Label:
+    def create_muted_label(self, parent: tk.Misc, text: str) -> ttkb.Label:
         ...
 
     def create_copy_entry(self, parent: tk.Misc, text: str, monospace: bool = False) -> CopyableEntry:
         ...
 
-    def build_list_widget(
-        self, container: ttk.Frame, text: str, line_count: int, copy_text: str | None = None
-    ) -> None:
+    def build_list_widget(self, container: ttkb.Frame, text: str, line_count: int, copy_text: str | None = None) -> None:
         ...
