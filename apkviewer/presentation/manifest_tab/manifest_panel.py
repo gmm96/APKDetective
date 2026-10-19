@@ -8,9 +8,8 @@ from typing import Optional
 import ttkbootstrap as ttkb
 
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
-from apkviewer.presentation.appearance.tk_widget_styler import TkWidgetStyler
 from apkviewer.presentation.config.theme import FONT_MONO
-from apkviewer.presentation.common.auto_hide_scrollbar import AutoHideScrollbar
+from apkviewer.presentation.common.auto_scrolled_text import AutoScrolledText
 from apkviewer.presentation.common.text_context_menu import TextContextMenu
 
 from .xml_syntax_highlighter import XmlSyntaxHighlighter
@@ -30,20 +29,15 @@ class ManifestPanel(ttkb.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
-        self.text: tk.Text = tk.Text(self, wrap=tk.NONE, font=FONT_MONO, borderwidth=0)
-        v_scroll = ttkb.Scrollbar(self, orient="vertical", command=self.text.yview)
-        h_scroll = ttkb.Scrollbar(self, orient="horizontal", command=self.text.xview)
-        autohide = AutoHideScrollbar(h_scroll, {"row": 1, "column": 0, "sticky": "ew"})
-
-        self.text.configure(yscrollcommand=v_scroll.set, xscrollcommand=autohide.scroll_command)
-        self.text.grid(row=0, column=0, sticky="nsew")
-        v_scroll.grid(row=0, column=1, sticky="ns")
+        # ttkbootstrap styles the inner Text (colors, selection) and follows the theme by itself.
+        scrolled_text = AutoScrolledText(self, wrap=tk.NONE, font=FONT_MONO)
+        scrolled_text.grid(row=0, column=0, sticky="nsew")
+        self.text: tk.Text = scrolled_text.text
 
         context_menu.attach(self.text)
         self.apply_palette(palette)
 
     def apply_palette(self, palette: ThemePalette) -> None:
-        TkWidgetStyler.style_text(self.text, palette)
         self._highlighter.configure_tags(self.text, palette)
 
     def clear(self):

@@ -9,6 +9,7 @@ imports the infrastructure layer.
 import os
 import threading
 import tkinter as tk
+from functools import partial
 from tkinter import filedialog, messagebox
 
 import ttkbootstrap as ttkb
@@ -215,6 +216,15 @@ class ApkAnalyzerApp:
                             ),
                         ),
                         selected_key=settings.color_mode.value,
+                    ),
+                    AppToolbarChoiceGroup(
+                        key="theme",
+                        title="Theme",
+                        choices=tuple(
+                            AppToolbarChoice(name, settings.theme_label(name), partial(settings.set_theme, name))
+                            for name in settings.themes
+                        ),
+                        selected_key=settings.base_theme,
                     ),
                 ],
                 "Help": [

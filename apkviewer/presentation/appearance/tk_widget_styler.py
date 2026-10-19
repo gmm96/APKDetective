@@ -1,6 +1,6 @@
 """
 Applies a palette to the classic Tk widgets that ttk theming does not
-reach (Text and Menu).
+reach (Menu). ttkbootstrap already styles Text widgets on its own.
 """
 
 import tkinter as tk
@@ -9,21 +9,6 @@ from .theme_palette import ThemePalette
 
 
 class TkWidgetStyler:
-    @staticmethod
-    def style_text(widget: tk.Text, palette: ThemePalette) -> None:
-        widget.configure(
-            background=palette.background,
-            foreground=palette.foreground,
-            insertbackground=palette.input_foreground,
-            selectbackground=palette.select_background,
-            selectforeground=palette.select_foreground,
-            # The selected text keeps `selectforeground` when the widget loses the focus, so the
-            # background has to stay one that contrasts with it.
-            inactiveselectbackground=palette.select_background,
-            highlightbackground=palette.background,
-            highlightcolor=palette.foreground,
-        )
-
     @staticmethod
     def style_menu(menu: tk.Menu, palette: ThemePalette) -> None:
         menu.configure(

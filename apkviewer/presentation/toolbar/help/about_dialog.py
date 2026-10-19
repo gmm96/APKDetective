@@ -3,40 +3,36 @@ Modal "About" popup with basic information about the project.
 """
 
 import tkinter as tk
-from typing import Optional
 
 import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
+from ttkbootstrap.dialogs import Dialog
 
-from apkviewer.presentation.config.theme import FONT_TITLE
 from apkviewer.presentation.config.about import PROJECT_DESCRIPTION, PROJECT_NAME
-from apkviewer.presentation.common.modal_dialog_positioner import ModalDialogPositioner
+from apkviewer.presentation.config.theme import FONT_TITLE
 
 
-class AboutDialog:
+class AboutDialog(Dialog):
+    """Centered on the main window, modal, and closed with the button or Escape."""
+
     def __init__(
         self,
         parent: tk.Misc,
         project_name: str = PROJECT_NAME,
         description: str = PROJECT_DESCRIPTION,
-        positioner: Optional[ModalDialogPositioner] = None,
     ) -> None:
-        self._parent: tk.Misc = parent
+        super().__init__(parent.winfo_toplevel(), title=f"About {project_name}")
         self._project_name: str = project_name
         self._description: str = description
-        self._positioner: ModalDialogPositioner = positioner or ModalDialogPositioner()
 
-    def show(self) -> None:
-        dialog = ttkb.Toplevel(title=f"About {self._project_name}")
-        dialog.resizable(False, False)
-        dialog.transient(self._parent.winfo_toplevel())
+    def create_body(self, master: tk.Misc) -> None:
+        body = ttkb.Frame(master)
+        body.pack(fill=tk.BOTH, expand=True, padx=30, pady=(20, 0))
 
-        main_frame = ttkb.Frame(dialog)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        ttkb.Label(body, text=self._project_name, font=FONT_TITLE).pack(pady=(0, 10))
+        ttkb.Label(body, text=self._description, wraplength=380, justify=tk.LEFT).pack()
 
-        ttkb.Label(main_frame, text=self._project_name, font=FONT_TITLE).pack(pady=(0, 10))
-        ttkb.Label(main_frame, text=self._description, wraplength=380, justify=tk.LEFT).pack()
-        ttkb.Button(main_frame, text="Close", command=dialog.destroy, bootstyle=ttkb_constants.PRIMARY).pack(pady=(20, 0))
-
-        self._positioner.center_on_parent(dialog, self._parent)
-        self._positioner.show_as_modal(dialog)
+    def create_buttonbox(self, master: tk.Misc) -> None:
+        close_button = ttkb.Button(master, text="Close", command=self.close, bootstyle=ttkb_constants.PRIMARY)
+        close_button.pack(pady=20)
+        self._initial_focus = close_button
