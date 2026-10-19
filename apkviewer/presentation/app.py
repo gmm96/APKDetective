@@ -213,6 +213,7 @@ class ApkAnalyzerApp:
                             AppToolbarChoice(
                                 ColorMode.AUTO.value, "Auto (follow system)",
                                 lambda: settings.set_color_mode(ColorMode.AUTO),
+                                f"{_ICONS_DIR}/auto_color_mode.png",
                             ),
                         ),
                         selected_key=settings.color_mode.value,
