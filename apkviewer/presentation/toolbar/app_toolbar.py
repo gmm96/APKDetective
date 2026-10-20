@@ -10,9 +10,11 @@ so opening the drop-downs, moving between them with the mouse or the
 keyboard and dismissing them are handled by Tk. A choice group is a
 submenu of mutually exclusive radio entries.
 
-Every entry reserves the same space on the left, whether it has an icon
-or not, so the labels of all the menus line up. In a choice group that
-space starts with a column for the check mark of the selected entry.
+Items, choices and groups can show a PNG asset or a Bootstrap icon
+indistinctly (see MenuIconRenderer). Every entry reserves the same space on
+the left, whether it has an icon or not, so the labels of all the menus line
+up. In a choice group that space starts with a column for the check mark of
+the selected entry.
 
 ttkbootstrap restyles every Menu when the theme changes; `apply_palette`
 only covers what it leaves out (the text of disabled entries) and redraws
@@ -30,13 +32,11 @@ from PIL import Image, ImageTk
 from apkviewer.presentation.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.app_focus_watcher import AppFocusWatcher
 from apkviewer.presentation.icons.icon_loader import IconLoader
+from apkviewer.presentation.icons.menu_icon_renderer import MenuIconRenderer
 from apkviewer.presentation.viewmodels.app_toolbar_choice_group import AppToolbarChoiceGroup
 from apkviewer.presentation.viewmodels.app_toolbar_item import AppToolbarItem
-
-
-# A None entry renders as a separator.
-MenuEntry = AppToolbarItem | AppToolbarChoiceGroup | None
-MenuImage = ImageTk.PhotoImage | tk.PhotoImage
+from apkviewer.presentation.viewmodels.asset_icon import AssetIcon
+from apkviewer.presentation.viewmodels.bootstrap_icon import BootstrapIcon
 
 
 class AppToolbar:
@@ -50,14 +50,14 @@ class AppToolbar:
     def __init__(
         self,
         root: ttkb.App,
-        menus: Mapping[str, Sequence[MenuEntry]],
+        menus: Mapping[str, Sequence[AppToolbarItem | AppToolbarChoiceGroup | None]],
         palette: ThemePalette,
         icon_loader: IconLoader | None = None,
     ) -> None:
         self._root: ttkb.App = root
         self._palette: ThemePalette = palette
-        self._icon_loader: IconLoader = icon_loader or IconLoader()
-        self._icons: list[MenuImage] = []  # Tk drops an image as soon as its Python object is collected
+        self._icon_renderer: MenuIconRenderer = MenuIconRenderer(root, icon_loader)
+        self._icons: list[ImageTk.PhotoImage | tk.PhotoImage] = []  # Tk drops an image as soon as its Python object is collected
         self._blank_icon: ImageTk.PhotoImage = self._create_blank_icon()
         self._positions: dict[str, tuple[tk.Menu, int]] = {}
         # (menu, index, builder of the image options of that entry): the images depend on the palette.
@@ -125,7 +125,7 @@ class AppToolbar:
 
     # --- Construction --------------------------------------------------------
 
-    def _populate(self, menu: tk.Menu, entries: Sequence[MenuEntry]) -> None:
+    def _populate(self, menu: tk.Menu, entries: Sequence[AppToolbarItem | AppToolbarChoiceGroup | None]) -> None:
         for entry in entries:
             if entry is None:
                 menu.add_separator()
@@ -138,7 +138,7 @@ class AppToolbar:
         options: dict = {
             "label": self._padded(item.label),
             "command": partial(self._invoke, item.key),
-            "image": self._icon_option(item.icon_path),
+            "image": self._icon_option(item.icon),
             "compound": tk.LEFT,
         }
         if item.accelerator:
@@ -149,8 +149,8 @@ class AppToolbar:
         self._positions[item.key] = (menu, index)
         self._commands[item.key] = item.command
         self._enabled[item.key] = True
-        if item.icon_path:
-            self._entry_images.append((menu, index, partial(self._item_image_options, item.icon_path)))
+        if item.icon:
+            self._entry_images.append((menu, index, partial(self._item_image_options, item.icon)))
         if item.shortcut:
             self._root.bind(item.shortcut, partial(self._on_shortcut, item.key))
 
@@ -169,18 +169,20 @@ class AppToolbar:
                 command=choice.command,
                 compound=tk.LEFT,
                 indicatoron=False,
-                **self._choice_image_options(choice.icon_path),
+                **self._choice_image_options(choice.icon),
             )
             self._entry_images.append(
-                (submenu, self._last_index(submenu), partial(self._choice_image_options, choice.icon_path))
+                (submenu, self._last_index(submenu), partial(self._choice_image_options, choice.icon))
             )
 
         menu.add_cascade(
             label=self._padded(group.title),
             menu=submenu,
-            image=self._blank_icon,
+            image=self._icon_option(group.icon),
             compound=tk.LEFT,
         )
+        if group.icon:
+            self._entry_images.append((menu, self._last_index(menu), partial(self._item_image_options, group.icon)))
 
     def _padded(self, label: str) -> str:
         return f"{label:<{self._LABEL_WIDTH}}"
@@ -192,22 +194,26 @@ class AppToolbar:
 
     # --- Images --------------------------------------------------------------
 
-    def _item_image_options(self, icon_path: str) -> dict:
-        return {"image": self._load_icon(icon_path)}
+    def _item_image_options(self, icon: AssetIcon | BootstrapIcon) -> dict:
+        return {"image": self._render_icon(icon)}
 
-    def _choice_image_options(self, icon_path: str | None) -> dict:
+    def _choice_image_options(self, icon: AssetIcon | BootstrapIcon | None) -> dict:
         """
         Image of a radio entry: [check column][icon column], with the check mark only while it is
         selected (`selectimage`). The selected entry keeps the menu background (`selectcolor`).
         """
-        icon = self._load_icon(icon_path) if icon_path else None
+        image = self._render_icon(icon) if icon else None
         return {
-            "image": self._compose_choice_image(icon, selected=False),
-            "selectimage": self._compose_choice_image(icon, selected=True),
+            "image": self._compose_choice_image(image, selected=False),
+            "selectimage": self._compose_choice_image(image, selected=True),
             "selectcolor": self._palette.background,
         }
 
-    def _compose_choice_image(self, icon: MenuImage | None, selected: bool) -> tk.PhotoImage:
+    def _compose_choice_image(
+            self,
+            icon: ImageTk.PhotoImage | tk.PhotoImage | None,
+            selected: bool
+        ) -> tk.PhotoImage:
         image = tk.PhotoImage(
             master=self._root,
             width=self._CHECK_SLOT_WIDTH + self._ICON_SLOT_WIDTH,
@@ -221,19 +227,19 @@ class AppToolbar:
         self._icons.append(image)
         return image
 
-    def _icon_option(self, icon_path: str | None) -> ImageTk.PhotoImage:
-        return self._load_icon(icon_path) if icon_path else self._blank_icon
+    def _icon_option(self, icon: AssetIcon | BootstrapIcon | None) -> ImageTk.PhotoImage | tk.PhotoImage:
+        return self._render_icon(icon) if icon else self._blank_icon
 
-    def _load_icon(self, icon_path: str) -> ImageTk.PhotoImage:
-        icon = self._icon_loader.load_icon(
-            icon_path,
+    def _render_icon(self, icon: AssetIcon | BootstrapIcon) -> ImageTk.PhotoImage | tk.PhotoImage:
+        image = self._icon_renderer.render(
+            icon,
             size=self._ICON_SIZE,
-            hex_color=self._palette.foreground,
+            color=self._palette.foreground,
             padding_left=self._ICON_PADDING,
             padding_right=self._ICON_PADDING,
         )
-        self._icons.append(icon)
-        return icon
+        self._icons.append(image)
+        return image
 
     def _create_blank_icon(self) -> ImageTk.PhotoImage:
         return ImageTk.PhotoImage(Image.new("RGBA", (self._ICON_SLOT_WIDTH, self._ICON_SIZE[1]), (0, 0, 0, 0)))

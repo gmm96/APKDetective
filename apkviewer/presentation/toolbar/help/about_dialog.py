@@ -28,11 +28,10 @@ class AboutDialog(Dialog):
     def create_body(self, master: tk.Misc) -> None:
         body = ttkb.Frame(master)
         body.pack(fill=tk.BOTH, expand=True, padx=30, pady=(20, 0))
-
         ttkb.Label(body, text=self._project_name, font=FONT_TITLE).pack(pady=(0, 10))
         ttkb.Label(body, text=self._description, wraplength=380, justify=tk.LEFT).pack()
 
     def create_buttonbox(self, master: tk.Misc) -> None:
         close_button = ttkb.Button(master, text="Close", command=self.close, bootstyle=ttkb_constants.PRIMARY)
         close_button.pack(pady=20)
-        self._initial_focus = close_button
+        self._initial_focus = close_button  # type: ignore[assignment]  # ttkbootstrap infers this hook as None

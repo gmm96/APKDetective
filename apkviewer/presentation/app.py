@@ -48,8 +48,8 @@ from apkviewer.presentation.toolbar.settings.settings_menu import SettingsMenu
 from apkviewer.presentation.viewmodels.app_toolbar_choice import AppToolbarChoice
 from apkviewer.presentation.viewmodels.app_toolbar_choice_group import AppToolbarChoiceGroup
 from apkviewer.presentation.viewmodels.app_toolbar_item import AppToolbarItem
-
-_ICONS_DIR = "assets/icons/outline"
+from apkviewer.presentation.viewmodels.asset_icon import AssetIcon
+from apkviewer.presentation.viewmodels.bootstrap_icon import BootstrapIcon
 
 
 class ApkAnalyzerApp:
@@ -73,6 +73,8 @@ class ApkAnalyzerApp:
         AnalysisSection.COMPONENTS,
         AnalysisSection.MANIFEST,
     )
+
+    _ICONS_DIR: str = "assets/icons/outline"
 
     def __init__(
         self,
@@ -187,13 +189,13 @@ class ApkAnalyzerApp:
             self.root,
             {
                 "File": [
-                    AppToolbarItem("load_apk", "Load APK", self.load_apk, f"{_ICONS_DIR}/android.png", "Ctrl+O", "<Control-o>"),
+                    AppToolbarItem("load_apk", "Load APK", self.load_apk, self._asset_icon("android.png"), "Ctrl+O", "<Control-o>"),
                     None,
-                    AppToolbarItem("export_app_info", "Export app info", export.export_app_info, f"{_ICONS_DIR}/save_file.png"),
-                    AppToolbarItem("extract_apk", "Extract to...", export.extract_apk, f"{_ICONS_DIR}/unarchive_file.png"),
-                    AppToolbarItem("extract_icon", "Extract icon as PNG", export.extract_icon, f"{_ICONS_DIR}/image.png"),
+                    AppToolbarItem("export_app_info", "Export app info", export.export_app_info, self._asset_icon("save_file.png")),
+                    AppToolbarItem("extract_apk", "Extract to...", export.extract_apk, self._asset_icon("unarchive_file.png")),
+                    AppToolbarItem("extract_icon", "Extract icon as PNG", export.extract_icon, self._asset_icon("image.png")),
                     None,
-                    AppToolbarItem("exit", "Exit", self.exit_app, f"{_ICONS_DIR}/exit_app.png"),
+                    AppToolbarItem("exit", "Exit", self.exit_app, self._asset_icon("exit_app.png")),
                 ],
                 "Settings": [
                     AppToolbarChoiceGroup(
@@ -203,20 +205,21 @@ class ApkAnalyzerApp:
                             AppToolbarChoice(
                                 ColorMode.LIGHT.value, "Light mode",
                                 lambda: settings.set_color_mode(ColorMode.LIGHT),
-                                f"{_ICONS_DIR}/light_mode.png",
+                                self._asset_icon("light_mode.png"),
                             ),
                             AppToolbarChoice(
                                 ColorMode.DARK.value, "Dark mode",
                                 lambda: settings.set_color_mode(ColorMode.DARK),
-                                f"{_ICONS_DIR}/dark_mode.png",
+                                self._asset_icon("dark_mode.png"),
                             ),
                             AppToolbarChoice(
                                 ColorMode.AUTO.value, "Auto (follow system)",
                                 lambda: settings.set_color_mode(ColorMode.AUTO),
-                                f"{_ICONS_DIR}/auto_color_mode.png",
+                                self._asset_icon("auto_color_mode.png")
                             ),
                         ),
                         selected_key=settings.color_mode.value,
+                        icon=BootstrapIcon("circle-half"),
                     ),
                     AppToolbarChoiceGroup(
                         key="theme",
@@ -226,12 +229,13 @@ class ApkAnalyzerApp:
                             for name in settings.themes
                         ),
                         selected_key=settings.base_theme,
+                        icon=BootstrapIcon("palette"),
                     ),
                 ],
                 "Help": [
-                    AppToolbarItem("source_code", "Source code", help_.open_source_code, f"{_ICONS_DIR}/code.png"),
-                    AppToolbarItem("report_issue", "Report issue", help_.report_issue, f"{_ICONS_DIR}/bug_report.png"),
-                    AppToolbarItem("about", "About", help_.show_about, f"{_ICONS_DIR}/info.png"),
+                    AppToolbarItem("source_code", "Source code", help_.open_source_code, self._asset_icon("code.png")),
+                    AppToolbarItem("report_issue", "Report issue", help_.report_issue, self._asset_icon("bug_report.png")),
+                    AppToolbarItem("about", "About", help_.show_about, self._asset_icon("info.png")),
                 ],
             },
             self._theme.palette,
@@ -354,3 +358,7 @@ class ApkAnalyzerApp:
         self.permissions_panel.show_warnings(result.warning_messages(*self._PERMISSIONS_SECTIONS))
         self.components_panel.show_warnings(components_warnings)
         self.intents_panel.show_warnings(components_warnings)
+
+    @staticmethod
+    def _asset_icon(file_name: str) -> AssetIcon:
+        return AssetIcon(f"{ApkAnalyzerApp._ICONS_DIR}/{file_name}")

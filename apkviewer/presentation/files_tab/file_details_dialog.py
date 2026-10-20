@@ -3,7 +3,7 @@ Popup dialog showing the parsed details of selected file(s) or folder(s).
 """
 
 import tkinter as tk
-from typing import Optional
+from typing import Tuple
 
 import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
@@ -13,30 +13,21 @@ from ttkbootstrap.dialogs import Dialog
 class FileDetailsDialog(Dialog):
     """Builds and shows the modal 'Details' popup for files/folders."""
 
-    def __init__(self, parent: tk.Misc) -> None:
-        super().__init__(parent.winfo_toplevel())
-        self._items_data: list = []
-        self._summary: Optional[dict] = None
-        self._initial_focus: ttkb.Button | None     # type: ignore
+    def __init__(self, parent: tk.Misc, items_data: list, summary: dict | None = None) -> None:
+        title = "Item Details" if len(items_data) == 1 else "Multiple Items Details"
+        super().__init__(parent.winfo_toplevel(), title=title)
+        self._items_data: list = items_data
+        self._summary: dict | None = summary
 
-    def show(self, items_data: list, summary: Optional[dict] = None, **options) -> None:    # type: ignore
-        """
-        Shows the details of `items_data` and returns once the dialog is closed; nothing happens
-        when there are no items. `options`: the ones of `Dialog.show` (`position`, `wait_for_result`).
-        """
-        if not items_data:
-            return
-        self._items_data = items_data
-        self._summary = summary
-        self._title = "Item Details" if len(items_data) == 1 else "Multiple Items Details"
-        super().show(**options)
+    def show(self, position: Tuple[int, int] | None = None, wait_for_result: bool = True) -> None:
+        """Shows the details and returns once the dialog is closed; nothing happens when there are no items."""
+        if self._items_data:
+            super().show(position, wait_for_result)
 
     def create_body(self, master: tk.Misc) -> None:
-        toplevel_window: tk.Tk | tk.Toplevel = master.winfo_toplevel()
-        toplevel_window.minsize(350, 180)
+        master.winfo_toplevel().minsize(350, 180)
         body = ttkb.Frame(master)
         body.pack(fill=tk.BOTH, expand=True, padx=20, pady=(20, 0))
-
         if len(self._items_data) == 1:
             self._build_single_item(body, self._items_data[0])
         else:
@@ -45,7 +36,7 @@ class FileDetailsDialog(Dialog):
     def create_buttonbox(self, master: tk.Misc) -> None:
         close_button = ttkb.Button(master, text="Close", command=self.close, bootstyle=ttkb_constants.PRIMARY)
         close_button.pack(pady=20)
-        self._initial_focus = close_button
+        self._initial_focus = close_button  # type: ignore[assignment]  # ttkbootstrap infers this hook as None
 
     def _build_single_item(self, parent: ttkb.Frame, item: dict) -> None:
         fields = {
@@ -61,10 +52,9 @@ class FileDetailsDialog(Dialog):
             self,
             parent: ttkb.Frame,
             items: list,
-            summary: Optional[dict] = None
+            summary: dict | None = None
         ) -> None:
         fields = {"Items Selected:": str(len(items))}
-
         if summary:
             # Real totals, computed from the raw byte counts - not the
             # already-formatted per-row strings, which can't be summed

@@ -208,7 +208,7 @@ class FilesContextMenu:
             })
 
         summary = self._build_summary(paths) if len(paths) > 1 else None
-        FileDetailsDialog(self._tree).show(items_data, summary)
+        FileDetailsDialog(self._tree, items_data, summary).show()
 
     def _build_summary(self, paths: list[str]) -> dict | None:
         """Real totals (not just a count) for the multi-select Details
