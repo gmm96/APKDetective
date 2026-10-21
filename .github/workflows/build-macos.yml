@@ -42,6 +42,8 @@ jobs:
               --output-dir=dist \
               --output-filename=APKViewer-macos.bin \
               --include-package-data=androguard \
+              --include-package-data=ttkbootstrap \
+              --include-package-data=babel \
               --include-data-dir=assets=assets \
               --enable-plugin=tk-inter \
               --enable-plugin=anti-bloat \
