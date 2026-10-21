@@ -8,7 +8,6 @@ The panel does not lay its sections out while they are being filled: every
 change only schedules ONE layout pass for when the UI is idle.
 """
 
-from typing import Any
 import tkinter as tk
 
 import ttkbootstrap as ttkb
@@ -26,6 +25,7 @@ from apkviewer.presentation.common.warning_banner import WarningBanner
 from apkviewer.presentation.config.theme import FONT_MONO_SMALL
 from apkviewer.presentation.config.layout import FIELD_PADX, FIELD_PADY
 from apkviewer.presentation.icons.icon_loader import IconLoader
+from apkviewer.presentation.viewmodels.chip_spec import ChipSpec
 from apkviewer.presentation.viewmodels.color_pair import ColorPair
 
 
@@ -107,25 +107,24 @@ class FormPanel(ttkb.Frame):
         self._next_row = 0
         for widget in self.scroll_frame.inner_frame.winfo_children():
             widget.destroy()
+        self.scroll_frame.collapse()
 
     def add_section(
         self,
         title: str,
-        badge: tuple[str, str] | None = None,
+        badge: ChipSpec | None = None,
         responsive: bool = False,
         max_columns: int = 1,
         min_field_width: int | None = None,
     ) -> FormSection:
         """
-        `badge`: optional (text, chip kind) shown on the section's title line, at its right.
+        `badge`: optional chip shown on the section's title line, at its right.
         `responsive`: lay the entries out in up to `max_columns` columns, as many as fit while
         each value field keeps `min_field_width` pixels (sections with groups or lists use one).
         """
         frame = ttkb.LabelFrame(self.scroll_frame.inner_frame, text=title)
         frame.grid(row=self._next_row, column=0, sticky="ew", padx=self.SECTION_PAD_X, pady=self.SECTION_PAD_Y)
         self._next_row += 1
-        if badge is not None:
-            self.create_chip(frame, *badge).place(relx=1.0, x=self.BADGE_OFFSET_X, y=self.BADGE_OFFSET_Y, anchor="ne")
         section = FormSection(
             frame,
             self,
@@ -136,6 +135,12 @@ class FormPanel(ttkb.Frame):
             min_field_width,
         )
         self._sections.append(section)
+        if badge is not None:
+            chip = self.create_chip(frame, *badge)
+            chip.place(relx=1.0, x=self.BADGE_OFFSET_X, y=self.BADGE_OFFSET_Y, anchor="ne")
+            # The section's fields are created after this chip and would sit above it, hiding part of it
+            # and taking its tooltip: raise it once they exist.
+            chip.after_idle(lambda: chip.lift() if chip.winfo_exists() else None)
         return section
 
     # --- Widgets shared by the sections ------------------------------------------------------
@@ -152,13 +157,15 @@ class FormPanel(ttkb.Frame):
         self._copy_entries.append(entry)
         return entry
 
-    def create_chip(self, parent: tk.Misc, text: str, kind: str) -> ttkb.Label:
-        """`kind`: one of CHIP_KINDS."""
+    def create_chip(self, parent: tk.Misc, text: str, kind: str, description: str | None = None) -> ttkb.Label:
+        """`kind`: one of CHIP_KINDS. `description`: a tooltip that explains what the chip means."""
         if kind not in self.CHIP_KINDS:
             raise ValueError(f"Unknown chip kind {kind!r}; expected one of {self.CHIP_KINDS}")
         chip = ttkb.Label(parent, text=text, padding=(self.CHIP_PAD_X, self.CHIP_PAD_Y), borderwidth=0)
         self._chips.append((chip, kind))
         self._style_chip(chip, kind)
+        if description:
+            ttkb.ToolTip(chip, text=description)
         return chip
 
     def create_muted_label(self, parent: tk.Misc, text: str) -> ttkb.Label:

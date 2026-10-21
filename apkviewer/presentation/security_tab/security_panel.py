@@ -19,6 +19,7 @@ from apkviewer.presentation.common.form_panel import FormPanel
 from apkviewer.presentation.common.form_section import FormSection
 from apkviewer.presentation.common.text_context_menu import TextContextMenu
 from apkviewer.presentation.common.text_line_marker import TextLineMarker
+from apkviewer.presentation.viewmodels.chip_spec import ChipSpec
 
 
 
@@ -83,10 +84,17 @@ class SecurityPanel(FormPanel):
             self.create_muted_label(frame, note).grid(row=row, column=3, sticky="w", padx=10)
 
     @staticmethod
-    def _status(scheme: str, present: tuple[str, ...]) -> tuple[str, str]:
+    def _status(scheme: str, present: tuple[str, ...]) -> ChipSpec:
         if scheme == SecurityPanel._UNCHECKABLE:
-            return "Can't be checked", "muted"
-        return ("Signed", "success") if scheme in present else ("Not signed", "neutral")
+            return ChipSpec(
+                "Can't be checked",
+                "muted",
+                f"The {scheme} signature is stored in a separate .idsig file, not inside the APK, "
+                "so it can't be checked from the APK alone.",
+            )
+        if scheme in present:
+            return ChipSpec("Signed", "success", f"The APK carries a {scheme} signature.")
+        return ChipSpec("Not signed", "neutral", f"The APK has no {scheme} signature.")
 
     # --- Certificates ---------------------------------------------------------------------------------
 
@@ -136,9 +144,10 @@ class SecurityPanel(FormPanel):
             section.add_entry(label, value, monospace=label in SecurityPanel._MONOSPACE_FIELDS)
 
     @staticmethod
-    def _validity_badge(certificate: Certificate, now: datetime) -> tuple[str, str] | None:
-        if certificate.valid_until is None:
+    def _validity_badge(certificate: Certificate, now: datetime) -> ChipSpec | None:
+        until = certificate.valid_until
+        if until is None:
             return None
         if certificate.is_expired(now):
-            return "expired", "danger"
-        return f"valid until {certificate.valid_until.year}", "success"
+            return ChipSpec("expired", "danger", f"This certificate expired on {until:%Y-%m-%d}.")
+        return ChipSpec(f"valid until {until.year}", "success", f"This certificate is valid until {until:%Y-%m-%d}.")

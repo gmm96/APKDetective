@@ -34,6 +34,8 @@ from apkviewer.presentation.common.status_level import StatusLevel
 from apkviewer.presentation.common.text_context_menu import TextContextMenu
 from apkviewer.presentation.components_tab.components_panel import ComponentsPanel
 from apkviewer.presentation.files_tab.files_panel import FilesPanel
+from apkviewer.presentation.common.loading_bar import LoadingBar
+from apkviewer.presentation.common.notebook_lock import NotebookLock
 from apkviewer.presentation.header.app_header import AppHeader
 from apkviewer.presentation.icons.icon_loader import IconLoader
 from apkviewer.presentation.info_tab.info_panel import InfoPanel
@@ -144,9 +146,18 @@ class ApkAnalyzerApp:
 
     def _build_layout(self) -> None:
         top_frame = ttkb.Frame(self.root)
-        top_frame.pack(side=tk.TOP, fill=tk.X, padx=15, pady=15)
-        self.header: AppHeader = AppHeader(top_frame, on_load_click=self.load_apk, palette=self._theme.palette)
+        top_frame.pack(side=tk.TOP, fill=tk.X, padx=15, pady=(15, 0))
+        self.header: AppHeader = AppHeader(
+            top_frame,
+            on_load_click=self.load_apk,
+            on_cancel_click=self.cancel_analysis,
+            palette=self._theme.palette,
+        )
         self.header.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        # Between the header and the tabs, in the gap that used to separate them: the load affects the
+        # whole window, not a single tab, and being a strip of fixed height it moves nothing when shown.
+        self.loading_bar: LoadingBar = LoadingBar(self.root)
+        self.loading_bar.pack(side=tk.TOP, fill=tk.X, padx=10)
         self.status_bar: StatusBar = StatusBar(self.root, self._theme.palette)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
         notebook = ttkb.Notebook(self.root, bootstyle=ttkb_constants.SECONDARY)
@@ -181,6 +192,7 @@ class ApkAnalyzerApp:
         notebook.add(self.intents_panel, text="Intents")
         notebook.add(self.manifest_panel, text="Manifest")
         notebook.add(self.files_panel, text="Files")
+        self._tab_lock: NotebookLock = NotebookLock(notebook)
 
     def _build_menu(self) -> None:
         export, help_ = self._file_actions, self._help_actions
@@ -252,6 +264,15 @@ class ApkAnalyzerApp:
         )
         if apk_path:
             self.start_analysis(apk_path)
+
+    def cancel_analysis(self) -> None:
+        """
+        What the header's Cancel button does. The analysis cannot be interrupted yet (AnalyzeApk has
+        no cancellation), so for now it only says so; this is where stopping it would go.
+        """
+        self._set_status(
+            "Cancelling an analysis is not supported yet: it will finish on its own.", StatusLevel.INFO
+        )
 
     def exit_app(self) -> None:
         self.files_panel.cleanup()  # drop temp files extracted for Open / Open with / Copy
@@ -328,8 +349,16 @@ class ApkAnalyzerApp:
         self.root.after(0, lambda: self.status_bar.set_status(message, level))
 
     def _set_loading(self, loading: bool) -> None:
-        self.header.set_loading_enabled(not loading)
+        self.header.set_loading(loading)
         self.menu_bar.set_enabled(("load_apk",), not loading)
+        if loading:
+            # Whatever was on screen is about to be cleared: show the Info tab and keep the user on it
+            # until everything has been loaded and drawn.
+            self._tab_lock.lock(keep=self.info_panel)
+            self.loading_bar.start()
+        else:
+            self.loading_bar.stop()
+            self._tab_lock.unlock()
 
     def _render_result(self, result: AnalysisResult) -> None:
         self._result = result

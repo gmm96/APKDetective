@@ -18,16 +18,22 @@ from apkviewer.presentation.icons.placeholder_icon_factory import PlaceholderIco
 
 
 class AppHeader(ttkb.Frame):
+    # Characters; wide enough for both labels so the button keeps its size when it changes.
+    _BUTTON_WIDTH: int = 8
+
     def __init__(
         self,
         parent: ttkb.Frame,
         on_load_click: Callable[[], None],
+        on_cancel_click: Callable[[], None],
         palette: ThemePalette,
         icon_factory: Optional[PlaceholderIconFactory] = None
     ) -> None:
         super().__init__(parent)
+        self._on_load_click: Callable[[], None] = on_load_click
+        self._on_cancel_click: Callable[[], None] = on_cancel_click
         self._icon_factory: PlaceholderIconFactory = icon_factory or PlaceholderIconFactory()
-        self._placeholder_icon: ImageTk.PhotoImage = self._icon_factory.create(palette)
+        self._placeholder_icon: tk.PhotoImage = self._icon_factory.create(palette)
         self._current_icon: Optional[ImageTk.PhotoImage] = None
 
         left = ttkb.Frame(self)
@@ -54,7 +60,8 @@ class AppHeader(ttkb.Frame):
             self,
             text="Load APK",
             command=on_load_click,
-            bootstyle=ttkb_constants.PRIMARY
+            bootstyle=ttkb_constants.PRIMARY,
+            width=self._BUTTON_WIDTH,
         )
         self.load_button.pack(side=tk.RIGHT)
 
@@ -73,8 +80,12 @@ class AppHeader(ttkb.Frame):
     def show_error(self) -> None:
         self.name_label.configure(text="Error loading APK")
 
-    def set_loading_enabled(self, enabled: bool) -> None:
-        self.load_button.configure(state=tk.NORMAL if enabled else tk.DISABLED)
+    def set_loading(self, loading: bool) -> None:
+        """While an APK is being loaded the button turns into a red "Cancel" button."""
+        if loading:
+            self.load_button.configure(text="Cancel", command=self._on_cancel_click, bootstyle=ttkb_constants.DANGER)
+        else:
+            self.load_button.configure(text="Load APK", command=self._on_load_click, bootstyle=ttkb_constants.PRIMARY)
 
     def show_result(self, app_name: str, package_name: str, icon_png: bytes | None = None) -> None:
         thumbnail = self._create_thumbnail(icon_png)

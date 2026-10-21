@@ -50,6 +50,14 @@ class ScrollableFrame(ttkb.Frame):
     def apply_palette(self, palette: ThemePalette) -> None:
         self.canvas.configure(background=palette.background)
 
+    def collapse(self) -> None:
+        """
+        To call once all the content has been removed. A frame without children keeps the size it last
+        had, so an emptied one would still look as tall as before, with its scrollbar and its scrolling.
+        """
+        self.inner_frame.configure(height=1)
+        self._update_scrollregion()
+
     # --- Layout ----------------------------------------------------------------
 
     def _on_canvas_configure(self, event: tk.Event) -> None:
