@@ -11,7 +11,7 @@ from typing import Any
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
 from apkviewer.domain.entities.component import Component
 from apkviewer.domain.entities.component_kind import ComponentKind
 from apkviewer.domain.entities.declared_components import DeclaredComponents

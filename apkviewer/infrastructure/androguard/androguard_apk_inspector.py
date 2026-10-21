@@ -13,8 +13,8 @@ from typing import TypeVar
 
 from loguru import logger
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
-from apkviewer.domain.entities.apk_inspection import ApkInspection
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.apk_inspection import ApkInspection
 from apkviewer.domain.entities.application_info import ApplicationInfo
 from apkviewer.domain.entities.configuration_info import ConfigurationInfo
 from apkviewer.domain.entities.declared_components import DeclaredComponents

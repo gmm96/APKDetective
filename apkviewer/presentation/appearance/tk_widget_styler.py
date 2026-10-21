@@ -5,7 +5,7 @@ reach (Menu). ttkbootstrap already styles Text widgets on its own.
 
 import tkinter as tk
 
-from .theme_palette import ThemePalette
+from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 
 
 class TkWidgetStyler:

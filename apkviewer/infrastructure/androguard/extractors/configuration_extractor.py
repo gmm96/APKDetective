@@ -15,7 +15,7 @@ from androguard.core.apk import APK
 from babel import Locale
 from babel.core import UnknownLocaleError
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
 from apkviewer.domain.entities.configuration_info import ConfigurationInfo
 from apkviewer.domain.entities.hardware_feature import HardwareFeature
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector

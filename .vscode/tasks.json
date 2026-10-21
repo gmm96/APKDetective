@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "clear_pycache",
+            "type": "shell",
+            "command": "find \"${workspaceFolder}\" -type d -name '__pycache__' -exec rm -rf {} +",
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

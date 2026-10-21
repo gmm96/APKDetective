@@ -24,12 +24,12 @@ from typing import Generic, TypeVar
 import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 
-from apkviewer.presentation.appearance.theme_palette import ThemePalette
-from apkviewer.presentation.common.auto_hide_scrollbar import AutoHideScrollbar
-from apkviewer.presentation.common.clearable_entry import ClearableEntry
+from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
+from apkviewer.presentation.common.scrolling.auto_hide_scrollbar import AutoHideScrollbar
+from apkviewer.presentation.common.inputs.clearable_entry import ClearableEntry
 from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
-from apkviewer.presentation.common.wrap_frame import WrapFrame
-from apkviewer.presentation.icons.icon_loader import IconLoader
+from apkviewer.presentation.common.layout.wrap_frame import WrapFrame
+from apkviewer.presentation.common.icons.icon_loader import IconLoader
 
 NodeT = TypeVar("NodeT")
 

@@ -2,8 +2,8 @@
 Collects the warnings raised by the extractors while one APK is analyzed.
 """
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
-from apkviewer.domain.entities.analysis_warning import AnalysisWarning
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_warning import AnalysisWarning
 
 
 class AnalysisWarningCollector:

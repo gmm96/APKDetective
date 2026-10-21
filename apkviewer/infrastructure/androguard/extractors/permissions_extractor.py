@@ -13,7 +13,7 @@ from typing import Any
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
 from apkviewer.domain.entities.permission import Permission
 from apkviewer.domain.entities.permission_origin import PermissionOrigin
 from apkviewer.domain.entities.permissions_info import PermissionsInfo

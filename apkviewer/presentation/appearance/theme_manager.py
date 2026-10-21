@@ -12,9 +12,9 @@ import ttkbootstrap as ttkb
 from apkviewer.application.resolve_color_scheme import ResolveColorScheme
 from apkviewer.domain.entities.color_mode import ColorMode
 from apkviewer.domain.entities.color_scheme import ColorScheme
-from apkviewer.presentation.appearance.theme_palette import ThemePalette
+from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.appearance.theme_palette_builder import ThemePaletteBuilder
-from apkviewer.presentation.viewmodels.theme_custom_colors import ThemeCustomColors
+from apkviewer.presentation.viewmodels.appearance.theme_custom_colors import ThemeCustomColors
 from apkviewer.presentation.config.theme import THEMES, CUSTOM_COLORS
 
 

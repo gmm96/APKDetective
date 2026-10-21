@@ -6,7 +6,7 @@ a .txt file. Each section is written explicitly from its entity.
 from collections.abc import Sequence
 from datetime import datetime
 
-from apkviewer.domain.entities.analysis_result import AnalysisResult
+from apkviewer.domain.entities.analysis.analysis_result import AnalysisResult
 from apkviewer.domain.entities.application_info import ApplicationInfo
 from apkviewer.application.dex_metrics_formatter import DexMetricsFormatter
 from apkviewer.domain.entities.component import Component

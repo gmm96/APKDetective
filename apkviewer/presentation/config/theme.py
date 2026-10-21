@@ -3,7 +3,7 @@ Fonts shared across widgets and the numbers the palette is derived with.
 Colors live in ThemePalette (see apkviewer.presentation.appearance.theme_palette_builder).
 """
 
-from apkviewer.presentation.viewmodels.theme_custom_colors import ThemeCustomColors
+from apkviewer.presentation.viewmodels.appearance.theme_custom_colors import ThemeCustomColors
 from apkviewer.domain.entities.color_scheme import ColorScheme
 
 
@@ -17,9 +17,9 @@ FONT_MONO_SMALL_ITALIC: tuple[str, int, str] = FONT_MONO_SMALL + ("italic",)
 
 # --- Theme ---
 THEMES: list[str] = [
+    "nord",
     "bootstrap",
     "pydata",
-    "nord",
     "solarized",
     "catppuccin",
     "gruvbox",

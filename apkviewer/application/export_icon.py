@@ -2,7 +2,7 @@
 Use case: save the launcher icon of an analyzed APK as a PNG file.
 """
 
-from apkviewer.domain.entities.analysis_result import AnalysisResult
+from apkviewer.domain.entities.analysis.analysis_result import AnalysisResult
 from apkviewer.domain.interfaces.file_writer import FileWriter
 
 

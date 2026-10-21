@@ -11,7 +11,7 @@ that they reach a minimum contrast on it, keeping its hue.
 from typing import Any
 
 from apkviewer.presentation.appearance.contrast_adjuster import ContrastAdjuster
-from apkviewer.presentation.appearance.theme_palette import ThemePalette
+from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.config.theme import (
     DISABLED_TEXT_AMOUNT,
     FOLDER_ROW_TINT,
@@ -21,8 +21,8 @@ from apkviewer.presentation.config.theme import (
     MIN_TEXT_CONTRAST,
     MUTED_TEXT_AMOUNT,
 )
-from apkviewer.presentation.viewmodels.color_pair import ColorPair
-from apkviewer.presentation.viewmodels.theme_custom_colors import ThemeCustomColors
+from apkviewer.presentation.viewmodels.appearance.color_pair import ColorPair
+from apkviewer.presentation.viewmodels.appearance.theme_custom_colors import ThemeCustomColors
 
 
 class ThemePaletteBuilder:

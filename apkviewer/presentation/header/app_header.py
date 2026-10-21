@@ -11,10 +11,10 @@ import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 from PIL import Image, ImageTk
 
-from apkviewer.presentation.appearance.theme_palette import ThemePalette
+from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.config.layout import ICON_SIZE
 from apkviewer.presentation.config.theme import FONT_SUBTITLE, FONT_TITLE
-from apkviewer.presentation.icons.placeholder_icon_factory import PlaceholderIconFactory
+from apkviewer.presentation.common.icons.placeholder_icon_factory import PlaceholderIconFactory
 
 
 class AppHeader(ttkb.Frame):

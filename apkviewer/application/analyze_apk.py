@@ -2,8 +2,8 @@
 Use case: analyze an APK and return everything a front end needs to show it.
 """
 
-from apkviewer.application.file_tree_builder import FileTreeBuilder
-from apkviewer.domain.entities.analysis_result import AnalysisResult
+from apkviewer.application.tree.file_tree_builder import FileTreeBuilder
+from apkviewer.domain.entities.analysis.analysis_result import AnalysisResult
 from apkviewer.domain.interfaces.apk_inspector import ApkInspector
 from apkviewer.domain.interfaces.archive_reader import ArchiveReader
 

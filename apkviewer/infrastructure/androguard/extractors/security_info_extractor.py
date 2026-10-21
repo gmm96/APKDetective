@@ -8,7 +8,7 @@ from typing import Any
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
 from apkviewer.domain.entities.certificate import Certificate
 from apkviewer.domain.entities.security_info import SecurityInfo
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector

@@ -5,7 +5,7 @@ to parse APKs is an implementation detail of the infrastructure layer.
 
 from abc import ABC, abstractmethod
 
-from apkviewer.domain.entities.apk_inspection import ApkInspection
+from apkviewer.domain.entities.analysis.apk_inspection import ApkInspection
 
 
 class ApkInspector(ABC):

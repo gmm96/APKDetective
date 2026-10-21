@@ -12,7 +12,7 @@ are needed. It also keeps working with DEX versions the library can't parse.
 import struct
 from collections.abc import Iterable
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.dex_contents import DexContents
 from apkviewer.infrastructure.androguard.dex_header import DexHeader

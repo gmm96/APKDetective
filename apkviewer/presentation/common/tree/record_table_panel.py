@@ -11,7 +11,7 @@ from dataclasses import replace
 
 import ttkbootstrap as ttkb
 
-from apkviewer.presentation.appearance.theme_palette import ThemePalette
+from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.tree.base_tree_panel import BaseTreePanel
 from apkviewer.presentation.viewmodels.tree.record_node import RecordNode
 from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn

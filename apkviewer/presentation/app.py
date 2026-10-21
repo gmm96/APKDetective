@@ -21,37 +21,37 @@ from apkviewer.application.export_app_info import ExportAppInfo
 from apkviewer.application.export_icon import ExportIcon
 from apkviewer.application.extract_apk_entries import ExtractApkEntries
 from apkviewer.application.resolve_color_scheme import ResolveColorScheme
-from apkviewer.domain.entities.analysis_result import AnalysisResult
-from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_result import AnalysisResult
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
 from apkviewer.domain.entities.color_mode import ColorMode
 from apkviewer.domain.interfaces.url_opener import UrlOpener
 from apkviewer.domain.interfaces.size_formatter import SizeFormatter
 from apkviewer.domain.interfaces.date_formatter import DateFormatter
 from apkviewer.presentation.appearance.theme_manager import ThemeManager
-from apkviewer.presentation.common.extract_to_dialog import ExtractToDialog
-from apkviewer.presentation.common.status_bar import StatusBar
-from apkviewer.presentation.common.status_level import StatusLevel
-from apkviewer.presentation.common.text_context_menu import TextContextMenu
-from apkviewer.presentation.components_tab.components_panel import ComponentsPanel
-from apkviewer.presentation.files_tab.files_panel import FilesPanel
-from apkviewer.presentation.common.loading_bar import LoadingBar
-from apkviewer.presentation.common.notebook_lock import NotebookLock
+from apkviewer.presentation.common.dialogs.extract_to_dialog import ExtractToDialog
+from apkviewer.presentation.status_bar.status_bar import StatusBar
+from apkviewer.presentation.viewmodels.status_bar.status_level import StatusLevel
+from apkviewer.presentation.common.menus.text_context_menu import TextContextMenu
+from apkviewer.presentation.tabs.components_tab.components_panel import ComponentsPanel
+from apkviewer.presentation.tabs.files_tab.files_panel import FilesPanel
+from apkviewer.presentation.common.feedback.loading_bar import LoadingBar
+from apkviewer.presentation.common.layout.notebook_lock import NotebookLock
 from apkviewer.presentation.header.app_header import AppHeader
-from apkviewer.presentation.icons.icon_loader import IconLoader
-from apkviewer.presentation.info_tab.info_panel import InfoPanel
-from apkviewer.presentation.intents_tab.intents_panel import IntentsPanel
-from apkviewer.presentation.manifest_tab.manifest_panel import ManifestPanel
-from apkviewer.presentation.permissions_tab.permissions_panel import PermissionsPanel
-from apkviewer.presentation.security_tab.security_panel import SecurityPanel
-from apkviewer.presentation.toolbar.app_toolbar import AppToolbar
-from apkviewer.presentation.toolbar.file.file_menu import FileMenu
-from apkviewer.presentation.toolbar.help.help_menu import HelpMenu
-from apkviewer.presentation.toolbar.settings.settings_menu import SettingsMenu
-from apkviewer.presentation.viewmodels.app_toolbar_choice import AppToolbarChoice
-from apkviewer.presentation.viewmodels.app_toolbar_choice_group import AppToolbarChoiceGroup
-from apkviewer.presentation.viewmodels.app_toolbar_item import AppToolbarItem
-from apkviewer.presentation.viewmodels.asset_icon import AssetIcon
-from apkviewer.presentation.viewmodels.bootstrap_icon import BootstrapIcon
+from apkviewer.presentation.common.icons.icon_loader import IconLoader
+from apkviewer.presentation.tabs.info_tab.info_panel import InfoPanel
+from apkviewer.presentation.tabs.intents_tab.intents_panel import IntentsPanel
+from apkviewer.presentation.tabs.manifest_tab.manifest_panel import ManifestPanel
+from apkviewer.presentation.tabs.permissions_tab.permissions_panel import PermissionsPanel
+from apkviewer.presentation.tabs.security_tab.security_panel import SecurityPanel
+from apkviewer.presentation.menu_bar.app_menu_bar import AppMenuBar
+from apkviewer.presentation.menu_bar.file.file_menu import FileMenu
+from apkviewer.presentation.menu_bar.help.help_menu import HelpMenu
+from apkviewer.presentation.menu_bar.settings.settings_menu import SettingsMenu
+from apkviewer.presentation.viewmodels.menus.menu_choice import MenuChoice
+from apkviewer.presentation.viewmodels.menus.menu_choice_group import MenuChoiceGroup
+from apkviewer.presentation.viewmodels.menus.menu_item import MenuItem
+from apkviewer.presentation.viewmodels.icons.asset_icon import AssetIcon
+from apkviewer.presentation.viewmodels.icons.bootstrap_icon import BootstrapIcon
 
 
 class ApkAnalyzerApp:
@@ -198,34 +198,34 @@ class ApkAnalyzerApp:
     def _build_menu(self) -> None:
         export, help_ = self._file_actions, self._help_actions
         settings = self._settings_actions
-        self.menu_bar: AppToolbar = AppToolbar(
+        self.menu_bar: AppMenuBar = AppMenuBar(
             self.root,
             {
                 "File": [
-                    AppToolbarItem("load_apk", "Load APK", self.load_apk, self._asset_icon("android.png"), "Ctrl+O", "<Control-o>"),
+                    MenuItem("load_apk", "Load APK", self.load_apk, self._asset_icon("android.png"), "Ctrl+O", "<Control-o>"),
                     None,
-                    AppToolbarItem("export_app_info", "Export app info", export.export_app_info, self._asset_icon("save_file.png")),
-                    AppToolbarItem("extract_apk", "Extract to...", export.extract_apk, self._asset_icon("unarchive_file.png")),
-                    AppToolbarItem("extract_icon", "Extract icon as PNG", export.extract_icon, self._asset_icon("image.png")),
+                    MenuItem("export_app_info", "Export app info", export.export_app_info, self._asset_icon("save_file.png")),
+                    MenuItem("extract_apk", "Extract to...", export.extract_apk, self._asset_icon("unarchive_file.png")),
+                    MenuItem("extract_icon", "Extract icon as PNG", export.extract_icon, self._asset_icon("image.png")),
                     None,
-                    AppToolbarItem("exit", "Exit", self.exit_app, self._asset_icon("exit_app.png")),
+                    MenuItem("exit", "Exit", self.exit_app, self._asset_icon("exit_app.png")),
                 ],
                 "Settings": [
-                    AppToolbarChoiceGroup(
+                    MenuChoiceGroup(
                         key="color_mode",
                         title="Color mode",
                         choices=(
-                            AppToolbarChoice(
+                            MenuChoice(
                                 ColorMode.LIGHT.value, "Light mode",
                                 lambda: settings.set_color_mode(ColorMode.LIGHT),
                                 self._asset_icon("light_mode.png"),
                             ),
-                            AppToolbarChoice(
+                            MenuChoice(
                                 ColorMode.DARK.value, "Dark mode",
                                 lambda: settings.set_color_mode(ColorMode.DARK),
                                 self._asset_icon("dark_mode.png"),
                             ),
-                            AppToolbarChoice(
+                            MenuChoice(
                                 ColorMode.AUTO.value, "Auto (follow system)",
                                 lambda: settings.set_color_mode(ColorMode.AUTO),
                                 self._asset_icon("auto_color_mode.png")
@@ -234,11 +234,11 @@ class ApkAnalyzerApp:
                         selected_key=settings.color_mode.value,
                         icon=BootstrapIcon("circle-half"),
                     ),
-                    AppToolbarChoiceGroup(
+                    MenuChoiceGroup(
                         key="theme",
                         title="Theme",
                         choices=tuple(
-                            AppToolbarChoice(name, settings.theme_label(name), partial(settings.set_theme, name))
+                            MenuChoice(name, settings.theme_label(name), partial(settings.set_theme, name))
                             for name in settings.themes
                         ),
                         selected_key=settings.base_theme,
@@ -246,9 +246,9 @@ class ApkAnalyzerApp:
                     ),
                 ],
                 "Help": [
-                    AppToolbarItem("source_code", "Source code", help_.open_source_code, self._asset_icon("code.png")),
-                    AppToolbarItem("report_issue", "Report issue", help_.report_issue, self._asset_icon("bug_report.png")),
-                    AppToolbarItem("about", "About", help_.show_about, self._asset_icon("info.png")),
+                    MenuItem("source_code", "Source code", help_.open_source_code, self._asset_icon("code.png")),
+                    MenuItem("report_issue", "Report issue", help_.report_issue, self._asset_icon("bug_report.png")),
+                    MenuItem("about", "About", help_.show_about, self._asset_icon("info.png")),
                 ],
             },
             self._theme.palette,

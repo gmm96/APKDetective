@@ -10,7 +10,7 @@ from androguard.core.apk import APK
 from androguard.core.axml import AXMLPrinter
 
 from apkviewer.domain.entities.application_info import ApplicationInfo
-from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS
 

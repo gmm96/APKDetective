@@ -3,7 +3,7 @@ Use case: save the analysis as a plain text report.
 """
 
 from apkviewer.application.app_info_serializer import AppInfoSerializer
-from apkviewer.domain.entities.analysis_result import AnalysisResult
+from apkviewer.domain.entities.analysis.analysis_result import AnalysisResult
 from apkviewer.domain.interfaces.file_writer import FileWriter
 
 

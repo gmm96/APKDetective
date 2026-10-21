@@ -11,7 +11,7 @@ what is missing is reported as a warning.
 import struct
 from collections.abc import Sequence
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
 from apkviewer.domain.entities.dex_metrics import DexMetrics
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.dex_code_scanner import DexCodeScanner
