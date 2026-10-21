@@ -64,6 +64,7 @@ class ApkAnalyzerApp:
         AnalysisSection.APPLICATION,
         AnalysisSection.CONFIGURATION,
         AnalysisSection.EMBEDDED_CONTENT,
+        AnalysisSection.DEX_METRICS,
         AnalysisSection.ICON,
     )
     _SECURITY_SECTIONS: tuple[AnalysisSection, ...] = (
@@ -369,7 +370,10 @@ class ApkAnalyzerApp:
             icon_png=result.icon_png,
         )
         self.info_panel.render(
-            inspection.application, inspection.configuration, inspection.embedded_content
+            inspection.application,
+            inspection.configuration,
+            inspection.embedded_content,
+            inspection.dex_metrics
         )
         self.security_panel.render(inspection.security, inspection.third_party)
         self.permissions_panel.render(inspection.permissions)

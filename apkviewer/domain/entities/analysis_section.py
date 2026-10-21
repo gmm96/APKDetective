@@ -9,6 +9,7 @@ from enum import Enum
 class AnalysisSection(Enum):
     APPLICATION = "application"
     CONFIGURATION = "configuration"
+    DEX_METRICS = "dex metrics"
     EMBEDDED_CONTENT = "embedded content"
     SIGNATURES = "signatures"
     PERMISSIONS = "permissions"

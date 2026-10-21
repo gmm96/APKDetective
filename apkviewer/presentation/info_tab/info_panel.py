@@ -5,8 +5,10 @@ content embedded in the code.
 
 import ttkbootstrap as ttkb
 
+from apkviewer.application.dex_metrics_formatter import DexMetricsFormatter
 from apkviewer.domain.entities.application_info import ApplicationInfo
 from apkviewer.domain.entities.configuration_info import ConfigurationInfo
+from apkviewer.domain.entities.dex_metrics import DexMetrics
 from apkviewer.domain.entities.embedded_content import EmbeddedContent
 from apkviewer.domain.interfaces.date_formatter import DateFormatter
 from apkviewer.domain.interfaces.size_formatter import SizeFormatter
@@ -31,12 +33,14 @@ class InfoPanel(FormPanel):
         super().__init__(parent, context_menu, palette, line_marker)
         self._size_formatter: SizeFormatter = size_formatter or HumanReadableSizeFormatter()
         self._date_formatter: DateFormatter = date_formatter or EnglishLongDateFormatter()
+        self._dex_metrics_formatter: DexMetricsFormatter = DexMetricsFormatter(self._size_formatter)
 
     def render(
         self,
         application: ApplicationInfo,
         configuration: ConfigurationInfo,
         embedded_content: EmbeddedContent,
+        dex_metrics: DexMetrics,
     ) -> None:
         self.clear()
         app_section = self.add_section("Application", responsive=True, max_columns=2)
@@ -70,6 +74,10 @@ class InfoPanel(FormPanel):
         section.add_list("Hardware Requirements", [feature.as_text() for feature in configuration.hardware_requirements])
         section.add_list("Supported Locales", configuration.locales)
         section.add_list("Screen Densities", configuration.screen_densities)
+
+        section = self.add_section("DEX Metrics", responsive=True, max_columns=2)
+        for label, value in self._dex_metrics_formatter.fields(dex_metrics):
+            section.add_entry(label, value)
 
         section = self.add_section("Embedded Content")
         section.add_list("Discovered URLs", embedded_content.urls)

@@ -8,10 +8,12 @@ from datetime import datetime
 
 from apkviewer.domain.entities.analysis_result import AnalysisResult
 from apkviewer.domain.entities.application_info import ApplicationInfo
+from apkviewer.application.dex_metrics_formatter import DexMetricsFormatter
 from apkviewer.domain.entities.component import Component
 from apkviewer.domain.entities.component_kind import ComponentKind
 from apkviewer.domain.entities.configuration_info import ConfigurationInfo
 from apkviewer.domain.entities.declared_components import DeclaredComponents
+from apkviewer.domain.entities.dex_metrics import DexMetrics
 from apkviewer.domain.entities.embedded_content import EmbeddedContent
 from apkviewer.domain.entities.exported_intent import ExportedIntent
 from apkviewer.domain.entities.permission import Permission
@@ -33,12 +35,14 @@ class AppInfoSerializer:
     ) -> None:
         self._size_formatter: SizeFormatter | None = size_formatter
         self._date_formatter: DateFormatter | None = date_formatter
+        self._dex_metrics_formatter: DexMetricsFormatter = DexMetricsFormatter(size_formatter)
 
     def format(self, result: AnalysisResult) -> str:
         inspection = result.inspection
         blocks = [
             self._application(inspection.application),
             self._configuration(inspection.configuration),
+            self._dex_metrics(inspection.dex_metrics),
             self._embedded_content(inspection.embedded_content),
             self._security(inspection.security),
             self._permissions(inspection.permissions),
@@ -85,6 +89,10 @@ class AppInfoSerializer:
         lines += self._list("Supported Locales", info.locales)
         lines += self._list("Screen Densities", info.screen_densities)
         return self._block("Configuration", lines)
+
+    def _dex_metrics(self, metrics: DexMetrics) -> str:
+        lines = [f"{label}: {value}" for label, value in self._dex_metrics_formatter.fields(metrics)]
+        return self._block("DEX Metrics", lines)
 
     def _embedded_content(self, info: EmbeddedContent) -> str:
         return self._block("Embedded Content", self._list("Discovered URLs", info.urls))

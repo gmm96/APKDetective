@@ -18,6 +18,7 @@ from apkviewer.domain.entities.apk_inspection import ApkInspection
 from apkviewer.domain.entities.application_info import ApplicationInfo
 from apkviewer.domain.entities.configuration_info import ConfigurationInfo
 from apkviewer.domain.entities.declared_components import DeclaredComponents
+from apkviewer.domain.entities.dex_metrics import DexMetrics
 from apkviewer.domain.entities.embedded_content import EmbeddedContent
 from apkviewer.domain.entities.permissions_info import PermissionsInfo
 from apkviewer.domain.entities.security_info import SecurityInfo
@@ -30,6 +31,7 @@ from apkviewer.infrastructure.androguard.dex_reader import DexReader
 from apkviewer.infrastructure.androguard.extractors.app_info_extractor import ApplicationInfoExtractor
 from apkviewer.infrastructure.androguard.extractors.components_extractor import ComponentsExtractor
 from apkviewer.infrastructure.androguard.extractors.configuration_extractor import ConfigurationExtractor
+from apkviewer.infrastructure.androguard.extractors.dex_metrics_extractor import DexMetricsExtractor
 from apkviewer.infrastructure.androguard.extractors.embedded_content_extractor import EmbeddedContentExtractor
 from apkviewer.infrastructure.androguard.extractors.permissions_extractor import PermissionsExtractor
 from apkviewer.infrastructure.androguard.extractors.security_info_extractor import SecurityInfoExtractor
@@ -47,6 +49,7 @@ class AndroguardApkInspector(ApkInspector):
         self,
         apk_loader: ApkLoader | None = None,
         dex_reader: DexReader | None = None,
+        dex_metrics_extractor: DexMetricsExtractor | None = None,
         icon_extractor: IconExtractor | None = None,
         manifest_formatter: ManifestFormatter | None = None,
         application_extractor: ApplicationInfoExtractor | None = None,
@@ -59,6 +62,7 @@ class AndroguardApkInspector(ApkInspector):
     ) -> None:
         self._apk_loader = apk_loader or ApkLoader()
         self._dex_reader = dex_reader or DexReader()
+        self._dex_metrics = dex_metrics_extractor or DexMetricsExtractor()
         self._icon_extractor = icon_extractor or IconExtractor()
         self._manifest_formatter = manifest_formatter or ManifestFormatter()
         self._application = application_extractor or ApplicationInfoExtractor()
@@ -75,11 +79,19 @@ class AndroguardApkInspector(ApkInspector):
         guard = self._guarded
         section = AnalysisSection
 
+        # The DEX files are read from the APK once and shared by everything that looks at the code.
+        dex_files = guard(
+            warnings,
+            "The code (DEX) of the app",
+            (section.EMBEDDED_CONTENT, section.THIRD_PARTY,
+             section.DEX_METRICS),
+            lambda: tuple(apk.get_all_dex()), (),
+        )
         dex = guard(
             warnings,
             "The code (DEX) of the app",
             (section.EMBEDDED_CONTENT, section.THIRD_PARTY),
-            lambda: self._dex_reader.read(apk, warnings),
+            lambda: self._dex_reader.read(dex_files, warnings),
             DexContents(),
         )
         return ApkInspection(
@@ -87,8 +99,8 @@ class AndroguardApkInspector(ApkInspector):
                 warnings,
                 "The application data",
                 (section.APPLICATION,),
-                lambda: self._application.extract(apk, warnings),
-                ApplicationInfo("", "", None, None, None, None, None, None, None, None, None, None, None),
+                lambda: self._application.extract(apk),
+                ApplicationInfo("", "", None, None, None, None, None, None, None, None, None),
             ),
             configuration=guard(
                 warnings,
@@ -96,6 +108,13 @@ class AndroguardApkInspector(ApkInspector):
                 (section.CONFIGURATION,),
                 lambda: self._configuration.extract(apk, warnings),
                 ConfigurationInfo((), (), (), ()),
+            ),
+            dex_metrics=guard(
+                warnings,
+                "The DEX metrics",
+                (section.DEX_METRICS,),
+                lambda: self._dex_metrics.extract(dex_files, dex, warnings),
+                DexMetrics(),
             ),
             embedded_content=guard(
                 warnings,
