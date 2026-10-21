@@ -7,8 +7,12 @@ Usage:
 
 import sys
 import ttkbootstrap as ttkb
+import ttkbootstrap.localization
 
 from apkviewer.composition_root import build_app
+
+# Bypass ttkbootstrap localization to prevent Nuitka msgcat packaging errors on UNIX
+ttkbootstrap.localization.initialize_localities = bool
 
 
 def main() -> None:
