@@ -61,6 +61,16 @@ jobs:
               --lto=yes \
               main.py
 
+      - name: 'Copy binary with commit ID'
+        run: cp dist/APKViewer-linux.bin dist/APKViewer-linux-${{ github.sha }}.bin
+
+      - name: 'Upload binary as artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: APKViewer-linux-binary
+          path: dist/APKViewer-linux-${{ github.sha }}.bin
+          retention-days: 90
+
       - name: 'Upload binary to release'
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
