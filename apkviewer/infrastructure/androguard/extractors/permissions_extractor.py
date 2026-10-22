@@ -13,15 +13,15 @@ from typing import Any
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
-from apkviewer.domain.entities.permission import Permission
-from apkviewer.domain.entities.permission_origin import PermissionOrigin
-from apkviewer.domain.entities.permissions_info import PermissionsInfo
-from apkviewer.domain.entities.protection_level import ProtectionLevel
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
+from apkviewer.domain.entities.manifest.permissions.permission import Permission
+from apkviewer.domain.entities.manifest.permissions.permission_origin_enum import PermissionOriginEnum
+from apkviewer.domain.entities.manifest.permissions.permissions_info import PermissionsInfo
+from apkviewer.domain.entities.manifest.permissions.protection_level import ProtectionLevel
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
-from apkviewer.infrastructure.androguard.aosp_permission_catalog import AospPermissionCatalog
+from apkviewer.infrastructure.androguard.extractors.aosp_permission_catalog import AospPermissionCatalog
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS
-from apkviewer.infrastructure.androguard.resource_reference_resolver import ResourceReferenceResolver
+from apkviewer.infrastructure.androguard.manifest.resource_reference_resolver import ResourceReferenceResolver
 
 
 class PermissionsExtractor:
@@ -34,7 +34,7 @@ class PermissionsExtractor:
             if warnings is not None:
                 warnings.add(
                     "The manifest is missing or corrupted: no permissions could be listed.",
-                    AnalysisSection.PERMISSIONS,
+                    AnalysisSectionEnum.PERMISSIONS,
                 )
             return PermissionsInfo()
 
@@ -50,7 +50,7 @@ class PermissionsExtractor:
         for name, max_sdk in requested.items():
             if name in declared:
                 custom[name] = replace(
-                    declared[name], max_sdk=max_sdk, origin=PermissionOrigin.DECLARED_AND_REQUESTED
+                    declared[name], max_sdk=max_sdk, origin=PermissionOriginEnum.DECLARED_AND_REQUESTED
                 )
                 continue
             entry = self._catalog.lookup(name) or target_entries.get(name)
@@ -107,7 +107,7 @@ class PermissionsExtractor:
                 protection=ProtectionLevel.parse(node.get(f"{ANDROID_NS}protectionLevel")),
                 label=self._text(node.get(f"{ANDROID_NS}label"), resolver)
                 or self._text(node.get(f"{ANDROID_NS}description"), resolver),
-                origin=PermissionOrigin.DECLARED,
+                origin=PermissionOriginEnum.DECLARED,
             )
         return declared
 

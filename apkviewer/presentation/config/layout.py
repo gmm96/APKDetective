@@ -9,3 +9,6 @@ LABEL_WIDTH: int = 25
 
 # Tag name shared between the line-marker and the copy context menu
 MARKED_LINE_TAG: str = "marked_line"
+
+FIELD_PADX: int = 10
+FIELD_PADY: int = 5

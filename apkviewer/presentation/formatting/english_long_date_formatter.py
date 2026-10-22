@@ -4,10 +4,10 @@ Formats a datetime into an extended English format (24h).
 
 from datetime import datetime
 
-from apkviewer.domain.interfaces.date_formatter import DateFormatter
+from apkviewer.ports.formatting.date_formatter_port import DateFormatterPort
 
 
-class EnglishLongDateFormatter(DateFormatter):
+class EnglishLongDateFormatter(DateFormatterPort):
     _DAYS: tuple[str, ...] = (
         "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
     )

@@ -5,9 +5,9 @@ the third-party libraries declared by the APK.
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.third_party_info import ThirdPartyInfo
+from apkviewer.domain.entities.analysis.sections.third_party_info import ThirdPartyInfo
 from apkviewer.infrastructure.androguard.config.trackers import KNOWN_TRACKERS
-from apkviewer.infrastructure.androguard.dex_contents import DexContents
+from apkviewer.infrastructure.androguard.dex.dex_contents import DexContents
 
 
 class TrackerDetector:

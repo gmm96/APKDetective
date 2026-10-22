@@ -6,10 +6,10 @@ Linux implementation of ClipboardFileCopier: tries the X11 clipboard
 import subprocess
 from pathlib import Path
 
-from apkviewer.domain.interfaces.clipboard_file_copier import ClipboardFileCopier
+from apkviewer.ports.system.clipboard_file_copier_port import ClipboardFileCopierPort
 
 
-class LinuxClipboardFileCopier(ClipboardFileCopier):
+class LinuxClipboardFileCopier(ClipboardFileCopierPort):
     _COMMANDS: tuple[list[str], list[str]] = (
         ["xclip", "-i", "-selection", "clipboard", "-t", "text/uri-list"],
         ["wl-copy", "-t", "text/uri-list"],

@@ -14,8 +14,9 @@
             "overrideName": true,
             "args": [
                 "-c",
-                "source ${workspaceFolder}/.venv/bin/activate && exec bash"
+                "bash --rcfile <(cat ~/.bashrc; echo 'source ${workspaceFolder}/.venv/bin/activate')"
             ]
         }
     },
+    "terminal.integrated.enablePersistentSessions": false
 }

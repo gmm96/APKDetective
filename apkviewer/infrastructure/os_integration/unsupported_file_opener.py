@@ -4,10 +4,10 @@ Fallback OsFileOpener for platforms with no native "open" integration.
 
 import sys
 
-from apkviewer.domain.interfaces.os_file_opener import OsFileOpener
+from apkviewer.ports.system.os_file_opener_port import OsFileOpenerPort
 
 
-class UnsupportedFileOpener(OsFileOpener):
+class UnsupportedFileOpener(OsFileOpenerPort):
     def open(self, path: str) -> None:
         raise RuntimeError(f"Opening files is not supported on platform: {sys.platform}")
 

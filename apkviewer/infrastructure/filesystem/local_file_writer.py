@@ -2,10 +2,10 @@
 FileWriter implementation backed by the local file system.
 """
 
-from apkviewer.domain.interfaces.file_writer import FileWriter
+from apkviewer.ports.filesystem.file_writer_port import FileWriterPort
 
 
-class LocalFileWriter(FileWriter):
+class LocalFileWriter(FileWriterPort):
     def write_text(self, path: str, content: str) -> None:
         with open(path, "w", encoding="utf-8") as file:
             file.write(content)

@@ -7,11 +7,11 @@ import ctypes
 import os
 from ctypes import wintypes
 
-from apkviewer.domain.interfaces.os_file_opener import OsFileOpener
+from apkviewer.ports.system.os_file_opener_port import OsFileOpenerPort
 from apkviewer.infrastructure.os_integration.windows_open_as_info import OpenAsInfo
 
 
-class WindowsFileOpener(OsFileOpener):
+class WindowsFileOpener(OsFileOpenerPort):
     _OAIF_EXEC: int = 0x00000004
     _OAIF_HIDE_REGISTRATION: int = 0x00000020
 

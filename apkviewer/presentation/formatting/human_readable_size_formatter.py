@@ -2,10 +2,10 @@
 Formats byte counts as B / KB / MB / GB / TB, as most file browsers do.
 """
 
-from apkviewer.domain.interfaces.size_formatter import SizeFormatter
+from apkviewer.ports.formatting.size_formatter_port import SizeFormatterPort
 
 
-class HumanReadableSizeFormatter(SizeFormatter):
+class HumanReadableSizeFormatter(SizeFormatterPort):
     _UNITS: tuple[str, ...] = ("B", "KB", "MB", "GB", "TB")
 
     def format(self, num_bytes: int, full_mode: bool = False) -> str:

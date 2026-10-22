@@ -15,13 +15,13 @@ from androguard.core.apk import APK
 from babel import Locale
 from babel.core import UnknownLocaleError
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
-from apkviewer.domain.entities.configuration_info import ConfigurationInfo
-from apkviewer.domain.entities.hardware_feature import HardwareFeature
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
+from apkviewer.domain.entities.analysis.sections.configuration_info import ConfigurationInfo
+from apkviewer.domain.entities.analysis.sections.hardware_feature import HardwareFeature
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS
-from apkviewer.infrastructure.androguard.manifest_value_formatter import ManifestValueFormatter
-from apkviewer.infrastructure.androguard.resource_reference_resolver import ResourceReferenceResolver
+from apkviewer.infrastructure.androguard.manifest.manifest_value_formatter import ManifestValueFormatter
+from apkviewer.infrastructure.androguard.manifest.resource_reference_resolver import ResourceReferenceResolver
 
 
 class ConfigurationExtractor:
@@ -58,7 +58,7 @@ class ConfigurationExtractor:
             warnings.add(
                 "The resource table (resources.arsc) is missing or unreadable: "
                 "locales and screen densities may be missing or incomplete.",
-                AnalysisSection.CONFIGURATION,
+                AnalysisSectionEnum.CONFIGURATION,
             )
         return ConfigurationInfo(
             architectures=self._architectures(apk),
@@ -93,7 +93,7 @@ class ConfigurationExtractor:
             if warnings is not None:
                 warnings.add(
                     f"The hardware requirements could not be read ({type(exc).__name__}).",
-                    AnalysisSection.CONFIGURATION,
+                    AnalysisSectionEnum.CONFIGURATION,
                 )
             return ()
 

@@ -9,44 +9,49 @@ imports the infrastructure layer.
 import os
 import threading
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from functools import partial
+from tkinter import filedialog, messagebox
 
-from apkviewer.application.analyze_apk import AnalyzeApk
-from apkviewer.application.entry_previewer import EntryPreviewer
-from apkviewer.application.export_app_info import ExportAppInfo
-from apkviewer.application.export_icon import ExportIcon
-from apkviewer.application.extract_apk_entries import ExtractApkEntries
-from apkviewer.application.resolve_color_scheme import ResolveColorScheme
-from apkviewer.domain.entities.analysis_result import AnalysisResult
-from apkviewer.domain.entities.analysis_section import AnalysisSection
-from apkviewer.domain.entities.color_mode import ColorMode
-from apkviewer.domain.interfaces.url_opener import UrlOpener
-from apkviewer.domain.interfaces.size_formatter import SizeFormatter
-from apkviewer.domain.interfaces.date_formatter import DateFormatter
-from apkviewer.presentation.appearance.forest_theme import ForestTheme
+import ttkbootstrap as ttkb
+import ttkbootstrap.constants as ttkb_constants
+
+from apkviewer.application.analysis.analyze_apk import AnalyzeApk
+from apkviewer.application.files.entry_previewer import EntryPreviewer
+from apkviewer.application.export.export_app_info import ExportAppInfo
+from apkviewer.application.export.export_icon import ExportIcon
+from apkviewer.application.export.extract_apk_entries import ExtractApkEntries
+from apkviewer.application.appearance.resolve_color_scheme import ResolveColorScheme
+from apkviewer.domain.entities.analysis.analysis_result import AnalysisResult
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
+from apkviewer.domain.entities.appearance.color_mode_enum import ColorModeEnum
+from apkviewer.ports.system.url_opener_port import UrlOpenerPort
+from apkviewer.ports.formatting.size_formatter_port import SizeFormatterPort
+from apkviewer.ports.formatting.date_formatter_port import DateFormatterPort
 from apkviewer.presentation.appearance.theme_manager import ThemeManager
-from apkviewer.presentation.common.extract_to_dialog import ExtractToDialog
-from apkviewer.presentation.common.status_bar import StatusBar
-from apkviewer.presentation.common.status_level import StatusLevel
-from apkviewer.presentation.common.text_context_menu import TextContextMenu
-from apkviewer.presentation.components_tab.components_panel import ComponentsPanel
-from apkviewer.presentation.files_tab.files_panel import FilesPanel
+from apkviewer.presentation.common.dialogs.extract_to_dialog import ExtractToDialog
+from apkviewer.presentation.status_bar.status_bar import StatusBar
+from apkviewer.presentation.viewmodels.status_bar.status_level_enum import StatusLevelEnum
+from apkviewer.presentation.common.menus.text_context_menu import TextContextMenu
+from apkviewer.presentation.tabs.components_tab.components_panel import ComponentsPanel
+from apkviewer.presentation.tabs.files_tab.files_panel import FilesPanel
+from apkviewer.presentation.common.feedback.loading_bar import LoadingBar
+from apkviewer.presentation.common.layout.notebook_lock import NotebookLock
 from apkviewer.presentation.header.app_header import AppHeader
-from apkviewer.presentation.icons.icon_loader import IconLoader
-from apkviewer.presentation.info_tab.info_panel import InfoPanel
-from apkviewer.presentation.intents_tab.intents_panel import IntentsPanel
-from apkviewer.presentation.manifest_tab.manifest_panel import ManifestPanel
-from apkviewer.presentation.permissions_tab.permissions_panel import PermissionsPanel
-from apkviewer.presentation.security_tab.security_panel import SecurityPanel
-from apkviewer.presentation.toolbar.app_toolbar import AppToolbar
-from apkviewer.presentation.toolbar.file.file_menu import FileMenu
-from apkviewer.presentation.toolbar.help.help_menu import HelpMenu
-from apkviewer.presentation.toolbar.settings.settings_menu import SettingsMenu
-from apkviewer.presentation.viewmodels.app_toolbar_choice import AppToolbarChoice
-from apkviewer.presentation.viewmodels.app_toolbar_choice_group import AppToolbarChoiceGroup
-from apkviewer.presentation.viewmodels.app_toolbar_item import AppToolbarItem
-
-_ICONS_DIR = "assets/icons/outline"
+from apkviewer.presentation.common.icons.icon_loader import IconLoader
+from apkviewer.presentation.tabs.info_tab.info_panel import InfoPanel
+from apkviewer.presentation.tabs.intents_tab.intents_panel import IntentsPanel
+from apkviewer.presentation.tabs.manifest_tab.manifest_panel import ManifestPanel
+from apkviewer.presentation.tabs.permissions_tab.permissions_panel import PermissionsPanel
+from apkviewer.presentation.tabs.security_tab.security_panel import SecurityPanel
+from apkviewer.presentation.menu_bar.app_menu_bar import AppMenuBar
+from apkviewer.presentation.menu_bar.file.file_menu import FileMenu
+from apkviewer.presentation.menu_bar.help.help_menu import HelpMenu
+from apkviewer.presentation.menu_bar.settings.settings_menu import SettingsMenu
+from apkviewer.presentation.viewmodels.menus.menu_choice import MenuChoice
+from apkviewer.presentation.viewmodels.menus.menu_choice_group import MenuChoiceGroup
+from apkviewer.presentation.viewmodels.menus.menu_item import MenuItem
+from apkviewer.presentation.viewmodels.icons.asset_icon import AssetIcon
+from apkviewer.presentation.viewmodels.icons.bootstrap_icon import BootstrapIcon
 
 
 class ApkAnalyzerApp:
@@ -55,37 +60,40 @@ class ApkAnalyzerApp:
 
     # Which parts of the analysis each tab reports problems for. The analysis only says WHAT it
     # could not read; deciding where the user is told is the job of the presentation.
-    _INFO_SECTIONS: tuple[AnalysisSection, ...] = (
-        AnalysisSection.APPLICATION,
-        AnalysisSection.CONFIGURATION,
-        AnalysisSection.EMBEDDED_CONTENT,
-        AnalysisSection.ICON,
+    _INFO_SECTIONS: tuple[AnalysisSectionEnum, ...] = (
+        AnalysisSectionEnum.APPLICATION,
+        AnalysisSectionEnum.CONFIGURATION,
+        AnalysisSectionEnum.EMBEDDED_CONTENT,
+        AnalysisSectionEnum.DEX_METRICS,
+        AnalysisSectionEnum.ICON,
     )
-    _SECURITY_SECTIONS: tuple[AnalysisSection, ...] = (
-        AnalysisSection.SIGNATURES,
-        AnalysisSection.THIRD_PARTY,
+    _SECURITY_SECTIONS: tuple[AnalysisSectionEnum, ...] = (
+        AnalysisSectionEnum.SIGNATURES,
+        AnalysisSectionEnum.THIRD_PARTY,
     )
-    _PERMISSIONS_SECTIONS: tuple[AnalysisSection, ...] = (AnalysisSection.PERMISSIONS,)
-    _COMPONENTS_SECTIONS: tuple[AnalysisSection, ...] = (  # also for the Intents tab, derived from them
-        AnalysisSection.COMPONENTS,
-        AnalysisSection.MANIFEST,
+    _PERMISSIONS_SECTIONS: tuple[AnalysisSectionEnum, ...] = (AnalysisSectionEnum.PERMISSIONS,)
+    _COMPONENTS_SECTIONS: tuple[AnalysisSectionEnum, ...] = (  # also for the Intents tab, derived from them
+        AnalysisSectionEnum.COMPONENTS,
+        AnalysisSectionEnum.MANIFEST,
     )
+
+    _ICONS_DIR: str = "assets/icons/outline"
 
     def __init__(
         self,
-        root: tk.Tk,
+        root: ttkb.App,
         analyze_apk: AnalyzeApk,
         extract_entries: ExtractApkEntries,
         entry_previewer: EntryPreviewer,
         export_app_info: ExportAppInfo,
         export_icon: ExportIcon,
-        url_opener: UrlOpener,
+        url_opener: UrlOpenerPort,
         resolve_color_scheme: ResolveColorScheme,
         icon_loader: IconLoader | None = None,
-        size_formatter: SizeFormatter | None = None,
-        date_formatter: DateFormatter | None = None,
+        size_formatter: SizeFormatterPort | None = None,
+        date_formatter: DateFormatterPort | None = None,
     ) -> None:
-        self.root: tk.Tk = root
+        self.root: ttkb.App = root
         self.root.title("APKViewer")
         self.root.minsize(600, 600)
         self.root.geometry("1000x750")
@@ -95,11 +103,11 @@ class ApkAnalyzerApp:
         self._analyze_apk: AnalyzeApk = analyze_apk
         self._entry_previewer: EntryPreviewer = entry_previewer
         self._icon_loader: IconLoader = icon_loader or IconLoader()
-        self._size_formatter: SizeFormatter | None = size_formatter
-        self._date_formatter: DateFormatter | None = date_formatter
+        self._size_formatter: SizeFormatterPort | None = size_formatter
+        self._date_formatter: DateFormatterPort | None = date_formatter
 
         # Activates the ttk theme (AUTO = follow the OS) before any widget exists.
-        self._theme: ThemeManager = ThemeManager(root, ForestTheme(root), resolve_color_scheme)
+        self._theme: ThemeManager = ThemeManager(root, resolve_color_scheme)
 
         # The analysis currently shown (None while nothing is loaded).
         self._result: AnalysisResult | None = None
@@ -138,15 +146,22 @@ class ApkAnalyzerApp:
             self._theme.subscribe(listener)
 
     def _build_layout(self) -> None:
-        top_frame = ttk.Frame(self.root)
-        top_frame.pack(side=tk.TOP, fill=tk.X, padx=15, pady=15)
+        top_frame = ttkb.Frame(self.root)
+        top_frame.pack(side=tk.TOP, fill=tk.X, padx=15, pady=(15, 0))
         self.header: AppHeader = AppHeader(
-            top_frame, on_load_click=self.load_apk, palette=self._theme.palette
+            top_frame,
+            on_load_click=self.load_apk,
+            on_cancel_click=self.cancel_analysis,
+            palette=self._theme.palette,
         )
         self.header.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        # Between the header and the tabs, in the gap that used to separate them: the load affects the
+        # whole window, not a single tab, and being a strip of fixed height it moves nothing when shown.
+        self.loading_bar: LoadingBar = LoadingBar(self.root)
+        self.loading_bar.pack(side=tk.TOP, fill=tk.X, padx=10)
         self.status_bar: StatusBar = StatusBar(self.root, self._theme.palette)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        notebook = ttk.Notebook(self.root)
+        notebook = ttkb.Notebook(self.root, bootstyle=ttkb_constants.SECONDARY)
         notebook.pack(expand=True, fill=tk.BOTH, padx=10, pady=(0, 10))
 
         palette = self._theme.palette
@@ -178,49 +193,62 @@ class ApkAnalyzerApp:
         notebook.add(self.intents_panel, text="Intents")
         notebook.add(self.manifest_panel, text="Manifest")
         notebook.add(self.files_panel, text="Files")
+        self._tab_lock: NotebookLock = NotebookLock(notebook)
 
     def _build_menu(self) -> None:
         export, help_ = self._file_actions, self._help_actions
         settings = self._settings_actions
-        self.menu_bar: AppToolbar = AppToolbar(
+        self.menu_bar: AppMenuBar = AppMenuBar(
             self.root,
             {
                 "File": [
-                    AppToolbarItem("load_apk", "Load APK", self.load_apk, f"{_ICONS_DIR}/android.png", "Ctrl+O", "<Control-o>"),
+                    MenuItem("load_apk", "Load APK", self.load_apk, self._asset_icon("android.png"), "Ctrl+O", "<Control-o>"),
                     None,
-                    AppToolbarItem("export_app_info", "Export app info", export.export_app_info, f"{_ICONS_DIR}/save_file.png"),
-                    AppToolbarItem("extract_apk", "Extract to...", export.extract_apk, f"{_ICONS_DIR}/unarchive_file.png"),
-                    AppToolbarItem("extract_icon", "Extract icon as PNG", export.extract_icon, f"{_ICONS_DIR}/image.png"),
+                    MenuItem("export_app_info", "Export app info", export.export_app_info, self._asset_icon("save_file.png")),
+                    MenuItem("extract_apk", "Extract to...", export.extract_apk, self._asset_icon("unarchive_file.png")),
+                    MenuItem("extract_icon", "Extract icon as PNG", export.extract_icon, self._asset_icon("image.png")),
                     None,
-                    AppToolbarItem("exit", "Exit", self.exit_app, f"{_ICONS_DIR}/exit_app.png"),
+                    MenuItem("exit", "Exit", self.exit_app, self._asset_icon("exit_app.png")),
                 ],
                 "Settings": [
-                    AppToolbarChoiceGroup(
+                    MenuChoiceGroup(
                         key="color_mode",
                         title="Color mode",
                         choices=(
-                            AppToolbarChoice(
-                                ColorMode.LIGHT.value, "Light mode",
-                                lambda: settings.set_color_mode(ColorMode.LIGHT),
-                                f"{_ICONS_DIR}/light_mode.png",
+                            MenuChoice(
+                                ColorModeEnum.LIGHT.value, "Light mode",
+                                lambda: settings.set_color_mode(ColorModeEnum.LIGHT),
+                                self._asset_icon("light_mode.png"),
                             ),
-                            AppToolbarChoice(
-                                ColorMode.DARK.value, "Dark mode",
-                                lambda: settings.set_color_mode(ColorMode.DARK),
-                                f"{_ICONS_DIR}/dark_mode.png",
+                            MenuChoice(
+                                ColorModeEnum.DARK.value, "Dark mode",
+                                lambda: settings.set_color_mode(ColorModeEnum.DARK),
+                                self._asset_icon("dark_mode.png"),
                             ),
-                            AppToolbarChoice(
-                                ColorMode.AUTO.value, "Auto (follow system)",
-                                lambda: settings.set_color_mode(ColorMode.AUTO),
+                            MenuChoice(
+                                ColorModeEnum.AUTO.value, "Auto (follow system)",
+                                lambda: settings.set_color_mode(ColorModeEnum.AUTO),
+                                self._asset_icon("auto_color_mode.png")
                             ),
                         ),
                         selected_key=settings.color_mode.value,
+                        icon=BootstrapIcon("circle-half"),
+                    ),
+                    MenuChoiceGroup(
+                        key="theme",
+                        title="Theme",
+                        choices=tuple(
+                            MenuChoice(name, settings.theme_label(name), partial(settings.set_theme, name))
+                            for name in settings.themes
+                        ),
+                        selected_key=settings.base_theme,
+                        icon=BootstrapIcon("palette"),
                     ),
                 ],
                 "Help": [
-                    AppToolbarItem("source_code", "Source code", help_.open_source_code, f"{_ICONS_DIR}/code.png"),
-                    AppToolbarItem("report_issue", "Report issue", help_.report_issue, f"{_ICONS_DIR}/bug_report.png"),
-                    AppToolbarItem("about", "About", help_.show_about, f"{_ICONS_DIR}/info.png"),
+                    MenuItem("source_code", "Source code", help_.open_source_code, self._asset_icon("code.png")),
+                    MenuItem("report_issue", "Report issue", help_.report_issue, self._asset_icon("bug_report.png")),
+                    MenuItem("about", "About", help_.show_about, self._asset_icon("info.png")),
                 ],
             },
             self._theme.palette,
@@ -237,6 +265,15 @@ class ApkAnalyzerApp:
         )
         if apk_path:
             self.start_analysis(apk_path)
+
+    def cancel_analysis(self) -> None:
+        """
+        What the header's Cancel button does. The analysis cannot be interrupted yet (AnalyzeApk has
+        no cancellation), so for now it only says so; this is where stopping it would go.
+        """
+        self._set_status(
+            "Cancelling an analysis is not supported yet: it will finish on its own.", StatusLevelEnum.INFO
+        )
 
     def exit_app(self) -> None:
         self.files_panel.cleanup()  # drop temp files extracted for Open / Open with / Copy
@@ -258,7 +295,7 @@ class ApkAnalyzerApp:
         self._result = None
         self.menu_bar.set_enabled(self._ANALYSIS_DEPENDENT_ITEMS, False)
         self._set_status(
-            f"Analyzing: {os.path.basename(apk_path)}... (Please wait)", StatusLevel.INFO
+            f"Analyzing: {os.path.basename(apk_path)}... (Please wait)", StatusLevelEnum.INFO
         )
         self._set_loading(True)
         self.header.reset_to_placeholder(os.path.basename(apk_path))
@@ -289,10 +326,10 @@ class ApkAnalyzerApp:
                 self._set_status(
                     f"Analysis completed with {count} warning(s): some data could not be read "
                     "(see the notice at the top of the tabs).",
-                    StatusLevel.INFO,
+                    StatusLevelEnum.INFO,
                 )
             else:
-                self._set_status("Analysis completed successfully.", StatusLevel.SUCCESS)
+                self._set_status("Analysis completed successfully.", StatusLevelEnum.SUCCESS)
         finally:
             self.root.after(0, lambda: self._set_loading(False))
 
@@ -305,16 +342,24 @@ class ApkAnalyzerApp:
             ),
         )
         self.root.after(0, self.header.show_error)
-        self._set_status("Analysis failed.", StatusLevel.ERROR)
+        self._set_status("Analysis failed.", StatusLevelEnum.ERROR)
 
     # --- UI updates (must run on the Tk main thread) ---------------------------
 
-    def _set_status(self, message: str, level: StatusLevel = StatusLevel.NEUTRAL) -> None:
+    def _set_status(self, message: str, level: StatusLevelEnum = StatusLevelEnum.NEUTRAL) -> None:
         self.root.after(0, lambda: self.status_bar.set_status(message, level))
 
     def _set_loading(self, loading: bool) -> None:
-        self.header.set_loading_enabled(not loading)
+        self.header.set_loading(loading)
         self.menu_bar.set_enabled(("load_apk",), not loading)
+        if loading:
+            # Whatever was on screen is about to be cleared: show the Info tab and keep the user on it
+            # until everything has been loaded and drawn.
+            self._tab_lock.lock(keep=self.info_panel)
+            self.loading_bar.start()
+        else:
+            self.loading_bar.stop()
+            self._tab_lock.unlock()
 
     def _render_result(self, result: AnalysisResult) -> None:
         self._result = result
@@ -325,7 +370,10 @@ class ApkAnalyzerApp:
             icon_png=result.icon_png,
         )
         self.info_panel.render(
-            inspection.application, inspection.configuration, inspection.embedded_content
+            inspection.application,
+            inspection.configuration,
+            inspection.embedded_content,
+            inspection.dex_metrics
         )
         self.security_panel.render(inspection.security, inspection.third_party)
         self.permissions_panel.render(inspection.permissions)
@@ -343,3 +391,7 @@ class ApkAnalyzerApp:
         self.permissions_panel.show_warnings(result.warning_messages(*self._PERMISSIONS_SECTIONS))
         self.components_panel.show_warnings(components_warnings)
         self.intents_panel.show_warnings(components_warnings)
+
+    @staticmethod
+    def _asset_icon(file_name: str) -> AssetIcon:
+        return AssetIcon(f"{ApkAnalyzerApp._ICONS_DIR}/{file_name}")

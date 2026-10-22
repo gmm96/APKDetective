@@ -8,9 +8,9 @@ from typing import Any
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis_section import AnalysisSection
-from apkviewer.domain.entities.certificate import Certificate
-from apkviewer.domain.entities.security_info import SecurityInfo
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
+from apkviewer.domain.entities.analysis.sections.certificate import Certificate
+from apkviewer.domain.entities.analysis.sections.security_info import SecurityInfo
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 
 
@@ -44,7 +44,7 @@ class SecurityInfoExtractor:
                 if warnings is not None:
                     warnings.add(
                         f"The {label} signature could not be checked ({type(exc).__name__}).",
-                        AnalysisSection.SIGNATURES,
+                        AnalysisSectionEnum.SIGNATURES,
                     )
         return tuple(found)
 

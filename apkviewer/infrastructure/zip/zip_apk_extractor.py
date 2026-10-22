@@ -7,12 +7,12 @@ import os
 import zipfile
 from collections.abc import Sequence
 
-from apkviewer.domain.interfaces.apk_extractor import ApkExtractor
+from apkviewer.ports.apk.apk_extractor_port import ApkExtractorPort
 from apkviewer.infrastructure.zip.axml_decoder import AxmlDecoder
 from apkviewer.infrastructure.zip.file_decoder import FileDecoder
 
 
-class ZipApkExtractor(ApkExtractor):
+class ZipApkExtractor(ApkExtractorPort):
     def __init__(self, decoders: list[FileDecoder] | None = None) -> None:
         # Inject known special cases here; the extractor remains agnostic
         self._decoders: list[FileDecoder] = decoders if decoders is not None else [AxmlDecoder()]

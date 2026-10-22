@@ -7,11 +7,11 @@ import ctypes
 from ctypes import wintypes
 from typing import Any
 
-from apkviewer.domain.interfaces.clipboard_file_copier import ClipboardFileCopier
+from apkviewer.ports.system.clipboard_file_copier_port import ClipboardFileCopierPort
 from apkviewer.infrastructure.clipboard.windows_drop_files import DropFiles
 
 
-class WindowsClipboardFileCopier(ClipboardFileCopier):
+class WindowsClipboardFileCopier(ClipboardFileCopierPort):
     _GHND: int = 0x0042  # GMEM_MOVEABLE | GMEM_ZEROINIT
     _CF_HDROP: int = 15
 
