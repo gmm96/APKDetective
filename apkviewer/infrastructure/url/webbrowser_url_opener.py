@@ -9,10 +9,10 @@ activation token, so the browser may open in the background.
 
 import webbrowser
 
-from apkviewer.domain.interfaces.url_opener import UrlOpener
+from apkviewer.ports.system.url_opener_port import UrlOpenerPort
 
 
-class WebBrowserUrlOpener(UrlOpener):
+class WebBrowserUrlOpener(UrlOpenerPort):
     def open(self, url: str) -> None:
         # new=2 asks for a new tab; autoraise is only a hint that many
         # browsers ignore.

@@ -16,8 +16,8 @@ import tkinter as tk
 import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 
-from apkviewer.domain.entities.permission import Permission
-from apkviewer.domain.entities.permissions_info import PermissionsInfo
+from apkviewer.domain.entities.manifest.permissions.permission import Permission
+from apkviewer.domain.entities.manifest.permissions.permissions_info import PermissionsInfo
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkviewer.presentation.common.feedback.warning_banner import WarningBanner

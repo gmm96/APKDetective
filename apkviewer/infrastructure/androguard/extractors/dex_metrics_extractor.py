@@ -11,13 +11,13 @@ what is missing is reported as a warning.
 import struct
 from collections.abc import Sequence
 
-from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
-from apkviewer.domain.entities.dex_metrics import DexMetrics
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
+from apkviewer.domain.entities.analysis.sections.dex_metrics import DexMetrics
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
-from apkviewer.infrastructure.androguard.dex_code_scanner import DexCodeScanner
-from apkviewer.infrastructure.androguard.dex_contents import DexContents
-from apkviewer.infrastructure.androguard.dex_header import DexHeader
-from apkviewer.infrastructure.androguard.dex_strings import DexStrings
+from apkviewer.infrastructure.androguard.dex.dex_code_scanner import DexCodeScanner
+from apkviewer.infrastructure.androguard.dex.dex_contents import DexContents
+from apkviewer.infrastructure.androguard.dex.dex_header import DexHeader
+from apkviewer.infrastructure.androguard.dex.dex_strings import DexStrings
 
 
 class DexMetricsExtractor:
@@ -102,7 +102,7 @@ class DexMetricsExtractor:
     @staticmethod
     def _warn(warnings: AnalysisWarningCollector | None, message: str) -> None:
         if warnings is not None:
-            warnings.add(message, AnalysisSection.DEX_METRICS)
+            warnings.add(message, AnalysisSectionEnum.DEX_METRICS)
 
     @staticmethod
     def _method_name(data: bytes, header: DexHeader, method_index: int) -> str:

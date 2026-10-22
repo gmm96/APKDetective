@@ -4,8 +4,8 @@ Scans the strings of the DEX files to extract hardcoded HTTP/HTTPS URLs.
 
 import re
 
-from apkviewer.domain.entities.embedded_content import EmbeddedContent
-from apkviewer.infrastructure.androguard.dex_contents import DexContents
+from apkviewer.domain.entities.analysis.sections.embedded_content import EmbeddedContent
+from apkviewer.infrastructure.androguard.dex.dex_contents import DexContents
 
 
 class EmbeddedContentExtractor:

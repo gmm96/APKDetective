@@ -5,9 +5,9 @@ data (no third-party types), so any presentation layer can consume it.
 
 from dataclasses import dataclass
 
-from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkviewer.domain.entities.analysis.apk_inspection import ApkInspection
-from apkviewer.domain.entities.file_node import FileNode
+from apkviewer.domain.entities.archive.file_node import FileNode
 
 
 @dataclass(frozen=True)
@@ -37,6 +37,6 @@ class AnalysisResult:
         """Name suggested for exported files/folders ("app" when the APK declares no package)."""
         return self.package_name or "app"
 
-    def warning_messages(self, *sections: AnalysisSection) -> list[str]:
+    def warning_messages(self, *sections: AnalysisSectionEnum) -> list[str]:
         """The messages of the warnings that concern any of those sections."""
         return [w.message for w in self.inspection.warnings if w.section in sections]

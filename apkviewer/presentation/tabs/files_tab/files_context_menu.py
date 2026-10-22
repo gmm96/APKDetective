@@ -15,13 +15,13 @@ from tkinter import messagebox, ttk
 
 from PIL import ImageTk
 
-from apkviewer.application.entry_previewer import EntryPreviewer
-from apkviewer.domain.entities.file_node import FileNode
+from apkviewer.application.files.entry_previewer import EntryPreviewer
+from apkviewer.domain.entities.archive.file_node import FileNode
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.appearance.tk_widget_styler import TkWidgetStyler
 from apkviewer.presentation.common.dialogs.extract_to_dialog import ExtractToDialog
 from apkviewer.presentation.common.menus.popup_menu_controller import PopupMenuController
-from apkviewer.domain.interfaces.size_formatter import SizeFormatter
+from apkviewer.ports.formatting.size_formatter_port import SizeFormatterPort
 from apkviewer.presentation.common.icons.icon_loader import IconLoader
 
 from .file_details_dialog import FileDetailsDialog
@@ -40,7 +40,7 @@ class FilesContextMenu:
         get_apk_path: Callable[[], str | None],
         get_default_folder_name: Callable[[], str],
         get_node: Callable[[str], FileNode | None],
-        size_formatter: SizeFormatter,
+        size_formatter: SizeFormatterPort,
         palette: ThemePalette,
         icon_loader: IconLoader | None = None,
     ) -> None:
@@ -50,7 +50,7 @@ class FilesContextMenu:
         self._get_apk_path: Callable[[], str | None] = get_apk_path
         self._get_default_folder_name: Callable[[], str] = get_default_folder_name
         self._get_node: Callable[[str], FileNode | None] = get_node
-        self._size_formatter: SizeFormatter = size_formatter
+        self._size_formatter: SizeFormatterPort = size_formatter
         self._palette: ThemePalette = palette
         self._icon_loader: IconLoader = icon_loader or IconLoader()
 

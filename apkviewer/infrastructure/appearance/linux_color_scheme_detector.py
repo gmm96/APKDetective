@@ -6,11 +6,11 @@ first whose answer mentions "dark" decides.
 
 import subprocess
 
-from apkviewer.domain.entities.color_scheme import ColorScheme
-from apkviewer.domain.interfaces.system_color_scheme_detector import SystemColorSchemeDetector
+from apkviewer.domain.entities.appearance.color_scheme_enum import ColorSchemeEnum
+from apkviewer.ports.system.system_color_scheme_detector_port import SystemColorSchemeDetectorPort
 
 
-class LinuxColorSchemeDetector(SystemColorSchemeDetector):
+class LinuxColorSchemeDetector(SystemColorSchemeDetectorPort):
     _PROBES: tuple[list[str], ...] = (
         # GNOME 42+ and most freedesktop-aware desktops: 'prefer-dark'.
         ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
@@ -21,10 +21,10 @@ class LinuxColorSchemeDetector(SystemColorSchemeDetector):
         ["kreadconfig5", "--group", "General", "--key", "ColorScheme"],
     )
 
-    def detect(self) -> ColorScheme:
+    def detect(self) -> ColorSchemeEnum:
         if any(self._answer_mentions_dark(probe) for probe in self._PROBES):
-            return ColorScheme.DARK
-        return ColorScheme.LIGHT
+            return ColorSchemeEnum.DARK
+        return ColorSchemeEnum.LIGHT
 
     @staticmethod
     def _answer_mentions_dark(command: list[str]) -> bool:

@@ -21,7 +21,7 @@ generic one instead, so a new group can be added before its icon is drawn.
 
 import mimetypes
 
-from apkviewer.domain.entities.file_node import FileNode
+from apkviewer.domain.entities.archive.file_node import FileNode
 
 
 class FileIconResolver:

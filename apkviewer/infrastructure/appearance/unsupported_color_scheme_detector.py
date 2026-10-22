@@ -2,10 +2,10 @@
 Fallback for platforms where the system color scheme cannot be queried.
 """
 
-from apkviewer.domain.entities.color_scheme import ColorScheme
-from apkviewer.domain.interfaces.system_color_scheme_detector import SystemColorSchemeDetector
+from apkviewer.domain.entities.appearance.color_scheme_enum import ColorSchemeEnum
+from apkviewer.ports.system.system_color_scheme_detector_port import SystemColorSchemeDetectorPort
 
 
-class UnsupportedColorSchemeDetector(SystemColorSchemeDetector):
-    def detect(self) -> ColorScheme:
-        return ColorScheme.LIGHT
+class UnsupportedColorSchemeDetector(SystemColorSchemeDetectorPort):
+    def detect(self) -> ColorSchemeEnum:
+        return ColorSchemeEnum.LIGHT

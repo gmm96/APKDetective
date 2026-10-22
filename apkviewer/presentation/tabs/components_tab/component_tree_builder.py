@@ -6,13 +6,13 @@ of the entities: no Tk involved, so they are easy to test.
 from collections.abc import Sequence
 from dataclasses import replace
 
-from apkviewer.domain.entities.component import Component
-from apkviewer.domain.entities.component_kind import ComponentKind
-from apkviewer.domain.entities.declared_components import DeclaredComponents
-from apkviewer.domain.entities.export_state import ExportState
-from apkviewer.domain.entities.exported_intent import ExportedIntent
-from apkviewer.domain.entities.intent_filter import IntentFilter
-from apkviewer.domain.entities.manifest_element import ManifestElement
+from apkviewer.domain.entities.manifest.components.component import Component
+from apkviewer.domain.entities.manifest.components.component_kind_enum import ComponentKindEnum
+from apkviewer.domain.entities.manifest.components.declared_components import DeclaredComponents
+from apkviewer.domain.entities.manifest.components.export_state_enum import ExportStateEnum
+from apkviewer.domain.entities.manifest.components.exported_intent import ExportedIntent
+from apkviewer.domain.entities.manifest.intents.intent_filter import IntentFilter
+from apkviewer.domain.entities.manifest.components.manifest_element import ManifestElement
 from apkviewer.presentation.viewmodels.tree.record_node import RecordNode
 
 
@@ -24,22 +24,22 @@ class ComponentTreeBuilder:
         ("receiver", "Receivers"),
         ("provider", "Providers"),
     )
-    _KIND_GROUPS: dict[ComponentKind, str] = {
-        ComponentKind.ACTIVITY: "activity",
-        ComponentKind.ACTIVITY_ALIAS: "activity",
-        ComponentKind.SERVICE: "service",
-        ComponentKind.RECEIVER: "receiver",
-        ComponentKind.PROVIDER: "provider",
+    _KIND_GROUPS: dict[ComponentKindEnum, str] = {
+        ComponentKindEnum.ACTIVITY: "activity",
+        ComponentKindEnum.ACTIVITY_ALIAS: "activity",
+        ComponentKindEnum.SERVICE: "service",
+        ComponentKindEnum.RECEIVER: "receiver",
+        ComponentKindEnum.PROVIDER: "provider",
     }
 
     _MAX_SUMMARY: int = 110
     _MAX_INLINE_ATTRIBUTES: int = 3
-    _EXPORT_LABELS: dict[ExportState, str] = {
-        ExportState.EXPORTED: "yes",
-        ExportState.NOT_EXPORTED: "no",
-        ExportState.IMPLICIT_EXPORTED: "yes (implicit)",
-        ExportState.IMPLICIT_NOT_EXPORTED: "no (implicit)",
-        ExportState.UNRESOLVED: "unknown",
+    _EXPORT_LABELS: dict[ExportStateEnum, str] = {
+        ExportStateEnum.EXPORTED: "yes",
+        ExportStateEnum.NOT_EXPORTED: "no",
+        ExportStateEnum.IMPLICIT_EXPORTED: "yes (implicit)",
+        ExportStateEnum.IMPLICIT_NOT_EXPORTED: "no (implicit)",
+        ExportStateEnum.UNRESOLVED: "unknown",
     }
 
     def build_components(self, components: DeclaredComponents) -> RecordNode:

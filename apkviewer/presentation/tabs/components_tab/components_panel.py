@@ -12,7 +12,7 @@ import tkinter as tk
 import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 
-from apkviewer.domain.entities.declared_components import DeclaredComponents
+from apkviewer.domain.entities.manifest.components.declared_components import DeclaredComponents
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.tree.record_table_panel import RecordTablePanel
 from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn

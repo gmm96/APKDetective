@@ -11,30 +11,30 @@ from typing import Any
 
 from androguard.core.apk import APK
 
-from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
-from apkviewer.domain.entities.component import Component
-from apkviewer.domain.entities.component_kind import ComponentKind
-from apkviewer.domain.entities.declared_components import DeclaredComponents
-from apkviewer.domain.entities.export_state import ExportState
-from apkviewer.domain.entities.intent_data import IntentData
-from apkviewer.domain.entities.intent_filter import IntentFilter
-from apkviewer.domain.entities.manifest_element import ManifestElement
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
+from apkviewer.domain.entities.manifest.components.component import Component
+from apkviewer.domain.entities.manifest.components.component_kind_enum import ComponentKindEnum
+from apkviewer.domain.entities.manifest.components.declared_components import DeclaredComponents
+from apkviewer.domain.entities.manifest.components.export_state_enum import ExportStateEnum
+from apkviewer.domain.entities.manifest.intents.intent_data import IntentData
+from apkviewer.domain.entities.manifest.intents.intent_filter import IntentFilter
+from apkviewer.domain.entities.manifest.components.manifest_element import ManifestElement
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS
-from apkviewer.infrastructure.androguard.manifest_value_formatter import ManifestValueFormatter
-from apkviewer.infrastructure.androguard.resource_reference_resolver import ResourceReferenceResolver
+from apkviewer.infrastructure.androguard.manifest.manifest_value_formatter import ManifestValueFormatter
+from apkviewer.infrastructure.androguard.manifest.resource_reference_resolver import ResourceReferenceResolver
 
 # targetSdkVersion given as a codename (a preview build) is newer than any numbered release.
 _PREVIEW_SDK: int = 10_000
 
 
 class ComponentsExtractor:
-    _KINDS: dict[str, ComponentKind] = {
-        "activity": ComponentKind.ACTIVITY,
-        "activity-alias": ComponentKind.ACTIVITY_ALIAS,
-        "service": ComponentKind.SERVICE,
-        "receiver": ComponentKind.RECEIVER,
-        "provider": ComponentKind.PROVIDER,
+    _KINDS: dict[str, ComponentKindEnum] = {
+        "activity": ComponentKindEnum.ACTIVITY,
+        "activity-alias": ComponentKindEnum.ACTIVITY_ALIAS,
+        "service": ComponentKindEnum.SERVICE,
+        "receiver": ComponentKindEnum.RECEIVER,
+        "provider": ComponentKindEnum.PROVIDER,
     }
     _CATEGORY_PREFIX: str = "android.intent.category."
     # Attributes already shown as dedicated fields of Component.
@@ -62,7 +62,7 @@ class ComponentsExtractor:
                 "the list of components may be incomplete.",
             )
 
-        order = list(ComponentKind)
+        order = list(ComponentKindEnum)
         unique = dict.fromkeys(components)
         return DeclaredComponents(
             tuple(sorted(unique, key=lambda c: (order.index(c.kind), c.name.lower())))
@@ -71,7 +71,7 @@ class ComponentsExtractor:
     @staticmethod
     def _warn(warnings: AnalysisWarningCollector | None, message: str) -> None:
         if warnings is not None:
-            warnings.add(message, AnalysisSection.COMPONENTS)
+            warnings.add(message, AnalysisSectionEnum.COMPONENTS)
 
     @staticmethod
     def _target_sdk(apk: APK) -> int | None:
@@ -92,7 +92,7 @@ class ComponentsExtractor:
     def _to_component(
         self,
         node: Any,
-        kind: ComponentKind,
+        kind: ComponentKindEnum,
         pkg_name: str,
         target_sdk: int | None,
         formatter: ManifestValueFormatter,
@@ -102,7 +102,7 @@ class ComponentsExtractor:
         return Component(
             name=self._resolve_name(node, pkg_name),
             kind=kind,
-            export_state=ExportState.resolve(
+            export_state=ExportStateEnum.resolve(
                 kind, formatter.declared(node.get(f"{ANDROID_NS}exported")), bool(filters), target_sdk
             ),
             permission=formatter.format("permission", permission) if permission else None,

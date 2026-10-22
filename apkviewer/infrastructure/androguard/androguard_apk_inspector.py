@@ -13,21 +13,21 @@ from typing import TypeVar
 
 from loguru import logger
 
-from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkviewer.domain.entities.analysis.apk_inspection import ApkInspection
-from apkviewer.domain.entities.application_info import ApplicationInfo
-from apkviewer.domain.entities.configuration_info import ConfigurationInfo
-from apkviewer.domain.entities.declared_components import DeclaredComponents
-from apkviewer.domain.entities.dex_metrics import DexMetrics
-from apkviewer.domain.entities.embedded_content import EmbeddedContent
-from apkviewer.domain.entities.permissions_info import PermissionsInfo
-from apkviewer.domain.entities.security_info import SecurityInfo
-from apkviewer.domain.entities.third_party_info import ThirdPartyInfo
-from apkviewer.domain.interfaces.apk_inspector import ApkInspector
+from apkviewer.domain.entities.analysis.sections.application_info import ApplicationInfo
+from apkviewer.domain.entities.analysis.sections.configuration_info import ConfigurationInfo
+from apkviewer.domain.entities.manifest.components.declared_components import DeclaredComponents
+from apkviewer.domain.entities.analysis.sections.dex_metrics import DexMetrics
+from apkviewer.domain.entities.analysis.sections.embedded_content import EmbeddedContent
+from apkviewer.domain.entities.manifest.permissions.permissions_info import PermissionsInfo
+from apkviewer.domain.entities.analysis.sections.security_info import SecurityInfo
+from apkviewer.domain.entities.analysis.sections.third_party_info import ThirdPartyInfo
+from apkviewer.ports.apk.apk_inspector_port import ApkInspectorPort
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.apk_loader import ApkLoader
-from apkviewer.infrastructure.androguard.dex_contents import DexContents
-from apkviewer.infrastructure.androguard.dex_reader import DexReader
+from apkviewer.infrastructure.androguard.dex.dex_contents import DexContents
+from apkviewer.infrastructure.androguard.dex.dex_reader import DexReader
 from apkviewer.infrastructure.androguard.extractors.app_info_extractor import ApplicationInfoExtractor
 from apkviewer.infrastructure.androguard.extractors.components_extractor import ComponentsExtractor
 from apkviewer.infrastructure.androguard.extractors.configuration_extractor import ConfigurationExtractor
@@ -36,15 +36,15 @@ from apkviewer.infrastructure.androguard.extractors.embedded_content_extractor i
 from apkviewer.infrastructure.androguard.extractors.permissions_extractor import PermissionsExtractor
 from apkviewer.infrastructure.androguard.extractors.security_info_extractor import SecurityInfoExtractor
 from apkviewer.infrastructure.androguard.extractors.tracker_detector import TrackerDetector
-from apkviewer.infrastructure.androguard.icon_extractor import IconExtractor
-from apkviewer.infrastructure.androguard.manifest_formatter import ManifestFormatter
+from apkviewer.infrastructure.androguard.extractors.icon_extractor import IconExtractor
+from apkviewer.infrastructure.androguard.manifest.manifest_formatter import ManifestFormatter
 
 logger.disable("androguard")  # it logs thousands of DEBUG lines per APK
 
 T = TypeVar("T")
 
 
-class AndroguardApkInspector(ApkInspector):
+class AndroguardApkInspector(ApkInspectorPort):
     def __init__(
         self,
         apk_loader: ApkLoader | None = None,
@@ -77,7 +77,7 @@ class AndroguardApkInspector(ApkInspector):
         warnings = AnalysisWarningCollector()
         apk = self._apk_loader.load(apk_path)  # an APK that can't even be opened is a real error
         guard = self._guarded
-        section = AnalysisSection
+        section = AnalysisSectionEnum
 
         # The DEX files are read from the APK once and shared by everything that looks at the code.
         dex_files = guard(
@@ -172,7 +172,7 @@ class AndroguardApkInspector(ApkInspector):
     def _guarded(
         warnings: AnalysisWarningCollector,
         what: str,
-        sections: tuple[AnalysisSection, ...],
+        sections: tuple[AnalysisSectionEnum, ...],
         read: Callable[[], T],
         default: T,
     ) -> T:

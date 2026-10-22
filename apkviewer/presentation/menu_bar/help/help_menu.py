@@ -7,7 +7,7 @@ from tkinter import messagebox
 from typing import Optional
 
 from apkviewer.presentation.config.about import ISSUES_URL, REPOSITORY_URL
-from apkviewer.domain.interfaces.url_opener import UrlOpener
+from apkviewer.ports.system.url_opener_port import UrlOpenerPort
 from .about_dialog import AboutDialog
 
 
@@ -15,13 +15,13 @@ class HelpMenu:
     def __init__(
         self,
         parent: tk.Misc,
-        url_opener: UrlOpener,
+        url_opener: UrlOpenerPort,
         about_dialog: Optional[AboutDialog] = None,
         repository_url: str = REPOSITORY_URL,
         issues_url: str = ISSUES_URL,
     ) -> None:
         self._parent: tk.Misc = parent
-        self._url_opener: UrlOpener = url_opener
+        self._url_opener: UrlOpenerPort = url_opener
         self._about_dialog: AboutDialog = about_dialog or AboutDialog(parent)
         self._repository_url: str = repository_url
         self._issues_url: str = issues_url

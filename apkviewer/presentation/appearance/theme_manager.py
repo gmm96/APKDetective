@@ -9,9 +9,9 @@ from typing import Any
 from collections.abc import Callable
 import ttkbootstrap as ttkb
 
-from apkviewer.application.resolve_color_scheme import ResolveColorScheme
-from apkviewer.domain.entities.color_mode import ColorMode
-from apkviewer.domain.entities.color_scheme import ColorScheme
+from apkviewer.application.appearance.resolve_color_scheme import ResolveColorScheme
+from apkviewer.domain.entities.appearance.color_mode_enum import ColorModeEnum
+from apkviewer.domain.entities.appearance.color_scheme_enum import ColorSchemeEnum
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.appearance.theme_palette_builder import ThemePaletteBuilder
 from apkviewer.presentation.viewmodels.appearance.theme_custom_colors import ThemeCustomColors
@@ -25,11 +25,11 @@ class ThemeManager:
         self,
         root: ttkb.App,
         resolve_color_scheme: ResolveColorScheme,
-        initial_mode: ColorMode = ColorMode.AUTO,
+        initial_mode: ColorModeEnum = ColorModeEnum.AUTO,
     ) -> None:
         self._root: ttkb.App = root
         self._system_color_scheme_detector: ResolveColorScheme = resolve_color_scheme
-        self._color_mode: ColorMode = initial_mode
+        self._color_mode: ColorModeEnum = initial_mode
 
         self._style: ttkb.Style = ttkb.Style()
         self._listeners: list[Callable[[ThemePalette], None]] = []
@@ -39,16 +39,16 @@ class ThemeManager:
         self._base_theme: str = THEMES[0] if THEMES else "bootstrap"
 
         # Resolve initial setup
-        self._color_scheme: ColorScheme
+        self._color_scheme: ColorSchemeEnum
         self._update_theme_state()
 
     @property
-    def color_mode(self) -> ColorMode:
+    def color_mode(self) -> ColorModeEnum:
         """Return the selected color mode."""
         return self._color_mode
 
     @property
-    def color_scheme(self) -> ColorScheme:
+    def color_scheme(self) -> ColorSchemeEnum:
         """Return the selected color mode."""
         return self._color_scheme
 
@@ -82,7 +82,7 @@ class ThemeManager:
         if listener in self._listeners:
             self._listeners.remove(listener)
 
-    def set_mode(self, color_mode: ColorMode) -> None:
+    def set_mode(self, color_mode: ColorModeEnum) -> None:
         """Apply a manually selected light/dark mode, or resolve AUTO."""
         self._color_mode = color_mode
         self._update_theme_state()
@@ -101,22 +101,22 @@ class ThemeManager:
 
     def _resolve_active_color_scheme(self) -> None:
         """Determine the target ColorScheme based on the current ColorMode."""
-        if self._color_mode == ColorMode.AUTO:
-            scheme: ColorScheme = self._system_color_scheme_detector.execute(self._color_mode)
-            self._color_scheme = scheme if scheme in (ColorScheme.LIGHT, ColorScheme.DARK) else ColorScheme.LIGHT
+        if self._color_mode == ColorModeEnum.AUTO:
+            scheme: ColorSchemeEnum = self._system_color_scheme_detector.execute(self._color_mode)
+            self._color_scheme = scheme if scheme in (ColorSchemeEnum.LIGHT, ColorSchemeEnum.DARK) else ColorSchemeEnum.LIGHT
         else:
-            self._color_scheme = ColorScheme.DARK if self._color_mode == ColorMode.DARK else ColorScheme.LIGHT
+            self._color_scheme = ColorSchemeEnum.DARK if self._color_mode == ColorModeEnum.DARK else ColorSchemeEnum.LIGHT
 
-    def _get_theme_variant(self, base_theme: str, target_scheme: ColorScheme) -> str:
+    def _get_theme_variant(self, base_theme: str, target_scheme: ColorSchemeEnum) -> str:
         """Construct the theme variant name based on the target scheme."""
-        suffix: str = "-light" if target_scheme == ColorScheme.LIGHT else "-dark"
+        suffix: str = "-light" if target_scheme == ColorSchemeEnum.LIGHT else "-dark"
         variant: str = f"{base_theme}{suffix}"
         if variant in self._style.theme_names():
             return variant
         fallback_base: str = THEMES[0] if THEMES else "bootstrap"
         return f"{fallback_base}{suffix}"
 
-    def _apply_theme(self, theme_name: str, color_scheme: ColorScheme) -> None:
+    def _apply_theme(self, theme_name: str, color_scheme: ColorSchemeEnum) -> None:
         """Apply the theme and notify listeners of palette changes."""
         if theme_name not in self._style.theme_names():
             raise ValueError(f"ttkbootstrap theme {theme_name!r} is not available.")
@@ -126,7 +126,7 @@ class ThemeManager:
         self._root.option_add("*Toplevel.background", self._palette.background)
         self._notify_listeners()
 
-    def _extract_theme_palette(self, color_scheme: ColorScheme) -> ThemePalette:
+    def _extract_theme_palette(self, color_scheme: ColorSchemeEnum) -> ThemePalette:
         """Create a ThemePalette combining ttkbootstrap colors and custom static colors."""
         custom_colors: ThemeCustomColors = CUSTOM_COLORS[color_scheme]
         try:

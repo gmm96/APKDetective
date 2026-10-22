@@ -9,8 +9,8 @@ from typing import Any
 from androguard.core.apk import APK
 from androguard.core.axml import AXMLPrinter
 
-from apkviewer.domain.entities.application_info import ApplicationInfo
-from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
+from apkviewer.domain.entities.analysis.sections.application_info import ApplicationInfo
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.config.android import ANDROID_NS
 
@@ -150,7 +150,7 @@ class ApplicationInfoExtractor:
     @staticmethod
     def _warn(warnings: AnalysisWarningCollector | None, message: str) -> None:
         if warnings is not None:
-            warnings.add(message, AnalysisSection.COMPONENTS)
+            warnings.add(message, AnalysisSectionEnum.COMPONENTS)
 
     @staticmethod
     def _parse_flag(node: Any, attr: str, default: bool) -> bool:

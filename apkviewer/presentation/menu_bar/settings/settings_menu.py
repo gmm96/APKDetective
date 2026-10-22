@@ -8,7 +8,7 @@ from tkinter import messagebox
 
 import ttkbootstrap as ttkb
 
-from apkviewer.domain.entities.color_mode import ColorMode
+from apkviewer.domain.entities.appearance.color_mode_enum import ColorModeEnum
 from apkviewer.presentation.appearance.theme_manager import ThemeManager
 from apkviewer.presentation.config.theme import THEMES
 
@@ -23,7 +23,7 @@ class SettingsMenu:
         self._theme_manager: ThemeManager = theme_manager
 
     @property
-    def color_mode(self) -> ColorMode:
+    def color_mode(self) -> ColorModeEnum:
         return self._theme_manager.color_mode
 
     @property
@@ -40,7 +40,7 @@ class SettingsMenu:
     def theme_label(base_theme: str) -> str:
         return base_theme.replace("-", " ").title()
 
-    def set_color_mode(self, mode: ColorMode) -> None:
+    def set_color_mode(self, mode: ColorModeEnum) -> None:
         self._apply("Color mode", lambda: self._theme_manager.set_mode(mode))
 
     def set_theme(self, base_theme: str) -> None:

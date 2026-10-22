@@ -7,7 +7,7 @@ shows an image only while a Python reference to it exists).
 
 from PIL import ImageTk
 
-from apkviewer.domain.entities.file_node import FileNode
+from apkviewer.domain.entities.archive.file_node import FileNode
 from apkviewer.presentation.tabs.files_tab.file_icon_resolver import FileIconResolver
 from apkviewer.presentation.common.icons.icon_loader import IconLoader
 

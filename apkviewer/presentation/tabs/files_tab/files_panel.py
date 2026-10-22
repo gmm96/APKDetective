@@ -13,12 +13,12 @@ from datetime import datetime
 
 import ttkbootstrap.constants as ttkb_constants
 
-from apkviewer.application.entry_previewer import EntryPreviewer
-from apkviewer.application.tree.file_sort_key import FileSortKey
-from apkviewer.application.tree.file_tree_filter import FileTreeFilter
-from apkviewer.application.tree.file_tree_sorter import FileTreeSorter
-from apkviewer.domain.entities.file_node import FileNode
-from apkviewer.domain.interfaces.size_formatter import SizeFormatter
+from apkviewer.application.files.entry_previewer import EntryPreviewer
+from apkviewer.application.files.file_sort_key_enum import FileSortKeyEnum
+from apkviewer.application.files.file_tree_filter import FileTreeFilter
+from apkviewer.application.files.file_tree_sorter import FileTreeSorter
+from apkviewer.domain.entities.archive.file_node import FileNode
+from apkviewer.ports.formatting.size_formatter_port import SizeFormatterPort
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.dialogs.extract_to_dialog import ExtractToDialog
 from apkviewer.presentation.common.tree.base_tree_panel import BaseTreePanel
@@ -40,12 +40,12 @@ class FilesPanel(BaseTreePanel[FileNode]):
         TreeColumn("modified", "Modified", width=150, min_width=130),
     )
     # Tree column id -> the (toolkit-agnostic) key the sorter understands.
-    COLUMN_SORT_KEYS: dict[str, FileSortKey] = {
-        "#0": FileSortKey.NAME,
-        "type": FileSortKey.TYPE,
-        "size": FileSortKey.SIZE,
-        "compressed": FileSortKey.COMPRESSED,
-        "modified": FileSortKey.MODIFIED,
+    COLUMN_SORT_KEYS: dict[str, FileSortKeyEnum] = {
+        "#0": FileSortKeyEnum.NAME,
+        "type": FileSortKeyEnum.TYPE,
+        "size": FileSortKeyEnum.SIZE,
+        "compressed": FileSortKeyEnum.COMPRESSED,
+        "modified": FileSortKeyEnum.MODIFIED,
     }
     DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
@@ -59,14 +59,14 @@ class FilesPanel(BaseTreePanel[FileNode]):
         entry_previewer: EntryPreviewer,
         palette: ThemePalette,
         tree_filter: FileTreeFilter | None = None,
-        size_formatter: SizeFormatter | None = None,
+        size_formatter: SizeFormatterPort | None = None,
         sorter: FileTreeSorter | None = None,
         icon_loader: IconLoader | None = None,
         file_icons: FileIconProvider | None = None,
     ) -> None:
         # State used by the base-class hooks: it must exist before the base builds the widgets.
         self._tree_filter: FileTreeFilter = tree_filter or FileTreeFilter()
-        self._size_formatter: SizeFormatter = size_formatter or HumanReadableSizeFormatter()
+        self._size_formatter: SizeFormatterPort = size_formatter or HumanReadableSizeFormatter()
         self._sorter: FileTreeSorter = sorter or FileTreeSorter()
         self._icon_loader: IconLoader = icon_loader or IconLoader()
         self._file_icons: FileIconProvider = file_icons or FileIconProvider(self._icon_loader)

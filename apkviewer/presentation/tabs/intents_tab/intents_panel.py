@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 
-from apkviewer.domain.entities.exported_intent import ExportedIntent
+from apkviewer.domain.entities.manifest.components.exported_intent import ExportedIntent
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.tree.record_table_panel import RecordTablePanel
 from apkviewer.presentation.common.feedback.warning_banner import WarningBanner

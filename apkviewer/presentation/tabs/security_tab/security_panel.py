@@ -11,9 +11,9 @@ from datetime import datetime, timezone
 
 import ttkbootstrap as ttkb
 
-from apkviewer.domain.entities.certificate import Certificate
-from apkviewer.domain.entities.security_info import SecurityInfo
-from apkviewer.domain.entities.third_party_info import ThirdPartyInfo
+from apkviewer.domain.entities.analysis.sections.certificate import Certificate
+from apkviewer.domain.entities.analysis.sections.security_info import SecurityInfo
+from apkviewer.domain.entities.analysis.sections.third_party_info import ThirdPartyInfo
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.forms.form_panel import FormPanel
 from apkviewer.presentation.common.forms.form_section import FormSection

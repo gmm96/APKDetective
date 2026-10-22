@@ -6,14 +6,14 @@ the archive's file tree, which is obtained through a separate port.
 from dataclasses import dataclass
 
 from apkviewer.domain.entities.analysis.analysis_warning import AnalysisWarning
-from apkviewer.domain.entities.application_info import ApplicationInfo
-from apkviewer.domain.entities.configuration_info import ConfigurationInfo
-from apkviewer.domain.entities.declared_components import DeclaredComponents
-from apkviewer.domain.entities.dex_metrics import DexMetrics
-from apkviewer.domain.entities.embedded_content import EmbeddedContent
-from apkviewer.domain.entities.permissions_info import PermissionsInfo
-from apkviewer.domain.entities.security_info import SecurityInfo
-from apkviewer.domain.entities.third_party_info import ThirdPartyInfo
+from apkviewer.domain.entities.analysis.sections.application_info import ApplicationInfo
+from apkviewer.domain.entities.analysis.sections.configuration_info import ConfigurationInfo
+from apkviewer.domain.entities.manifest.components.declared_components import DeclaredComponents
+from apkviewer.domain.entities.analysis.sections.dex_metrics import DexMetrics
+from apkviewer.domain.entities.analysis.sections.embedded_content import EmbeddedContent
+from apkviewer.domain.entities.manifest.permissions.permissions_info import PermissionsInfo
+from apkviewer.domain.entities.analysis.sections.security_info import SecurityInfo
+from apkviewer.domain.entities.analysis.sections.third_party_info import ThirdPartyInfo
 
 
 @dataclass(frozen=True)

@@ -5,11 +5,11 @@ Zip-backed implementation of the ArchiveReader port (an APK is a zip).
 import zipfile
 from datetime import datetime
 
-from apkviewer.domain.entities.archive_entry import ArchiveEntry
-from apkviewer.domain.interfaces.archive_reader import ArchiveReader
+from apkviewer.domain.entities.archive.archive_entry import ArchiveEntry
+from apkviewer.ports.apk.archive_reader_port import ArchiveReaderPort
 
 
-class ZipArchiveReader(ArchiveReader):
+class ZipArchiveReader(ArchiveReaderPort):
     def list_entries(self, archive_path: str) -> list[ArchiveEntry]:
         with zipfile.ZipFile(archive_path, "r") as archive:
             return [

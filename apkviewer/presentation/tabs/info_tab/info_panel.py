@@ -5,13 +5,13 @@ content embedded in the code.
 
 import ttkbootstrap as ttkb
 
-from apkviewer.application.dex_metrics_formatter import DexMetricsFormatter
-from apkviewer.domain.entities.application_info import ApplicationInfo
-from apkviewer.domain.entities.configuration_info import ConfigurationInfo
-from apkviewer.domain.entities.dex_metrics import DexMetrics
-from apkviewer.domain.entities.embedded_content import EmbeddedContent
-from apkviewer.domain.interfaces.date_formatter import DateFormatter
-from apkviewer.domain.interfaces.size_formatter import SizeFormatter
+from apkviewer.application.analysis.dex_metrics_formatter import DexMetricsFormatter
+from apkviewer.domain.entities.analysis.sections.application_info import ApplicationInfo
+from apkviewer.domain.entities.analysis.sections.configuration_info import ConfigurationInfo
+from apkviewer.domain.entities.analysis.sections.dex_metrics import DexMetrics
+from apkviewer.domain.entities.analysis.sections.embedded_content import EmbeddedContent
+from apkviewer.ports.formatting.date_formatter_port import DateFormatterPort
+from apkviewer.ports.formatting.size_formatter_port import SizeFormatterPort
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.forms.form_panel import FormPanel
 from apkviewer.presentation.common.menus.text_context_menu import TextContextMenu
@@ -27,12 +27,12 @@ class InfoPanel(FormPanel):
         context_menu: TextContextMenu,
         palette: ThemePalette,
         line_marker: TextLineMarker | None = None,
-        size_formatter: SizeFormatter | None = None,
-        date_formatter: DateFormatter | None = None,
+        size_formatter: SizeFormatterPort | None = None,
+        date_formatter: DateFormatterPort | None = None,
     ) -> None:
         super().__init__(parent, context_menu, palette, line_marker)
-        self._size_formatter: SizeFormatter = size_formatter or HumanReadableSizeFormatter()
-        self._date_formatter: DateFormatter = date_formatter or EnglishLongDateFormatter()
+        self._size_formatter: SizeFormatterPort = size_formatter or HumanReadableSizeFormatter()
+        self._date_formatter: DateFormatterPort = date_formatter or EnglishLongDateFormatter()
         self._dex_metrics_formatter: DexMetricsFormatter = DexMetricsFormatter(self._size_formatter)
 
     def render(

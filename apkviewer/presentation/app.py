@@ -15,22 +15,22 @@ from tkinter import filedialog, messagebox
 import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 
-from apkviewer.application.analyze_apk import AnalyzeApk
-from apkviewer.application.entry_previewer import EntryPreviewer
-from apkviewer.application.export_app_info import ExportAppInfo
-from apkviewer.application.export_icon import ExportIcon
-from apkviewer.application.extract_apk_entries import ExtractApkEntries
-from apkviewer.application.resolve_color_scheme import ResolveColorScheme
+from apkviewer.application.analysis.analyze_apk import AnalyzeApk
+from apkviewer.application.files.entry_previewer import EntryPreviewer
+from apkviewer.application.export.export_app_info import ExportAppInfo
+from apkviewer.application.export.export_icon import ExportIcon
+from apkviewer.application.export.extract_apk_entries import ExtractApkEntries
+from apkviewer.application.appearance.resolve_color_scheme import ResolveColorScheme
 from apkviewer.domain.entities.analysis.analysis_result import AnalysisResult
-from apkviewer.domain.entities.analysis.analysis_section import AnalysisSection
-from apkviewer.domain.entities.color_mode import ColorMode
-from apkviewer.domain.interfaces.url_opener import UrlOpener
-from apkviewer.domain.interfaces.size_formatter import SizeFormatter
-from apkviewer.domain.interfaces.date_formatter import DateFormatter
+from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
+from apkviewer.domain.entities.appearance.color_mode_enum import ColorModeEnum
+from apkviewer.ports.system.url_opener_port import UrlOpenerPort
+from apkviewer.ports.formatting.size_formatter_port import SizeFormatterPort
+from apkviewer.ports.formatting.date_formatter_port import DateFormatterPort
 from apkviewer.presentation.appearance.theme_manager import ThemeManager
 from apkviewer.presentation.common.dialogs.extract_to_dialog import ExtractToDialog
 from apkviewer.presentation.status_bar.status_bar import StatusBar
-from apkviewer.presentation.viewmodels.status_bar.status_level import StatusLevel
+from apkviewer.presentation.viewmodels.status_bar.status_level_enum import StatusLevelEnum
 from apkviewer.presentation.common.menus.text_context_menu import TextContextMenu
 from apkviewer.presentation.tabs.components_tab.components_panel import ComponentsPanel
 from apkviewer.presentation.tabs.files_tab.files_panel import FilesPanel
@@ -60,21 +60,21 @@ class ApkAnalyzerApp:
 
     # Which parts of the analysis each tab reports problems for. The analysis only says WHAT it
     # could not read; deciding where the user is told is the job of the presentation.
-    _INFO_SECTIONS: tuple[AnalysisSection, ...] = (
-        AnalysisSection.APPLICATION,
-        AnalysisSection.CONFIGURATION,
-        AnalysisSection.EMBEDDED_CONTENT,
-        AnalysisSection.DEX_METRICS,
-        AnalysisSection.ICON,
+    _INFO_SECTIONS: tuple[AnalysisSectionEnum, ...] = (
+        AnalysisSectionEnum.APPLICATION,
+        AnalysisSectionEnum.CONFIGURATION,
+        AnalysisSectionEnum.EMBEDDED_CONTENT,
+        AnalysisSectionEnum.DEX_METRICS,
+        AnalysisSectionEnum.ICON,
     )
-    _SECURITY_SECTIONS: tuple[AnalysisSection, ...] = (
-        AnalysisSection.SIGNATURES,
-        AnalysisSection.THIRD_PARTY,
+    _SECURITY_SECTIONS: tuple[AnalysisSectionEnum, ...] = (
+        AnalysisSectionEnum.SIGNATURES,
+        AnalysisSectionEnum.THIRD_PARTY,
     )
-    _PERMISSIONS_SECTIONS: tuple[AnalysisSection, ...] = (AnalysisSection.PERMISSIONS,)
-    _COMPONENTS_SECTIONS: tuple[AnalysisSection, ...] = (  # also for the Intents tab, derived from them
-        AnalysisSection.COMPONENTS,
-        AnalysisSection.MANIFEST,
+    _PERMISSIONS_SECTIONS: tuple[AnalysisSectionEnum, ...] = (AnalysisSectionEnum.PERMISSIONS,)
+    _COMPONENTS_SECTIONS: tuple[AnalysisSectionEnum, ...] = (  # also for the Intents tab, derived from them
+        AnalysisSectionEnum.COMPONENTS,
+        AnalysisSectionEnum.MANIFEST,
     )
 
     _ICONS_DIR: str = "assets/icons/outline"
@@ -87,11 +87,11 @@ class ApkAnalyzerApp:
         entry_previewer: EntryPreviewer,
         export_app_info: ExportAppInfo,
         export_icon: ExportIcon,
-        url_opener: UrlOpener,
+        url_opener: UrlOpenerPort,
         resolve_color_scheme: ResolveColorScheme,
         icon_loader: IconLoader | None = None,
-        size_formatter: SizeFormatter | None = None,
-        date_formatter: DateFormatter | None = None,
+        size_formatter: SizeFormatterPort | None = None,
+        date_formatter: DateFormatterPort | None = None,
     ) -> None:
         self.root: ttkb.App = root
         self.root.title("APKViewer")
@@ -103,8 +103,8 @@ class ApkAnalyzerApp:
         self._analyze_apk: AnalyzeApk = analyze_apk
         self._entry_previewer: EntryPreviewer = entry_previewer
         self._icon_loader: IconLoader = icon_loader or IconLoader()
-        self._size_formatter: SizeFormatter | None = size_formatter
-        self._date_formatter: DateFormatter | None = date_formatter
+        self._size_formatter: SizeFormatterPort | None = size_formatter
+        self._date_formatter: DateFormatterPort | None = date_formatter
 
         # Activates the ttk theme (AUTO = follow the OS) before any widget exists.
         self._theme: ThemeManager = ThemeManager(root, resolve_color_scheme)
@@ -216,18 +216,18 @@ class ApkAnalyzerApp:
                         title="Color mode",
                         choices=(
                             MenuChoice(
-                                ColorMode.LIGHT.value, "Light mode",
-                                lambda: settings.set_color_mode(ColorMode.LIGHT),
+                                ColorModeEnum.LIGHT.value, "Light mode",
+                                lambda: settings.set_color_mode(ColorModeEnum.LIGHT),
                                 self._asset_icon("light_mode.png"),
                             ),
                             MenuChoice(
-                                ColorMode.DARK.value, "Dark mode",
-                                lambda: settings.set_color_mode(ColorMode.DARK),
+                                ColorModeEnum.DARK.value, "Dark mode",
+                                lambda: settings.set_color_mode(ColorModeEnum.DARK),
                                 self._asset_icon("dark_mode.png"),
                             ),
                             MenuChoice(
-                                ColorMode.AUTO.value, "Auto (follow system)",
-                                lambda: settings.set_color_mode(ColorMode.AUTO),
+                                ColorModeEnum.AUTO.value, "Auto (follow system)",
+                                lambda: settings.set_color_mode(ColorModeEnum.AUTO),
                                 self._asset_icon("auto_color_mode.png")
                             ),
                         ),
@@ -272,7 +272,7 @@ class ApkAnalyzerApp:
         no cancellation), so for now it only says so; this is where stopping it would go.
         """
         self._set_status(
-            "Cancelling an analysis is not supported yet: it will finish on its own.", StatusLevel.INFO
+            "Cancelling an analysis is not supported yet: it will finish on its own.", StatusLevelEnum.INFO
         )
 
     def exit_app(self) -> None:
@@ -295,7 +295,7 @@ class ApkAnalyzerApp:
         self._result = None
         self.menu_bar.set_enabled(self._ANALYSIS_DEPENDENT_ITEMS, False)
         self._set_status(
-            f"Analyzing: {os.path.basename(apk_path)}... (Please wait)", StatusLevel.INFO
+            f"Analyzing: {os.path.basename(apk_path)}... (Please wait)", StatusLevelEnum.INFO
         )
         self._set_loading(True)
         self.header.reset_to_placeholder(os.path.basename(apk_path))
@@ -326,10 +326,10 @@ class ApkAnalyzerApp:
                 self._set_status(
                     f"Analysis completed with {count} warning(s): some data could not be read "
                     "(see the notice at the top of the tabs).",
-                    StatusLevel.INFO,
+                    StatusLevelEnum.INFO,
                 )
             else:
-                self._set_status("Analysis completed successfully.", StatusLevel.SUCCESS)
+                self._set_status("Analysis completed successfully.", StatusLevelEnum.SUCCESS)
         finally:
             self.root.after(0, lambda: self._set_loading(False))
 
@@ -342,11 +342,11 @@ class ApkAnalyzerApp:
             ),
         )
         self.root.after(0, self.header.show_error)
-        self._set_status("Analysis failed.", StatusLevel.ERROR)
+        self._set_status("Analysis failed.", StatusLevelEnum.ERROR)
 
     # --- UI updates (must run on the Tk main thread) ---------------------------
 
-    def _set_status(self, message: str, level: StatusLevel = StatusLevel.NEUTRAL) -> None:
+    def _set_status(self, message: str, level: StatusLevelEnum = StatusLevelEnum.NEUTRAL) -> None:
         self.root.after(0, lambda: self.status_bar.set_status(message, level))
 
     def _set_loading(self, loading: bool) -> None:

@@ -4,7 +4,7 @@ Colors live in ThemePalette (see apkviewer.presentation.appearance.theme_palette
 """
 
 from apkviewer.presentation.viewmodels.appearance.theme_custom_colors import ThemeCustomColors
-from apkviewer.domain.entities.color_scheme import ColorScheme
+from apkviewer.domain.entities.appearance.color_scheme_enum import ColorSchemeEnum
 
 
 # --- Fonts ---
@@ -62,7 +62,7 @@ DARK_CUSTOM_COLORS = ThemeCustomColors(
     xml_value="#a5d6a7",
     xml_comment="#8a8a8a",
 )
-CUSTOM_COLORS: dict[ColorScheme, ThemeCustomColors] = {
-    ColorScheme.LIGHT: LIGHT_CUSTOM_COLORS,
-    ColorScheme.DARK: DARK_CUSTOM_COLORS,
+CUSTOM_COLORS: dict[ColorSchemeEnum, ThemeCustomColors] = {
+    ColorSchemeEnum.LIGHT: LIGHT_CUSTOM_COLORS,
+    ColorSchemeEnum.DARK: DARK_CUSTOM_COLORS,
 }

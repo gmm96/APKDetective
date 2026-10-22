@@ -9,13 +9,13 @@ file and nothing else.
 
 import ttkbootstrap as ttkb
 
-from apkviewer.application.analyze_apk import AnalyzeApk
-from apkviewer.application.app_info_serializer import AppInfoSerializer
-from apkviewer.application.entry_previewer import EntryPreviewer
-from apkviewer.application.export_app_info import ExportAppInfo
-from apkviewer.application.export_icon import ExportIcon
-from apkviewer.application.extract_apk_entries import ExtractApkEntries
-from apkviewer.application.resolve_color_scheme import ResolveColorScheme
+from apkviewer.application.analysis.analyze_apk import AnalyzeApk
+from apkviewer.application.export.app_info_serializer import AppInfoSerializer
+from apkviewer.application.files.entry_previewer import EntryPreviewer
+from apkviewer.application.export.export_app_info import ExportAppInfo
+from apkviewer.application.export.export_icon import ExportIcon
+from apkviewer.application.export.extract_apk_entries import ExtractApkEntries
+from apkviewer.application.appearance.resolve_color_scheme import ResolveColorScheme
 from apkviewer.infrastructure.androguard.androguard_apk_inspector import AndroguardApkInspector
 from apkviewer.infrastructure.filesystem.local_file_writer import LocalFileWriter
 from apkviewer.infrastructure.filesystem.temp_directory_workspace import TempDirectoryWorkspace

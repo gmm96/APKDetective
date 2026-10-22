@@ -6,7 +6,7 @@ functions of the entities: no Tk involved.
 from collections.abc import Sequence
 from dataclasses import replace
 
-from apkviewer.domain.entities.permission import Permission
+from apkviewer.domain.entities.manifest.permissions.permission import Permission
 from apkviewer.presentation.viewmodels.tree.record_node import RecordNode
 
 DANGEROUS_STYLE: str = "dangerous"

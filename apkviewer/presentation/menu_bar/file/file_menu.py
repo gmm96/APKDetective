@@ -8,8 +8,8 @@ import tkinter as tk
 from collections.abc import Callable
 from tkinter import filedialog, messagebox
 
-from apkviewer.application.export_app_info import ExportAppInfo
-from apkviewer.application.export_icon import ExportIcon
+from apkviewer.application.export.export_app_info import ExportAppInfo
+from apkviewer.application.export.export_icon import ExportIcon
 from apkviewer.domain.entities.analysis.analysis_result import AnalysisResult
 from apkviewer.presentation.common.dialogs.extract_to_dialog import ExtractToDialog
 

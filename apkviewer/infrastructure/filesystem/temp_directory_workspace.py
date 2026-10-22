@@ -4,10 +4,10 @@ TemporaryWorkspace implementation backed by a system temp directory.
 
 import tempfile
 
-from apkviewer.domain.interfaces.temporary_workspace import TemporaryWorkspace
+from apkviewer.ports.filesystem.temporary_workspace_port import TemporaryWorkspacePort
 
 
-class TempDirectoryWorkspace(TemporaryWorkspace):
+class TempDirectoryWorkspace(TemporaryWorkspacePort):
     def __init__(self, prefix: str = "apkviewer_") -> None:
         self._prefix: str = prefix
         self._directory: tempfile.TemporaryDirectory[str] = self._create_directory()
