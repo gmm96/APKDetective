@@ -1,6 +1,9 @@
+import tkinter as tk
+
 import ttkbootstrap as ttkb
 
 from apkviewer.presentation.common.scrolling.auto_hide_scrollbar import AutoHideScrollbar
+from apkviewer.presentation.common.scrolling.wheel_lines import WheelLines
 from apkviewer.presentation.config.layout import FIELD_PADX, FIELD_PADY
 
 
@@ -13,6 +16,9 @@ class AutoScrolledText(ttkb.ScrolledText):
     visibility from feeding back into the layout (a bar appears -> less room -> another bar
     appears...): those lanes must stay. The grid options of the bars are not repeated here
     either; hiding a bar remembers them and showing it again restores them.
+
+    The mouse wheel scrolls the text while it overflows vertically; otherwise it is left to the
+    page behind it (same rule as the tables of BaseTreePanel).
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -29,3 +35,17 @@ class AutoScrolledText(ttkb.ScrolledText):
             self.text.configure(xscrollcommand=AutoHideScrollbar(self.hbar).scroll_command)
         if self.vbar is not None:
             self.text.configure(yscrollcommand=AutoHideScrollbar(self.vbar).scroll_command)
+        for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            self.text.bind(sequence, self._on_mousewheel)
+
+    def _on_mousewheel(self, event: tk.Event) -> str | None:
+        first, last = self.text.yview()
+        if first <= 0.0 and last >= 1.0:
+            return None  # nothing to scroll here: let the page behind it scroll
+        lines = WheelLines.of(event)
+        units = round(lines)
+        if units == 0 and lines != 0:
+            units = 1 if lines > 0 else -1
+        if units:
+            self.text.yview_scroll(units, "units")
+        return "break"  # handled: the enclosing scrollable page must not scroll too

@@ -18,7 +18,7 @@ from apkviewer.presentation.common.forms.column_planner import ColumnPlanner
 from apkviewer.presentation.common.inputs.copyable_entry import CopyableEntry
 from apkviewer.presentation.common.forms.form_widget_factory import FormWidgetFactory
 from apkviewer.presentation.common.forms.label_width_meter import LabelWidthMeter
-from apkviewer.presentation.config.layout import MIN_LIST_LINES
+from apkviewer.presentation.config.layout import MAX_LIST_LINES, MIN_LIST_LINES
 
 
 class FormSection:
@@ -192,8 +192,9 @@ class FormSection:
     @staticmethod
     def _display_text(items: Sequence[str], separator: str) -> tuple[str, int]:
         text = separator.join(items) if items else "None found"
-        line_count = max(text.count("\n") + 1, MIN_LIST_LINES)
-        text += "\n" * (line_count - (text.count("\n") + 1))
+        content_lines = text.count("\n") + 1
+        line_count = max(min(content_lines, MAX_LIST_LINES), MIN_LIST_LINES)
+        text += "\n" * max(0, line_count - content_lines)
         return text, line_count
 
     @staticmethod
