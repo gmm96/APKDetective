@@ -1,7 +1,7 @@
 """
-Keeps the user on one tab of a notebook while something is going on (a load,
-for instance): the other tabs are disabled, so neither the mouse nor the keyboard
-can leave it, and they are enabled again afterwards.
+Keeps the user on one tab of a notebook while the others have nothing to show (a load
+is going on, or no file has been loaded yet): the other tabs are disabled, so neither the
+mouse nor the keyboard can leave it, and they are enabled again afterwards.
 """
 
 import tkinter as tk

@@ -21,6 +21,9 @@ class AppHeader(ttkb.Frame):
     # Characters; wide enough for both labels so the button keeps its size when it changes.
     _BUTTON_WIDTH: int = 8
 
+    _IDLE_TITLE: str = "No APK Loaded"
+    _IDLE_SUBTITLE: str = "Select an application file to begin analysis."
+
     def __init__(
         self,
         parent: ttkb.Frame,
@@ -45,12 +48,12 @@ class AppHeader(ttkb.Frame):
         text_frame = ttkb.Frame(left)
         text_frame.pack(side=tk.LEFT, expand=True, fill=tk.Y)
 
-        self.name_label: ttkb.Label = ttkb.Label(text_frame, text="No APK Loaded", font=FONT_TITLE)
+        self.name_label: ttkb.Label = ttkb.Label(text_frame, text=self._IDLE_TITLE, font=FONT_TITLE)
         self.name_label.pack(side=tk.TOP, anchor="sw", expand=True)
 
         self.package_label: ttkb.Label = ttkb.Label(
             text_frame,
-            text="Select an application file to begin analysis.",
+            text=self._IDLE_SUBTITLE,
             font=FONT_SUBTITLE,
             foreground=palette.foreground,
         )
@@ -77,15 +80,30 @@ class AppHeader(ttkb.Frame):
         self.name_label.configure(text="Analyzing APK...")
         self.package_label.configure(text=file_name)
 
+    def reset_to_idle(self) -> None:
+        """Back to how the header looks before any APK has been loaded (an analysis was cancelled)."""
+        self._current_icon = None
+        self.icon_label.configure(image=self._placeholder_icon)
+        self.name_label.configure(text=self._IDLE_TITLE)
+        self.package_label.configure(text=self._IDLE_SUBTITLE)
+
     def show_error(self) -> None:
         self.name_label.configure(text="Error loading APK")
 
     def set_loading(self, loading: bool) -> None:
         """While an APK is being loaded the button turns into a red "Cancel" button."""
         if loading:
-            self.load_button.configure(text="Cancel", command=self._on_cancel_click, bootstyle=ttkb_constants.DANGER)
+            self.load_button.configure(
+                text="Cancel", command=self._on_cancel_click, bootstyle=ttkb_constants.DANGER, state=tk.NORMAL
+            )
         else:
-            self.load_button.configure(text="Load APK", command=self._on_load_click, bootstyle=ttkb_constants.PRIMARY)
+            self.load_button.configure(
+                text="Load APK", command=self._on_load_click, bootstyle=ttkb_constants.PRIMARY, state=tk.NORMAL
+            )
+
+    def set_cancelling(self) -> None:
+        """The cancellation was requested and the analysis has not stopped yet: the button can't be pressed again."""
+        self.load_button.configure(state=tk.DISABLED)
 
     def show_result(self, app_name: str, package_name: str, icon_png: bytes | None = None) -> None:
         thumbnail = self._create_thumbnail(icon_png)

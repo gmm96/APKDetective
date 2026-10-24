@@ -40,6 +40,11 @@ class EntryPreviewer:
     def open(self, local_path: str) -> None:
         self._file_opener.open(local_path)
 
+    def open_entries(self, apk_path: str, entry_paths: Sequence[str]) -> None:
+        """Extract the entries and open each one with the system's default application."""
+        for local_path in self.prepare(apk_path, entry_paths):
+            self.open(local_path)
+
     def open_with(self, local_path: str) -> None:
         self._file_opener.open_with(local_path)
 

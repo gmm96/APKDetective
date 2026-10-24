@@ -13,6 +13,7 @@ import struct
 from collections.abc import Iterable
 
 from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
+from apkviewer.domain.entities.analysis.cancellation_token import CancellationToken
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.dex.dex_contents import DexContents
 from apkviewer.infrastructure.androguard.dex.dex_header import DexHeader
@@ -22,10 +23,18 @@ _CLASS_DEF_WORDS: int = 8  # a class_def_item is 8 uint32 (32 bytes); the first 
 
 
 class DexReader:
-    def read(self, dex_files: Iterable[bytes], warnings: AnalysisWarningCollector | None = None) -> DexContents:
+    def read(
+        self,
+        dex_files: Iterable[bytes],
+        warnings: AnalysisWarningCollector | None = None,
+        cancellation: CancellationToken | None = None,
+    ) -> DexContents:
+        """Raises AnalysisCancelledError, between two DEX files, when a `cancellation` is given and cancelled."""
         strings: list[str] = []
         class_names: list[str] = []
         for number, dex_bytes in enumerate(dex_files, start=1):
+            if cancellation is not None:
+                cancellation.raise_if_cancelled()
             dex_strings, dex_classes, problem = self._parse(dex_bytes)
             strings.extend(dex_strings)
             class_names.extend(dex_classes)

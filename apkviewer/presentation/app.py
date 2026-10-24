@@ -21,7 +21,9 @@ from apkviewer.application.export.export_app_info import ExportAppInfo
 from apkviewer.application.export.export_icon import ExportIcon
 from apkviewer.application.export.extract_apk_entries import ExtractApkEntries
 from apkviewer.application.appearance.resolve_color_scheme import ResolveColorScheme
+from apkviewer.domain.entities.analysis.analysis_cancelled_error import AnalysisCancelledError
 from apkviewer.domain.entities.analysis.analysis_result import AnalysisResult
+from apkviewer.domain.entities.analysis.cancellation_token import CancellationToken
 from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkviewer.domain.entities.appearance.color_mode_enum import ColorModeEnum
 from apkviewer.ports.system.url_opener_port import UrlOpenerPort
@@ -111,6 +113,8 @@ class ApkAnalyzerApp:
 
         # The analysis currently shown (None while nothing is loaded).
         self._result: AnalysisResult | None = None
+        # What stops the analysis that is running (None while there is none).
+        self._cancellation: CancellationToken | None = None
 
         extract_dialog = ExtractToDialog(root, extract_entries)
         self._extract_dialog: ExtractToDialog = extract_dialog
@@ -194,6 +198,7 @@ class ApkAnalyzerApp:
         notebook.add(self.manifest_panel, text="Manifest")
         notebook.add(self.files_panel, text="Files")
         self._tab_lock: NotebookLock = NotebookLock(notebook)
+        self._sync_tab_lock()  # nothing is loaded yet: only the Info tab is available
 
     def _build_menu(self) -> None:
         export, help_ = self._file_actions, self._help_actions
@@ -208,7 +213,7 @@ class ApkAnalyzerApp:
                     MenuItem("extract_apk", "Extract to...", export.extract_apk, self._asset_icon("unarchive_file.png")),
                     MenuItem("extract_icon", "Extract icon as PNG", export.extract_icon, self._asset_icon("image.png")),
                     None,
-                    MenuItem("exit", "Exit", self.exit_app, self._asset_icon("exit_app.png")),
+                    MenuItem("exit", "Exit", self.exit_app, self._asset_icon("exit_app.png"), "Ctrl+Q", "<Control-q>"),
                 ],
                 "Settings": [
                     MenuChoiceGroup(
@@ -268,12 +273,14 @@ class ApkAnalyzerApp:
 
     def cancel_analysis(self) -> None:
         """
-        What the header's Cancel button does. The analysis cannot be interrupted yet (AnalyzeApk has
-        no cancellation), so for now it only says so; this is where stopping it would go.
+        What the header's Cancel button does: asks the running analysis to stop. It does not stop on
+        the spot but at its next checkpoint, so the button is disabled until the worker reports back.
         """
-        self._set_status(
-            "Cancelling an analysis is not supported yet: it will finish on its own.", StatusLevelEnum.INFO
-        )
+        if self._cancellation is None:
+            return
+        self._cancellation.cancel()
+        self.header.set_cancelling()
+        self._set_status("Cancelling the analysis...", StatusLevelEnum.INFO)
 
     def exit_app(self) -> None:
         self.files_panel.cleanup()  # drop temp files extracted for Open / Open with / Copy
@@ -297,6 +304,7 @@ class ApkAnalyzerApp:
         self._set_status(
             f"Analyzing: {os.path.basename(apk_path)}... (Please wait)", StatusLevelEnum.INFO
         )
+        self._cancellation = CancellationToken()
         self._set_loading(True)
         self.header.reset_to_placeholder(os.path.basename(apk_path))
         self.info_panel.clear()
@@ -306,16 +314,20 @@ class ApkAnalyzerApp:
         self.intents_panel.clear()
         self.manifest_panel.clear()
         self.files_panel.clear()
-        threading.Thread(target=self._analyze_in_background, args=(apk_path,), daemon=True).start()
+        threading.Thread(
+            target=self._analyze_in_background, args=(apk_path, self._cancellation), daemon=True
+        ).start()
 
     def _default_extract_folder_name(self) -> str:
         return self._result.default_name if self._result else "app"
 
     # --- Background worker (runs off the Tk main thread) ----------------------
 
-    def _analyze_in_background(self, apk_path: str) -> None:
+    def _analyze_in_background(self, apk_path: str, cancellation: CancellationToken) -> None:
         try:
-            result = self._analyze_apk.execute(apk_path)
+            result = self._analyze_apk.execute(apk_path, cancellation)
+        except AnalysisCancelledError:
+            self._report_cancelled()
         except Exception as exc:  # pylint: disable=broad-except
             # `exc` is unbound once the except block ends, so keep its text.
             self._report_failure(str(exc))
@@ -332,6 +344,10 @@ class ApkAnalyzerApp:
                 self._set_status("Analysis completed successfully.", StatusLevelEnum.SUCCESS)
         finally:
             self.root.after(0, lambda: self._set_loading(False))
+
+    def _report_cancelled(self) -> None:
+        self.root.after(0, self.header.reset_to_idle)
+        self._set_status("Analysis cancelled.", StatusLevelEnum.INFO)
 
     def _report_failure(self, message: str) -> None:
         self.root.after(
@@ -358,7 +374,18 @@ class ApkAnalyzerApp:
             self._tab_lock.lock(keep=self.info_panel)
             self.loading_bar.start()
         else:
+            self._cancellation = None
             self.loading_bar.stop()
+            self._sync_tab_lock()
+
+    def _sync_tab_lock(self) -> None:
+        """
+        The tabs are only usable while an APK is loaded: with none (at start-up, or after an analysis
+        that was cancelled or failed) they stay locked and the user is kept on the empty Info tab.
+        """
+        if self._result is None:
+            self._tab_lock.lock(keep=self.info_panel)
+        else:
             self._tab_lock.unlock()
 
     def _render_result(self, result: AnalysisResult) -> None:

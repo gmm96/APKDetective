@@ -3,7 +3,7 @@
 files flavour of BaseTreePanel (which provides the filter line with counter
 and expand / collapse buttons, header sorting and scrolling, exactly as the
 Components tab has them) plus a right-click context menu for Open / Open with /
-Copy / Extract to / Details. Everything starts collapsed; filtering opens the
+Copy / Extract to / Details, and the double click / Enter that open files. Everything starts collapsed; filtering opens the
 folders that hold matches. The icon of each row comes from FileIconProvider.
 """
 
@@ -24,7 +24,9 @@ from apkviewer.presentation.common.dialogs.extract_to_dialog import ExtractToDia
 from apkviewer.presentation.common.tree.base_tree_panel import BaseTreePanel
 from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkviewer.presentation.config.theme import FONT_MONO_SMALL
+from apkviewer.presentation.tabs.files_tab.file_activation_opener import FileActivationOpener
 from apkviewer.presentation.tabs.files_tab.file_icon_provider import FileIconProvider
+from apkviewer.presentation.tabs.files_tab.file_open_action import FileOpenAction
 from apkviewer.presentation.tabs.files_tab.files_context_menu import FilesContextMenu
 from apkviewer.presentation.formatting.human_readable_size_formatter import HumanReadableSizeFormatter
 from apkviewer.presentation.common.icons.icon_loader import IconLoader
@@ -81,9 +83,15 @@ class FilesPanel(BaseTreePanel[FileNode]):
             empty_text="This APK contains no files.",
             bootstyle=ttkb_constants.PRIMARY
         )
+        # One way of opening files, shared by the context menu and the double click / Enter.
+        open_action = FileOpenAction(self.tree, entry_previewer, get_apk_path=lambda: self.apk_path)
+        self._activation_opener: FileActivationOpener = FileActivationOpener(
+            self.tree, get_node=self._root_node_find, open_action=open_action
+        )
         self._context_menu: FilesContextMenu = FilesContextMenu(
             self.tree,
             entry_previewer=entry_previewer,
+            open_action=open_action,
             extract_dialog=extract_dialog,
             get_apk_path=lambda: self.apk_path,
             get_default_folder_name=get_default_folder_name,

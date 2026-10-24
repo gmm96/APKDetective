@@ -14,6 +14,7 @@ A file that breaks a limit is read as far as it respects it, never longer.
 
 import struct
 
+from apkviewer.domain.entities.analysis.cancellation_token import CancellationToken
 from apkviewer.infrastructure.androguard.dex.dalvik_opcodes import DalvikOpcodes
 from apkviewer.infrastructure.androguard.dex.dex_code_stats import DexCodeStats
 from apkviewer.infrastructure.androguard.dex.dex_header import DexHeader
@@ -24,6 +25,7 @@ _CLASS_DATA_WORD: int = 6
 _CODE_HEADER: struct.Struct = struct.Struct("<HHHHII")  # registers, ins, outs, tries, debug info, size
 _CODE_HEADER_SIZE: int = 16
 _SHARED_CODE_FACTOR: int = 4  # how many times the code may exceed the file, if methods share code blocks
+_CANCEL_CHECK_MASK: int = 0x3F  # the token is checked once every 64 classes: a class takes ~0.1 ms, and the check is free
 
 
 def _uleb(data: bytes, pos: int) -> tuple[int, int]:
@@ -55,14 +57,17 @@ def _sleb(data: bytes, pos: int) -> tuple[int, int]:
 
 
 class DexCodeScanner:
-    def scan(self, data: bytes, header: DexHeader) -> DexCodeStats:
+    def scan(self, data: bytes, header: DexHeader, cancellation: CancellationToken | None = None) -> DexCodeStats:
         """
         Count the code of `data`. Raises struct.error when its class table is unreadable; a
-        class with damaged data is skipped and counted in `damaged_classes`.
+        class with damaged data is skipped and counted in `damaged_classes`. Raises
+        AnalysisCancelledError, when a `cancellation` is given and cancelled, in the middle of the file.
         """
         stats = DexCodeStats()
         words = struct.unpack_from(f"<{header.class_defs_size * _CLASS_DEF_WORDS}I", data, header.class_defs_off)
-        for class_data_off in words[_CLASS_DATA_WORD::_CLASS_DEF_WORDS]:
+        for index, class_data_off in enumerate(words[_CLASS_DATA_WORD::_CLASS_DEF_WORDS]):
+            if cancellation is not None and not index & _CANCEL_CHECK_MASK:
+                cancellation.raise_if_cancelled()
             if class_data_off == 0:
                 continue  # an interface of constants, a marker class...
             try:

@@ -12,6 +12,7 @@ import struct
 from collections.abc import Sequence
 
 from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
+from apkviewer.domain.entities.analysis.cancellation_token import CancellationToken
 from apkviewer.domain.entities.analysis.sections.dex_metrics import DexMetrics
 from apkviewer.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkviewer.infrastructure.androguard.dex.dex_code_scanner import DexCodeScanner
@@ -29,8 +30,12 @@ class DexMetricsExtractor:
         dex_files: Sequence[bytes],
         contents: DexContents,
         warnings: AnalysisWarningCollector | None = None,
+        cancellation: CancellationToken | None = None,
     ) -> DexMetrics:
-        """`contents`: the strings and class names already read from the same files."""
+        """
+        `contents`: the strings and class names already read from the same files. Raises
+        AnalysisCancelledError when a `cancellation` is given and gets cancelled.
+        """
         classes = method_references = strings = 0
         methods = methods_with_code = native_methods = fields = 0
         instructions = code_units = complexity = 0
@@ -38,6 +43,8 @@ class DexMetricsExtractor:
         longest: tuple[int, str | None] = (0, None)       # (instructions, name of the method)
 
         for number, data in enumerate(dex_files, start=1):
+            if cancellation is not None:
+                cancellation.raise_if_cancelled()
             header = DexHeader.parse(data)
             if header is None:
                 self._warn(warnings, f"DEX file #{number} is not a valid DEX file: its metrics are missing.")
@@ -53,7 +60,7 @@ class DexMetricsExtractor:
             method_references += header.method_ids_size
             strings += header.string_ids_size
             try:
-                stats = self._scanner.scan(data, header)
+                stats = self._scanner.scan(data, header, cancellation)
             except (struct.error, IndexError, ValueError):
                 self._warn(
                     warnings,

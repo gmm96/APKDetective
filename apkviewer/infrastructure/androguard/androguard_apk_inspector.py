@@ -6,15 +6,22 @@ results into a single ApkInspection entity.
 Each extractor runs guarded: if one of them fails, the rest of the
 analysis still completes and a warning says what is missing, instead of
 the whole APK being rejected or the section silently coming up empty.
+
+The analysis can be cancelled: the token is checked before every step and, inside the DEX
+files, every few classes. A step that is running (such as loading the APK) is not interrupted;
+the analysis stops as soon as it ends.
 """
 
 from collections.abc import Callable
+from functools import partial
 from typing import TypeVar
 
 from loguru import logger
 
+from apkviewer.domain.entities.analysis.analysis_cancelled_error import AnalysisCancelledError
 from apkviewer.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkviewer.domain.entities.analysis.apk_inspection import ApkInspection
+from apkviewer.domain.entities.analysis.cancellation_token import CancellationToken
 from apkviewer.domain.entities.analysis.sections.application_info import ApplicationInfo
 from apkviewer.domain.entities.analysis.sections.configuration_info import ConfigurationInfo
 from apkviewer.domain.entities.manifest.components.declared_components import DeclaredComponents
@@ -73,93 +80,82 @@ class AndroguardApkInspector(ApkInspectorPort):
         self._trackers = tracker_detector or TrackerDetector()
         self._components = components_extractor or ComponentsExtractor()
 
-    def inspect(self, apk_path: str) -> ApkInspection:
+    def inspect(self, apk_path: str, cancellation: CancellationToken) -> ApkInspection:
         warnings = AnalysisWarningCollector()
+        cancellation.raise_if_cancelled()
         apk = self._apk_loader.load(apk_path)  # an APK that can't even be opened is a real error
-        guard = self._guarded
+        guard = partial(self._guarded, warnings, cancellation)
         section = AnalysisSectionEnum
 
         # The DEX files are read from the APK once and shared by everything that looks at the code.
         dex_files = guard(
-            warnings,
             "The code (DEX) of the app",
             (section.EMBEDDED_CONTENT, section.THIRD_PARTY,
              section.DEX_METRICS),
             lambda: tuple(apk.get_all_dex()), (),
         )
         dex = guard(
-            warnings,
             "The code (DEX) of the app",
             (section.EMBEDDED_CONTENT, section.THIRD_PARTY),
-            lambda: self._dex_reader.read(dex_files, warnings),
+            lambda: self._dex_reader.read(dex_files, warnings, cancellation),
             DexContents(),
         )
         return ApkInspection(
             application=guard(
-                warnings,
                 "The application data",
                 (section.APPLICATION,),
                 lambda: self._application.extract(apk),
                 ApplicationInfo("", "", None, None, None, None, None, None, None, None, None),
             ),
             configuration=guard(
-                warnings,
                 "The configuration",
                 (section.CONFIGURATION,),
                 lambda: self._configuration.extract(apk, warnings),
                 ConfigurationInfo((), (), (), ()),
             ),
             dex_metrics=guard(
-                warnings,
                 "The DEX metrics",
                 (section.DEX_METRICS,),
-                lambda: self._dex_metrics.extract(dex_files, dex, warnings),
+                lambda: self._dex_metrics.extract(dex_files, dex, warnings, cancellation),
                 DexMetrics(),
             ),
             embedded_content=guard(
-                warnings,
                 "The embedded content",
                 (section.EMBEDDED_CONTENT,),
                 lambda: self._embedded_content.extract(dex),
                 EmbeddedContent(()),
             ),
             security=guard(
-                warnings,
                 "The signatures",
                 (section.SIGNATURES,),
                 lambda: self._security.extract(apk, warnings),
                 SecurityInfo(()),
             ),
             permissions=guard(
-                warnings,
                 "The permissions",
                 (section.PERMISSIONS,),
                 lambda: self._permissions.extract(apk, warnings),
                 PermissionsInfo(),
             ),
             third_party=guard(
-                warnings,
                 "The third-party code",
                 (section.THIRD_PARTY,),
                 lambda: self._trackers.extract(apk, dex),
                 ThirdPartyInfo((), ()),
             ),
             components=guard(
-                warnings,
                 "The components",
                 (section.COMPONENTS,),
                 lambda: self._components.extract(apk, warnings),
                 DeclaredComponents(),
             ),
             icon_png=guard(
-                warnings,
                 "The icon",
                 (section.ICON,),
                 lambda: self._icon_extractor.extract(apk, warnings),
                 None,
             ),
             manifest_xml=guard(
-                warnings,
                 "The manifest",
                 (section.MANIFEST,),
                 lambda: self._manifest_formatter.format(apk),
@@ -171,13 +167,17 @@ class AndroguardApkInspector(ApkInspectorPort):
     @staticmethod
     def _guarded(
         warnings: AnalysisWarningCollector,
+        cancellation: CancellationToken,
         what: str,
         sections: tuple[AnalysisSectionEnum, ...],
         read: Callable[[], T],
         default: T,
     ) -> T:
+        cancellation.raise_if_cancelled()
         try:
             return read()
+        except AnalysisCancelledError:  # not a failure of this step: the whole analysis must stop
+            raise
         except Exception as exc:  # pylint: disable=broad-except
             warnings.add(f"{what} could not be read ({type(exc).__name__}: {exc}).", *sections)
             return default

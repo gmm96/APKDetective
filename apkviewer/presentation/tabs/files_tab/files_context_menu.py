@@ -5,7 +5,8 @@ the "Extract to..." dialog) and manages focus for the popup menu itself.
 
 Launching files, the native "Open with..." picker and the file clipboard
 are NOT implemented here: they are reached through the EntryPreviewer
-use case, so this class stays focused on being a menu.
+use case (and, for "Open", through the FileOpenAction shared with the
+double click), so this class stays focused on being a menu.
 """
 
 import os
@@ -25,6 +26,7 @@ from apkviewer.ports.formatting.size_formatter_port import SizeFormatterPort
 from apkviewer.presentation.common.icons.icon_loader import IconLoader
 
 from .file_details_dialog import FileDetailsDialog
+from .file_open_action import FileOpenAction
 
 
 class FilesContextMenu:
@@ -36,6 +38,7 @@ class FilesContextMenu:
         self,
         tree: ttk.Treeview,
         entry_previewer: EntryPreviewer,
+        open_action: FileOpenAction,
         extract_dialog: ExtractToDialog,
         get_apk_path: Callable[[], str | None],
         get_default_folder_name: Callable[[], str],
@@ -46,6 +49,7 @@ class FilesContextMenu:
     ) -> None:
         self._tree: ttk.Treeview = tree
         self._entry_previewer: EntryPreviewer = entry_previewer
+        self._open_action: FileOpenAction = open_action
         self._extract_dialog: ExtractToDialog = extract_dialog
         self._get_apk_path: Callable[[], str | None] = get_apk_path
         self._get_default_folder_name: Callable[[], str] = get_default_folder_name
@@ -137,15 +141,7 @@ class FilesContextMenu:
 
     def _cmd_open(self) -> None:
         self._menu.unpost()
-        targets = self._prepare(self._get_selected_paths(), "Open failed")
-        if targets is None:
-            return
-
-        try:
-            for target in targets:
-                self._entry_previewer.open(target)
-        except Exception as exc:
-            messagebox.showerror("Open failed", str(exc), parent=self._tree)
+        self._open_action.open(self._get_selected_paths())
 
     def _cmd_open_with(self) -> None:
         self._menu.unpost()
