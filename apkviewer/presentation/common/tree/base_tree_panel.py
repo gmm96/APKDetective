@@ -25,6 +25,8 @@ import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
+from apkviewer.presentation.common.keyboard.button_group_navigator import ButtonGroupNavigator
+from apkviewer.presentation.common.keyboard.keyboard_focus_announcer import KeyboardFocusAnnouncer
 from apkviewer.presentation.common.scrolling.auto_hide_scrollbar import AutoHideScrollbar
 from apkviewer.presentation.common.inputs.clearable_entry import ClearableEntry
 from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
@@ -81,13 +83,15 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         self._filter_row: int = 1 if toolbar_row else 0
         self._tree_row: int = self._filter_row + 1
         self.toolbar: ttkb.Frame | None = None
+        self._expand_buttons: ButtonGroupNavigator | None = None  # only with the expand / collapse buttons
         self.rowconfigure(self._tree_row, weight=1)
         self.columnconfigure(0, weight=1)
-        self._build_tree(palette)
+        # Built in the order they appear on screen, which is the order Tab goes through them.
         if toolbar_row:
             self.toolbar = WrapFrame(self, padding_x=4, padding_y=4)
             self.toolbar.grid(row=0, column=0, columnspan=2, sticky="ew", padx=5, pady=(5, 0))
         self._build_filter_bar(expand_buttons, palette)
+        self._build_tree(palette)
         self._empty_label: ttkb.Label = ttkb.Label(self, text=empty_text)
         self._update_heading_labels()
         self._fit_height()
@@ -230,6 +234,7 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         if any(column.weight for column in self._columns):
             self.tree.bind("<Configure>", self._on_tree_configure, add="+")
             self.tree.bind("<ButtonPress-1>", self._on_tree_press, add="+")
+        self.tree.bind(KeyboardFocusAnnouncer.EVENT, self._on_keyboard_focus, add="+")
         self.tree.bind("<<TreeviewOpen>>", self._on_toggle, add="+")
         self.tree.bind("<<TreeviewClose>>", self._on_toggle, add="+")
         for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
@@ -241,29 +246,35 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         ttkb.Style().configure("Treeview.Heading", padding=(8, 6))
         self._configure_tags(palette)
 
-    def _pack_expand_buttons(self, parent: ttkb.Frame) -> None:
-        """Place "Collapse all" and "Expand all" at the right end of `parent`."""
-        ttkb.Button(
-            parent,
-            text="Expand all",
-            command=self.expand_all,
-            bootstyle=f"{ttkb_constants.SUCCESS} {ttkb_constants.OUTLINE}"
-        ).pack(side=tk.RIGHT)
-        ttkb.Button(
+    def _pack_expand_buttons(self, parent: ttkb.Frame, before: tk.Widget | None = None) -> None:
+        """
+        Place "Collapse all" and "Expand all" at the right end of `parent` (`before`: in the packing
+        order, right before that widget of `parent`). They are one block for the keyboard: Tab stops
+        once and the arrows move between them.
+        """
+        # Created from left to right, the order Tab goes through them; packed from the right.
+        collapse = ttkb.Button(
             parent,
             text="Collapse all",
             command=self.collapse_all,
             bootstyle=f"{ttkb_constants.DANGER} {ttkb_constants.OUTLINE}"
-            ).pack(side=tk.RIGHT, padx=(0, 4)
         )
+        expand = ttkb.Button(
+            parent,
+            text="Expand all",
+            command=self.expand_all,
+            bootstyle=f"{ttkb_constants.SUCCESS} {ttkb_constants.OUTLINE}"
+        )
+        position = {} if before is None else {"before": before}
+        expand.pack(side=tk.RIGHT, **position)
+        collapse.pack(side=tk.RIGHT, padx=(0, 4), **position)
+        self._expand_buttons = ButtonGroupNavigator([collapse, expand])
 
     def _build_filter_bar(self, with_buttons: bool, palette: ThemePalette) -> None:
         """Left to right: "Filter:", the field (takes the free space), the counter, the buttons."""
         filter_bar = ttkb.Frame(self)
         filter_bar.grid(row=self._filter_row, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
         ttkb.Label(filter_bar, text="Filter:").pack(side=tk.LEFT)
-        if with_buttons:
-            self._pack_expand_buttons(filter_bar)
         self._count_label: ttkb.Label = ttkb.Label(filter_bar, text="")
         self._count_label.pack(side=tk.RIGHT, padx=(5, 8))
         self._filter_entry: ClearableEntry = ClearableEntry(
@@ -275,6 +286,8 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         )
         self._filter_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         self._filter_entry.bind("<KeyRelease>", lambda _event: self._apply_filter())
+        if with_buttons:  # after the field, so Tab reaches it first; packed before the counter, where they belong
+            self._pack_expand_buttons(filter_bar, before=self._count_label)
 
     # --- Sorting / filtering / rendering ---------------------------------------------
 
@@ -380,6 +393,20 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         if self._viewport_margin < margin < self._viewport_margin + 80:
             self._viewport_margin = margin
             self._apply_column_weights(recalibrate=False)
+
+    def _on_keyboard_focus(self, _event: tk.Event) -> None:
+        """
+        Tab has just brought the focus to the table. As happens when a row is clicked, one is selected
+        (the first, if none was) and it is the one the arrow keys start from.
+        """
+        selected = self.tree.selection()
+        row = selected[0] if selected else next(iter(self.tree.get_children("")), None)
+        if row is None:
+            return
+        if not selected:
+            self.tree.selection_set(row)
+        self.tree.focus(row)
+        self.tree.see(row)
 
     def _on_toggle(self, _event: tk.Event) -> None:
         # The event fires before the item's state changes: measure afterwards.

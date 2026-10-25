@@ -8,6 +8,9 @@ area; otherwise the scrollbar is hidden and the wheel does nothing.
 Several instances can live in the same window (one per tab): the wheel
 only scrolls the frame that is under the pointer.
 
+When the keyboard (Tab) moves the focus to a field that is not completely on screen, the page
+scrolls to bring it to the top. Nothing else changes.
+
 Scrolling must stay cheap, because it happens on every wheel event:
 - Moving the content inside the canvas makes Tk send a <Configure> to it, so the handlers of
   both widgets only act when a SIZE changes. Recomputing the scroll region on every scroll step
@@ -21,6 +24,7 @@ import tkinter as tk
 
 import ttkbootstrap as ttkb
 
+from apkviewer.presentation.common.keyboard.keyboard_focus_announcer import KeyboardFocusAnnouncer
 from apkviewer.presentation.common.scrolling.auto_hide_scrollbar import AutoHideScrollbar
 from apkviewer.presentation.common.scrolling.wheel_lines import WheelLines
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
@@ -28,6 +32,7 @@ from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePale
 
 class ScrollableFrame(ttkb.Frame):
     WHEEL_LINE_PX: int = 20  # one notch scrolls WheelLines.LINES_PER_NOTCH of them, like a desktop text area
+    FOCUS_MARGIN_PX: int = 8  # what stays visible above a field that is scrolled to the top
 
     def __init__(self, container: ttkb.Frame, palette: ThemePalette, *args, **kwargs) -> None:
         super().__init__(container, *args, **kwargs)
@@ -64,6 +69,7 @@ class ScrollableFrame(ttkb.Frame):
         self.bind_all("<MouseWheel>", self._on_mousewheel, add="+")
         self.bind_all("<Button-4>", self._on_mousewheel, add="+")
         self.bind_all("<Button-5>", self._on_mousewheel, add="+")
+        self.bind_all(KeyboardFocusAnnouncer.EVENT, self._on_keyboard_focus, add="+")
 
     def apply_palette(self, palette: ThemePalette) -> None:
         self.canvas.configure(background=palette.background)
@@ -131,8 +137,24 @@ class ScrollableFrame(ttkb.Frame):
             widget = self.winfo_containing(event.x_root, event.y_root)
         except KeyError:  # internal Tk windows (e.g. popup menus) have no Python wrapper
             return False
+        return self._is_inside(widget, self)
+
+    @staticmethod
+    def _is_inside(widget: tk.Misc | None, container: tk.Misc) -> bool:
         while widget is not None:
-            if widget is self:
+            if widget is container:
                 return True
             widget = widget.master
         return False
+
+    # --- Keyboard focus --------------------------------------------------------
+
+    def _on_keyboard_focus(self, event: tk.Event) -> None:
+        widget = event.widget
+        if self._fits or not isinstance(widget, tk.Misc) or not self._is_inside(widget, self.inner_frame):
+            return
+        top = widget.winfo_rooty() - self.inner_frame.winfo_rooty()  # position in the content, not on screen
+        view_top = self.canvas.canvasy(0)
+        if top >= view_top and top + widget.winfo_height() <= view_top + self.canvas.winfo_height():
+            return  # completely visible already
+        self.canvas.yview_moveto(max(0, top - self.FOCUS_MARGIN_PX) / self._region_height)

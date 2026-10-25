@@ -1,11 +1,13 @@
 """
 Right-click "Copy" context menu shared by every read-only Text widget in
-the app (manifest viewer, list fields, etc.). Also makes Ctrl+C behave
-consistently with it, since these widgets are read-only (state="disabled")
-and don't reliably get Tk's default copy binding.
+the app (manifest viewer, list fields, etc.). Also makes the copy shortcut
+(Ctrl+C, Ctrl+Insert, Command+C: Tk's <<Copy>>) behave consistently with it,
+since these widgets are read-only (state="disabled") and don't reliably get
+Tk's default copy binding.
 """
 
 import tkinter as tk
+from collections.abc import Callable
 
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.appearance.tk_widget_styler import TkWidgetStyler
@@ -15,9 +17,9 @@ from apkviewer.presentation.config.layout import MARKED_LINE_TAG
 
 class TextContextMenu:
     """
-    Attach to any Text widget with `attach(widget)`. Right-click (or
-    Ctrl+C) will copy the current selection, or the currently marked line
-    if nothing is selected.
+    Attach to any Text widget with `attach(widget)`. Right-click (or the
+    copy shortcut) copies the current selection; with no selection, the
+    currently marked line; with neither, the whole text of the widget.
     """
 
     def __init__(self, root: tk.Misc, palette: ThemePalette) -> None:
@@ -25,21 +27,28 @@ class TextContextMenu:
         self._menu.add_command(label="Copy Text", command=self._copy_from_active)
         self._popup: PopupMenuController = PopupMenuController(root, self._menu)
         self._active_widget: tk.Text | None = None
+        self._full_texts: dict[tk.Text, Callable[[], str]] = {}
         self.apply_palette(palette)
 
     def apply_palette(self, palette: ThemePalette) -> None:
         TkWidgetStyler.style_menu(self._menu, palette)
 
-    def attach(self, widget: tk.Text) -> None:
+    def attach(self, widget: tk.Text, get_full_text: Callable[[], str] | None = None) -> None:
+        """
+        `get_full_text`: what is copied when nothing is selected or marked, for a widget whose
+        content is not exactly what the user means to copy (a list box padded with blank lines).
+        By default it is the content of the widget.
+        """
+        self._full_texts[widget] = get_full_text or (lambda: widget.get("1.0", "end-1c"))
         widget.bind("<Button-3>", self._show)
-        widget.bind("<Control-c>", self._on_ctrl_c)
+        widget.bind("<<Copy>>", self._on_copy)
 
     def _show(self, event: tk.Event) -> None:
         if isinstance(event.widget, tk.Text):
             self._active_widget = event.widget
             self._popup.post(event.x_root, event.y_root)
 
-    def _on_ctrl_c(self, event: tk.Event) -> str:
+    def _on_copy(self, event: tk.Event) -> str:
         if isinstance(event.widget, tk.Text):
             self._copy_from(event.widget)
         return "break"
@@ -54,7 +63,7 @@ class TextContextMenu:
                 text_to_copy = widget.get(tk.SEL_FIRST, tk.SEL_LAST)
             else:
                 marked = widget.tag_ranges(MARKED_LINE_TAG)
-                text_to_copy = widget.get(marked[0], marked[1]) if marked else ""
+                text_to_copy = widget.get(marked[0], marked[1]) if marked else self._full_texts[widget]()
             text_to_copy = self._strip_trailing_padding(text_to_copy)
             if text_to_copy:
                 widget.clipboard_clear()

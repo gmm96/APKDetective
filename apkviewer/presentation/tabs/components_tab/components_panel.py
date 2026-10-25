@@ -5,6 +5,9 @@ dimmed instead of opening an empty view) and the table's own header line
 carries the filter, the counter and the expand / collapse buttons, exactly
 as in the Files tab. Each component expands to show its properties and
 intent filters.
+
+For the keyboard the pills are one block: Tab stops on one of them and the
+arrow keys move between them.
 """
 
 import tkinter as tk
@@ -13,6 +16,8 @@ import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 
 from apkviewer.domain.entities.manifest.components.declared_components import DeclaredComponents
+from apkviewer.presentation.appearance.toolbutton_focus_ring import ToolbuttonFocusRing
+from apkviewer.presentation.common.keyboard.button_group_navigator import ButtonGroupNavigator
 from apkviewer.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkviewer.presentation.common.tree.record_table_panel import RecordTablePanel
 from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
@@ -64,16 +69,18 @@ class ComponentsPanel(ttkb.Frame):
                 value=key,
                 variable=self._selected,
                 style=self._PILL_STYLE,
-                takefocus=False,
                 command=self._on_pill_selected,
             )
             pill.pack(side=tk.LEFT, padx=(0, 4))
             self._pills[key] = pill
+        self._pill_block: ButtonGroupNavigator = ButtonGroupNavigator(list(self._pills.values()))
+        self._style_pills()
         self._update_pills({})
 
     def apply_palette(self, palette: ThemePalette) -> None:
         self._table.apply_palette(palette)
         self._banner.apply_palette(palette)
+        self._style_pills()
 
     def show_warnings(self, messages: list[str]) -> None:
         self._banner.show(messages)
@@ -98,6 +105,10 @@ class ComponentsPanel(ttkb.Frame):
         self._update_pills(counts)
 
     # --- Pills -------------------------------------------------------------------
+
+    def _style_pills(self) -> None:
+        # The style of a toolbutton has no focus ring; it is added again after every theme change.
+        ToolbuttonFocusRing.apply(str(self._pills[self._ALL].cget("style")))
 
     def _on_pill_selected(self) -> None:
         key = self._selected.get()

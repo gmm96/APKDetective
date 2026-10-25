@@ -203,7 +203,7 @@ class FormPanel(ttkb.Frame):
         self._line_marker.bind(text_widget.text)
         self._list_widgets.append(text_widget)
         self._style_list_widget(text_widget.text)
-        self._context_menu.attach(text_widget.text)
+        self._context_menu.attach(text_widget.text, get_full_text=lambda: copy_text or "")  # as the icon: no padding
         if copy_text:
             self._list_copy_icons.append(
                 CopyIconOverlay(

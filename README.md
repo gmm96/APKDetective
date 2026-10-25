@@ -97,6 +97,7 @@ Ready-to-run executables (no Python needed) are attached to every
 4. **Browse the tabs.** Everything is read-only and safe to explore.
 5. Hover over any value to reveal a small **copy icon** and copy it to the clipboard.
 
+
 ### Opening an APK from the command line
 
 Pass the path of the APK as the only argument and it is analysed as soon as the window opens:
@@ -281,6 +282,13 @@ A browsable tree of every file inside the APK, with open / copy / extract action
 - **Readable by design**: the palette is derived from each theme and adjusted to meet WCAG contrast
   minimums for text and icons.
 - **One-click copy** icon on every simple value; **clear** button on every filter.
+- **Keyboard navigation**: `Tab` / `Shift+Tab` go through every field, text list and table. A table that gets the
+  focus selects its first row, and the page scrolls to show the field that has it. The filter pills and the
+  *Collapse all* / *Expand all* buttons are one stop each: `Tab` goes to the next block and the arrow keys move
+  between the buttons of the block; `Enter` or `Space` presses the focused button or pill. `F10` moves the focus to
+  the menu bar (Windows and Linux).
+- **Copy with the keyboard**: on a focused field, text list or the manifest, `Ctrl+C` copies the selected text, or the
+  whole value if nothing is selected. The copy icon still only appears under the mouse pointer.
 - **Honest warnings**: when something could not be read, a banner tells you, so "nothing found" is never
   confused with "could not look".
 - **Per-OS integration**: theme detection, "Open with..." and clipboard support are implemented

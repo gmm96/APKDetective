@@ -37,6 +37,8 @@ from apkviewer.presentation.common.menus.text_context_menu import TextContextMen
 from apkviewer.presentation.tabs.components_tab.components_panel import ComponentsPanel
 from apkviewer.presentation.tabs.files_tab.files_panel import FilesPanel
 from apkviewer.presentation.common.feedback.loading_bar import LoadingBar
+from apkviewer.presentation.common.keyboard.enter_key_activation import EnterKeyActivation
+from apkviewer.presentation.common.keyboard.keyboard_focus_announcer import KeyboardFocusAnnouncer
 from apkviewer.presentation.common.layout.notebook_lock import NotebookLock
 from apkviewer.presentation.header.app_header import AppHeader
 from apkviewer.presentation.common.icons.icon_loader import IconLoader
@@ -96,6 +98,10 @@ class ApkAnalyzerApp:
         date_formatter: DateFormatterPort | None = None,
     ) -> None:
         self.root: ttkb.App = root
+        # Tells the widgets when Tab moved the focus to them (a page scrolls to it, a table selects a row).
+        self._focus_announcer: KeyboardFocusAnnouncer = KeyboardFocusAnnouncer(root)
+        # Enter presses the filter pills (radiobuttons) like it presses the buttons.
+        self._enter_activation: EnterKeyActivation = EnterKeyActivation(root)
         self.root.title("APKViewer")
         self.root.minsize(600, 600)
         self.root.geometry("1000x750")

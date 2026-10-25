@@ -1,6 +1,8 @@
 """
 Read-only text field with a copy icon at its right end. The icon only
-shows while the pointer is over the field.
+shows while the pointer is over the field. With the keyboard focus, the copy
+shortcut (Ctrl+C...) copies the selected text, or the whole value if nothing
+is selected: the same that the icon copies.
 """
 
 import tkinter as tk
@@ -27,6 +29,7 @@ class CopyableEntry(IconEntry):
         # happens to the first field of a tab when the Notebook switches to it. In a read-only
         # field that only looks like a stray selection, so the class binding is skipped.
         self.bind("<<TraverseIn>>", lambda _event: "break")
+        self.bind("<<Copy>>", self._on_copy)
         self.overlay: CopyIconOverlay = CopyIconOverlay(
             target=self,
             get_text=lambda: text,
@@ -34,6 +37,12 @@ class CopyableEntry(IconEntry):
             active_icon_color=active_icon_color,
             background=background,
         )
+
+    def _on_copy(self, _event: tk.Event) -> str | None:
+        if self.selection_present():
+            return None  # Tk's own binding copies the selection
+        self.overlay.copy()
+        return "break"
 
     @property
     def entry(self) -> "CopyableEntry":

@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 
 import ttkbootstrap as ttkb
 
@@ -19,6 +20,11 @@ class AutoScrolledText(ttkb.ScrolledText):
 
     The mouse wheel scrolls the text while it overflows vertically; otherwise it is left to the
     page behind it (same rule as the tables of BaseTreePanel).
+
+    It takes the focus with Tab like an Entry does, and shows it with the same ring. Tk would not
+    do it: a Text that is read-only (state disabled) is skipped by the keyboard traversal. The
+    frame around the Text is not a stop: it has focus bindings (those of the icons overlaid on
+    it), and Tk takes any widget that has them for one unless it is told otherwise.
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -26,7 +32,8 @@ class AutoScrolledText(ttkb.ScrolledText):
         kwargs.setdefault("hbar", True)
         super().__init__(*args, **kwargs)
 
-        self.text.configure(padx=FIELD_PADX, pady=FIELD_PADY)
+        self.text.configure(padx=FIELD_PADX, pady=FIELD_PADY, takefocus=True)
+        ttk.Frame.configure(self, takefocus=False)  # not self.configure: that one is delegated to the Text
 
         # ttkbootstrap grids the bars as soon as it creates them: start with both hidden and
         # let the first scroll report of the text decide which ones the content really needs.
