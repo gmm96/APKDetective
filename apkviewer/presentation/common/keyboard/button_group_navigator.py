@@ -36,7 +36,7 @@ class ButtonGroupNavigator:
 
     def _tab_stop(self) -> ttk.Widget | None:
         available = [button for button in self._buttons if self._is_available(button)]
-        focused = self._buttons[0].tk.call("focus")
+        focused = str(self._buttons[0].tk.call("focus"))  # the path; Tk returns it as a Tcl object, not a str
         candidates = (
             [button for button in available if str(button) == focused],
             [button for button in available if button.instate(["selected"])],
