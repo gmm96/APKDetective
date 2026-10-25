@@ -149,5 +149,5 @@ class SecurityPanel(FormPanel):
         if until is None:
             return None
         if certificate.is_expired(now):
-            return ChipSpec("expired", "danger", f"This certificate expired on {until:%Y-%m-%d}.")
-        return ChipSpec(f"valid until {until.year}", "success", f"This certificate is valid until {until:%Y-%m-%d}.")
+            return ChipSpec("expired", "danger", f"This certificate expired on {until:%Y-%m-%d %H:%M:%S}.")
+        return ChipSpec(f"valid until {until.year}", "success", f"This certificate is valid until {until:%Y-%m-%d %H:%M:%S}.")
