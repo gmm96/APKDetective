@@ -35,11 +35,42 @@ from apkviewer.presentation.common.icons.icon_loader import IconLoader
 class FilesPanel(BaseTreePanel[FileNode]):
 
     COLUMNS: tuple[TreeColumn, ...] = (
-        TreeColumn("#0", "Name", width=380, min_width=200, stretch=True),
-        TreeColumn("type", "Type", width=120, min_width=80),
-        TreeColumn("size", "Size", width=100, min_width=70),
-        TreeColumn("compressed", "Compressed", width=120, min_width=100),
-        TreeColumn("modified", "Modified", width=150, min_width=130),
+        TreeColumn(
+            "#0",
+            "Name",
+            width=380,
+            min_width=200,
+            stretch=True,
+            tooltip="Name of the file or folder inside the APK."
+        ),
+        TreeColumn(
+            "type",
+            "Type",
+            width=120,
+            min_width=80,
+            tooltip="The file extension. For a folder, \"Directory\" and the number of entries it holds."
+        ),
+        TreeColumn(
+            "size",
+            "Size",
+            width=100,
+            min_width=70,
+            tooltip="Size of the entry once extracted (uncompressed)."
+        ),
+        TreeColumn(
+            "compressed",
+            "Compressed",
+            width=120,
+            min_width=100,
+            tooltip="Size the entry takes inside the APK, after compression."
+        ),
+        TreeColumn(
+            "modified",
+            "Modified",
+            width=150,
+            min_width=130,
+            tooltip="Date and time of the last modification recorded for the entry in the APK."
+        ),
     )
     # Tree column id -> the (toolkit-agnostic) key the sorter understands.
     COLUMN_SORT_KEYS: dict[str, FileSortKeyEnum] = {

@@ -20,12 +20,51 @@ from apkviewer.presentation.tabs.components_tab.component_tree_builder import Co
 
 class IntentsPanel(ttkb.Frame):
     _COLUMNS: tuple[TreeColumn, ...] = (
-        TreeColumn("#0", "Action", width=280, min_width=160, stretch=True),
-        TreeColumn("component", "Component", width=300, min_width=140, stretch=True),
-        TreeColumn("type", "Type", width=100, min_width=70),
-        TreeColumn("categories", "Categories", width=190, min_width=100),
-        TreeColumn("data", "Data", width=220, min_width=100, stretch=True),
-        TreeColumn("verify", "Auto-verify", width=100, min_width=80),
+        TreeColumn(
+            "#0",
+            "Action",
+            width=280,
+            min_width=160,
+            stretch=True,
+            tooltip="The action the intent filter answers, for example android.intent.action.VIEW."
+        ),
+        TreeColumn(
+            "component",
+            "Component",
+            width=300,
+            min_width=140,
+            stretch=True,
+            tooltip="The exported component that answers the action."
+        ),
+        TreeColumn(
+            "type",
+            "Type",
+            width=100,
+            min_width=70,
+            tooltip="Kind of that component: activity, service, receiver or provider."
+        ),
+        TreeColumn(
+            "categories",
+            "Categories",
+            width=190,
+            min_width=100,
+            tooltip="Categories the filter requires, without the android.intent.category. prefix."
+        ),
+        TreeColumn(
+            "data",
+            "Data",
+            width=220,
+            min_width=100,
+            stretch=True,
+            tooltip="The URIs (scheme, host, path...) and MIME types the filter accepts."
+        ),
+        TreeColumn(
+            "verify",
+            "Auto-verify",
+            width=100,
+            min_width=80,
+            tooltip="Whether the filter asks Android to verify that the app owns its web links (android:autoVerify)."
+        ),
     )
 
     def __init__(

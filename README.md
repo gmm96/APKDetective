@@ -282,6 +282,7 @@ A browsable tree of every file inside the APK, with open / copy / extract action
 - **Readable by design**: the palette is derived from each theme and adjusted to meet WCAG contrast
   minimums for text and icons.
 - **One-click copy** icon on every simple value; **clear** button on every filter.
+- **Column tooltips**: hover the heading of a column in any table to see what it shows.
 - **Keyboard navigation**: `Tab` / `Shift+Tab` go through every field, text list and table. A table that gets the
   focus selects its first row, and the page scrolls to show the field that has it. The filter pills and the
   *Collapse all* / *Expand all* buttons are one stop each: `Tab` goes to the next block and the arrow keys move

@@ -15,3 +15,5 @@ class TreeColumn:
     # Share of the width left over by the fixed columns: a column with weight 2 gets twice
     # the width of one with weight 1. Below `min_width` the table scrolls horizontally.
     weight: float | None = None
+    # What the column shows, as a tooltip over its heading (none if the heading says it all).
+    tooltip: str | None = None

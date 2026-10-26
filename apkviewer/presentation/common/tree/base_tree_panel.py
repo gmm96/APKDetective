@@ -31,6 +31,7 @@ from apkviewer.presentation.common.scrolling.auto_hide_scrollbar import AutoHide
 from apkviewer.presentation.common.inputs.clearable_entry import ClearableEntry
 from apkviewer.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkviewer.presentation.common.layout.wrap_frame import WrapFrame
+from apkviewer.presentation.common.tree.heading_tool_tip import HeadingToolTip
 from apkviewer.presentation.common.icons.icon_loader import IconLoader
 
 NodeT = TypeVar("NodeT")
@@ -84,6 +85,7 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         self._tree_row: int = self._filter_row + 1
         self.toolbar: ttkb.Frame | None = None
         self._expand_buttons: ButtonGroupNavigator | None = None  # only with the expand / collapse buttons
+        self._heading_tool_tip: HeadingToolTip | None = None
         self.rowconfigure(self._tree_row, weight=1)
         self.columnconfigure(0, weight=1)
         # Built in the order they appear on screen, which is the order Tab goes through them.
@@ -234,6 +236,7 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         if any(column.weight for column in self._columns):
             self.tree.bind("<Configure>", self._on_tree_configure, add="+")
             self.tree.bind("<ButtonPress-1>", self._on_tree_press, add="+")
+        self._heading_tool_tip = HeadingToolTip(self.tree, self._columns)
         self.tree.bind(KeyboardFocusAnnouncer.EVENT, self._on_keyboard_focus, add="+")
         self.tree.bind("<<TreeviewOpen>>", self._on_toggle, add="+")
         self.tree.bind("<<TreeviewClose>>", self._on_toggle, add="+")

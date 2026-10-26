@@ -29,11 +29,41 @@ class PermissionsPanel(ttkb.Frame):
     # Columns share the width in proportion to their weights (the permission name and the
     # summary get twice as much as the others). If the window is too narrow for the minimum
     # widths, the table scrolls horizontally instead.
-    _NAME = TreeColumn("#0", "Permission", min_width=280, weight=4)
-    _TYPE = TreeColumn("type", "Type", min_width=150, weight=2)
-    _ORIGIN = TreeColumn("origin", "Origin", min_width=100, weight=2)
-    _MAX_SDK = TreeColumn("max_sdk", "Max SDK", min_width=75, weight=1)
-    _SUMMARY = TreeColumn("summary", "Summary", min_width=220, weight=3)
+    _NAME = TreeColumn(
+        "#0",
+        "Permission",
+        min_width=280,
+        weight=4,
+        tooltip="Name of the permission."
+    )
+    _TYPE = TreeColumn(
+        "type",
+        "Type",
+        min_width=150,
+        weight=2,
+        tooltip="Protection level of the permission. The dangerous ones are highlighted."
+    )
+    _ORIGIN = TreeColumn(
+        "origin",
+        "Origin",
+        min_width=100,
+        weight=2,
+        tooltip="Whether the app declares the permission itself, requests it, or both."
+    )
+    _MAX_SDK = TreeColumn(
+        "max_sdk",
+        "Max SDK",
+        min_width=75,
+        weight=1,
+        tooltip="Last Android API level on which the app requests the permission (android:maxSdkVersion)."
+    )
+    _SUMMARY = TreeColumn(
+        "summary",
+        "Summary",
+        min_width=220,
+        weight=3,
+        tooltip="What the permission is for, in plain words."
+    )
 
     _STANDARD_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _MAX_SDK, _SUMMARY)
     _CUSTOM_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _ORIGIN, _MAX_SDK, _SUMMARY)

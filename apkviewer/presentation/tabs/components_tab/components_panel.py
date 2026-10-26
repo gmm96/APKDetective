@@ -27,10 +27,37 @@ from apkviewer.presentation.tabs.components_tab.component_tree_builder import Co
 
 class ComponentsPanel(ttkb.Frame):
     _COLUMNS: tuple[TreeColumn, ...] = (
-        TreeColumn("#0", "Name", width=460, min_width=220, stretch=True),
-        TreeColumn("type", "Type", width=110, min_width=80),
-        TreeColumn("exported", "Exported", width=120, min_width=90),
-        TreeColumn("permission", "Permission", width=260, min_width=100, stretch=True),
+        TreeColumn(
+            "#0",
+            "Name",
+            width=460,
+            min_width=220,
+            stretch=True,
+            tooltip="Class name of the component. A relative name in the manifest is completed with the package name."
+        ),
+        TreeColumn(
+            "type",
+            "Type",
+            width=110,
+            min_width=80,
+            tooltip="Kind of component: activity, activity alias, service, receiver or provider."
+        ),
+        TreeColumn(
+            "exported",
+            "Exported",
+            width=120,
+            min_width=90,
+            tooltip="Whether other apps can use the component. \"implicit\": android:exported is not declared, "
+                    "so Android's default rules apply. \"unknown\": it could not be determined."
+        ),
+        TreeColumn(
+            "permission",
+            "Permission",
+            width=260,
+            min_width=100,
+            stretch=True,
+            tooltip="Permission that another app must hold to use the component, if the manifest requires one."
+        ),
     )
     _ALL: str = "all"
     _PILL_STYLE: str = f"{ttkb_constants.PRIMARY} {ttkb_constants.TOOLBUTTON} {ttkb_constants.OUTLINE}"
