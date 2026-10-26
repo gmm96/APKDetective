@@ -1,4 +1,4 @@
-name: '[MacOS] Build APKViewer'
+name: '[MacOS] Build APKDetective'
 on:
   push:
     tags:
@@ -41,7 +41,7 @@ jobs:
               --standalone \
               --onefile \
               --output-dir=dist \
-              --output-filename=APKViewer-macos.bin \
+              --output-filename=APKDetective-macos.bin \
               --include-package-data=androguard \
               --include-package-data=ttkbootstrap \
               --include-package-data=babel \
@@ -54,19 +54,19 @@ jobs:
               main.py
 
       - name: 'Copy binary with commit ID'
-        run: cp dist/APKViewer-macos.bin dist/APKViewer-macos-${{ github.sha }}.bin
+        run: cp dist/APKDetective-macos.bin dist/APKDetective-macos-${{ github.sha }}.bin
 
       - name: 'Upload binary as artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: APKViewer-macos-binary
-          path: dist/APKViewer-macos-${{ github.sha }}.bin
+          name: APKDetective-macos-binary
+          path: dist/APKDetective-macos-${{ github.sha }}.bin
           retention-days: 90
 
       - name: 'Upload binary to release'
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/APKViewer-macos.bin
+          files: dist/APKDetective-macos.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

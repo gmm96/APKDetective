@@ -47,7 +47,7 @@ jobs:
           PYTHONPATH: .
         shell: bash
         run: |
-          python -c "import sys, subprocess; ignore='${{ matrix.os.ignore }}'; args=['pylint', 'main.py', 'apkviewer/']; ignore and args.extend(['--ignore-paths', ignore]); sys.exit(subprocess.run(args).returncode & 3)"
+          python -c "import sys, subprocess; ignore='${{ matrix.os.ignore }}'; args=['pylint', 'main.py', 'apkdetective/']; ignore and args.extend(['--ignore-paths', ignore]); sys.exit(subprocess.run(args).returncode & 3)"
 
 
   mypy:
@@ -89,9 +89,9 @@ jobs:
       - name: 'Install Mypy required types'
         shell: bash
         run: |
-          mypy --install-types --non-interactive --explicit-package-bases main.py apkviewer/ || true
+          mypy --install-types --non-interactive --explicit-package-bases main.py apkdetective/ || true
 
       - name: 'Run Mypy'
         shell: bash
         run: |
-          mypy --explicit-package-bases --ignore-missing-imports ${{ matrix.os.exclude }} main.py apkviewer/
+          mypy --explicit-package-bases --ignore-missing-imports ${{ matrix.os.exclude }} main.py apkdetective/
