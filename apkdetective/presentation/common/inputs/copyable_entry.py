@@ -1,0 +1,64 @@
+"""
+Read-only text field with a copy icon at its right end. The icon only
+shows while the pointer is over the field. With the keyboard focus, the copy
+shortcut (Ctrl+C...) copies the selected text, or the whole value if nothing
+is selected: the same that the icon copies.
+"""
+
+import tkinter as tk
+
+from apkdetective.presentation.common.overlays.copy_icon_overlay import CopyIconOverlay
+from apkdetective.presentation.common.inputs.icon_entry import IconEntry
+
+
+class CopyableEntry(IconEntry):
+    def __init__(
+        self,
+        parent: tk.Misc,
+        text: str,
+        icon_color: str,
+        active_icon_color: str,
+        background: str | None = None,
+        font: tuple | None = None,
+    ) -> None:
+        options = {} if font is None else {"font": font}
+        super().__init__(parent, **options)
+        self.insert(0, text)
+        self.configure(state="readonly")
+        # Tk selects the whole text of an entry that gets the focus by traversal, which is what
+        # happens to the first field of a tab when the Notebook switches to it. In a read-only
+        # field that only looks like a stray selection, so the class binding is skipped.
+        self.bind("<<TraverseIn>>", lambda _event: "break")
+        self.bind("<<Copy>>", self._on_copy)
+        self.overlay: CopyIconOverlay = CopyIconOverlay(
+            target=self,
+            get_text=lambda: text,
+            icon_color=icon_color,
+            active_icon_color=active_icon_color,
+            background=background,
+        )
+
+    def _on_copy(self, _event: tk.Event) -> str | None:
+        if self.selection_present():
+            return None  # Tk's own binding copies the selection
+        self.overlay.copy()
+        return "break"
+
+    @property
+    def entry(self) -> "CopyableEntry":
+        """Kept for compatibility: the field used to be a frame wrapping an inner entry."""
+        return self
+
+    def update_colors(
+        self,
+        icon_color: str | None = None,
+        active_icon_color: str | None = None,
+        background: str | None = None,
+    ) -> None:
+        """Propagates theme color updates to the entry style and the overlay."""
+        self.configure_entry_style()
+        self.overlay.update_colors(
+            icon_color=icon_color,
+            active_icon_color=active_icon_color,
+            background=background,
+        )

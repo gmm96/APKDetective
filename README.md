@@ -1,12 +1,12 @@
 <div align="center">
 
-# APKViewer
+# APKDetective
 
 **Open any Android app (`.apk`) and see what is inside it, with no Android knowledge required.**
 
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/gmm96/APKViewer?label=release&color=success)](https://github.com/gmm96/APKViewer/releases/latest)
-[![Lint & type analysis](https://github.com/gmm96/APKViewer/actions/workflows/analyze.yml/badge.svg)](https://github.com/gmm96/APKViewer/actions/workflows/analyze.yml)
+[![Latest release](https://img.shields.io/github/v/release/gmm96/APKDetective?label=release&color=success)](https://github.com/gmm96/APKDetective/releases/latest)
+[![Lint & type analysis](https://github.com/gmm96/APKDetective/actions/workflows/analyze.yml/badge.svg)](https://github.com/gmm96/APKDetective/actions/workflows/analyze.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
 ![GUI](https://img.shields.io/badge/GUI-tkinter%20%2B%20ttkbootstrap-informational)
@@ -19,9 +19,9 @@
 [Architecture](#architecture) ·
 [Contributing](#contributing)
 
-<img src="docs/screenshots/main_dark.png" alt="APKViewer showing the Info tab of a loaded APK" width="900">
+<img src="docs/screenshots/main_dark.png" alt="APKDetective showing the Info tab of a loaded APK" width="900">
 <br><br>
-<img src="docs/screenshots/main_light.png" alt="APKViewer showing the Info tab of a loaded APK" width="900">
+<img src="docs/screenshots/main_light.png" alt="APKDetective showing the Info tab of a loaded APK" width="900">
 
 </div>
 
@@ -29,7 +29,7 @@
 
 ## Table of contents
 
-- [What is APKViewer?](#what-is-apkviewer)
+- [What is APKDetective?](#what-is-apkdetective)
 - [Who is it for?](#who-is-it-for)
 - [Download](#download)
 - [Quick start](#quick-start)
@@ -47,12 +47,12 @@
 
 
 
-## What is APKViewer?
+## What is APKDetective?
 
 An **APK** is the file Android apps are distributed in (it is what an app store downloads to your phone). It is a
 compressed package full of code, images and configuration, and it is **not** meant to be read by humans.
 
-**APKViewer is a desktop application that opens that package and presents everything useful in it as clean,
+**APKDetective is a desktop application that opens that package and presents everything useful in it as clean,
 readable tabs**: the app's name and version, which permissions it asks for, who signed it, which trackers and
 libraries it carries, how it can be launched from other apps, the decoded `AndroidManifest.xml`, and every file inside.
 
@@ -63,7 +63,7 @@ It does **not** install, run or modify the app. It only reads it. Nothing is upl
 
 ## Who is it for?
 
-| You are... | APKViewer helps you... |
+| You are... | APKDetective helps you... |
 |---|---|
 | **A curious user** | Check what an app asks for (camera? contacts? SMS?) and who made it, before installing it. |
 | **A developer** | Verify the final package: SDK range, flags like *debuggable*, signing scheme, size of the code, exported components. |
@@ -76,13 +76,13 @@ It does **not** install, run or modify the app. It only reads it. Nothing is upl
 ## Download
 
 Ready-to-run executables (no Python needed) are attached to every
-[**GitHub Release**](https://github.com/gmm96/APKViewer/releases/latest):
+[**GitHub Release**](https://github.com/gmm96/APKDetective/releases/latest):
 
 | Platform | File | How to run |
 |---|---|---|
-| **Windows** | `APKViewer-windows.exe` | Double-click it. |
-| **Linux** | `APKViewer-linux.bin` | `chmod +x APKViewer-linux.bin && ./APKViewer-linux.bin` |
-| **macOS** | `APKViewer-macos.bin` | `chmod +x APKViewer-macos.bin && ./APKViewer-macos.bin` |
+| **Windows** | `APKDetective-windows.exe` | Double-click it. |
+| **Linux** | `APKDetective-linux.bin` | `chmod +x APKDetective-linux.bin && ./APKDetective-linux.bin` |
+| **macOS** | `APKDetective-macos.bin` | `chmod +x APKDetective-macos.bin && ./APKDetective-macos.bin` |
 
 > Prefer running from the source code? See [Running from source](#running-from-source).
 
@@ -90,7 +90,7 @@ Ready-to-run executables (no Python needed) are attached to every
 
 ## Quick start
 
-1. **Start** APKViewer. Until an APK is loaded only the **Info** tab is available (and empty); the others unlock once there is something to show.
+1. **Start** APKDetective. Until an APK is loaded only the **Info** tab is available (and empty); the others unlock once there is something to show.
 2. Press **`Ctrl + O`** (or click **Load APK**) and choose an `.apk` file.
 3. Wait a moment: the status bar at the bottom shows progress and the other tabs stay locked until the analysis ends.
    If an APK is very large, press **Cancel** (the *Load APK* button turns into it while an analysis runs) to stop it.
@@ -103,20 +103,20 @@ Ready-to-run executables (no Python needed) are attached to every
 Pass the path of the APK as the only argument and it is analysed as soon as the window opens:
 
 ```text
-APKViewer-<platform>.<ext> /path/to/file.apk
+APKDetective-<platform>.<ext> /path/to/file.apk
 ```
 
 For example:
 
 ```bash
 # Windows
-APKViewer-windows.exe C:\Users\me\Downloads\app.apk
+APKDetective-windows.exe C:\Users\me\Downloads\app.apk
 
 # Linux
-./APKViewer-linux.bin ~/Downloads/app.apk
+./APKDetective-linux.bin ~/Downloads/app.apk
 
 # macOS
-./APKViewer-macos.bin ~/Downloads/app.apk
+./APKDetective-macos.bin ~/Downloads/app.apk
 
 # From source, on any platform
 python main.py path/to/app.apk
@@ -235,7 +235,7 @@ The decoded `AndroidManifest.xml` with syntax highlighting.
 <details>
 <summary>More details</summary>
 
-Android stores `AndroidManifest.xml` in a binary format nobody can read. APKViewer decodes it back to normal
+Android stores `AndroidManifest.xml` in a binary format nobody can read. APKDetective decodes it back to normal
 XML and shows it read-only with **syntax highlighting** (tags, attributes, values and comments in different
 colours that adapt to the active theme). Right-click offers **Copy Text**.
 
@@ -353,7 +353,7 @@ You do not need to know any of this to use the app, but it explains what you are
 
 ## Architecture
 
-APKViewer follows a **layered / hexagonal ("ports and adapters") architecture**. The goal: the rules of the
+APKDetective follows a **layered / hexagonal ("ports and adapters") architecture**. The goal: the rules of the
 application never depend on a specific library or GUI toolkit, so each piece can be understood, tested and
 replaced on its own.
 
@@ -403,7 +403,7 @@ The **dependency rule**: *dependencies point inwards*. The domain imports nothin
 
 ### Composition root
 
-[`apkviewer/composition_root.py`](apkviewer/composition_root.py) is the **only** module that knows every layer.
+[`apkdetective/composition_root.py`](apkdetective/composition_root.py) is the **only** module that knows every layer.
 It chooses a concrete implementation for each port and injects it where needed. Swapping the APK parser, the GUI
 toolkit or the storage means editing that one file.
 
@@ -446,10 +446,10 @@ start-up by `PlatformServicesResolver`:
 ### Project layout
 
 ```text
-APKViewer/
+APKDetective/
 ├── main.py                       # entry point
 ├── requirements.txt
-├── apkviewer/
+├── apkdetective/
 │   ├── composition_root.py       # wires every layer together
 │   ├── domain/                   # entities (pure data)
 │   ├── ports/                    # interfaces: apk, filesystem, formatting, system
@@ -502,8 +502,8 @@ APKViewer/
 
 ```bash
 # 1. Get the code
-git clone https://github.com/gmm96/APKViewer.git
-cd APKViewer
+git clone https://github.com/gmm96/APKDetective.git
+cd APKDetective
 
 # 2. (Recommended) create a virtual environment
 python -m venv .venv
@@ -523,8 +523,8 @@ python main.py path/to/app.apk     # or open an APK directly
 
 ```bash
 pip install pylint mypy
-pylint main.py apkviewer/
-mypy --explicit-package-bases --ignore-missing-imports main.py apkviewer/
+pylint main.py apkdetective/
+mypy --explicit-package-bases --ignore-missing-imports main.py apkdetective/
 ```
 
 The *Linting & Type Analysis* workflow runs Pylint and mypy on Linux, macOS and Windows for every push and pull
@@ -538,7 +538,7 @@ Helper scripts live in [`utils/`](utils).
 
 Contributions are welcome: bug reports, ideas and pull requests alike.
 
-1. **Found a bug or want a feature?** [Open an issue](https://github.com/gmm96/APKViewer/issues)
+1. **Found a bug or want a feature?** [Open an issue](https://github.com/gmm96/APKDetective/issues)
    (include the OS, the steps and, if you can, the kind of APK that triggered it).
 2. **Want to change code?**
    1. Fork the repository and create a branch (`git checkout -b feature/my-idea`).

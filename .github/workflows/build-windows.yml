@@ -1,4 +1,4 @@
-name: '[Windows] Build APKViewer'
+name: '[Windows] Build APKDetective'
 
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
               --onefile `
               --assume-yes-for-downloads `
               --output-dir=dist `
-              --output-filename=APKViewer-windows.exe `
+              --output-filename=APKDetective-windows.exe `
               --windows-console-mode=attach `
               --include-package-data=androguard `
               --include-package-data=ttkbootstrap `
@@ -55,19 +55,19 @@ jobs:
               main.py
 
       - name: 'Copy binary with commit ID'
-        run: cp dist/APKViewer-windows.exe dist/APKViewer-windows-${{ github.sha }}.exe
+        run: cp dist/APKDetective-windows.exe dist/APKDetective-windows-${{ github.sha }}.exe
 
       - name: 'Upload binary as artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: APKViewer-windows-binary
-          path: dist/APKViewer-windows-${{ github.sha }}.exe
+          name: APKDetective-windows-binary
+          path: dist/APKDetective-windows-${{ github.sha }}.exe
           retention-days: 90
 
       - name: 'Upload binary to release'
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/APKViewer-windows.exe
+          files: dist/APKDetective-windows.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

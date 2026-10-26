@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python3.11 APKViewer .venv",
+            "name": "Python3.11 APKDetective .venv",
             "type": "debugpy",
             "request": "launch",
             "python": "${workspaceFolder}/.venv/bin/python3.11",
@@ -14,7 +14,7 @@
             "preLaunchTask": "clear_pycache"
         },
         {
-            "name": "Build APKViewer (Linux)",
+            "name": "Build APKDetective (Linux)",
             "type": "debugpy",
             "request": "launch",
             "python": "${workspaceFolder}/.venv/bin/python3.11",
@@ -24,7 +24,7 @@
                 "--standalone",
                 "--onefile",
                 "--output-dir=dist",
-                "--output-filename=APKViewer-linux.bin",
+                "--output-filename=APKDetective-linux.bin",
                 "--include-package-data=androguard",
                 "--include-package-data=ttkbootstrap",
                 "--include-package-data=babel",
