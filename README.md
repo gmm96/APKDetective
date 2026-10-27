@@ -2,7 +2,9 @@
 
 # APKDetective
 
-**Open any Android app (`.apk`) and see what is inside it, with no Android knowledge required.**
+<img src="assets/icons/apkdetective/apkdetective_128.png" alt="APKDetective logo" width="128">
+
+**Open and inspect any Android app (`.apk`) from your PC.**
 
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/gmm96/APKDetective?label=release&color=success)](https://github.com/gmm96/APKDetective/releases/latest)
