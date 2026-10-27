@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 from typing import Optional
 
-from apkdetective.presentation.config.about import ISSUES_URL, REPOSITORY_URL
+from apkdetective.presentation.config.about_config import AboutConfig
 from apkdetective.ports.system.url_opener_port import UrlOpenerPort
 from .about_dialog import AboutDialog
 
@@ -17,8 +17,8 @@ class HelpMenu:
         parent: tk.Misc,
         url_opener: UrlOpenerPort,
         about_dialog: Optional[AboutDialog] = None,
-        repository_url: str = REPOSITORY_URL,
-        issues_url: str = ISSUES_URL,
+        repository_url: str = AboutConfig.REPOSITORY_URL,
+        issues_url: str = AboutConfig.ISSUES_URL,
     ) -> None:
         self._parent: tk.Misc = parent
         self._url_opener: UrlOpenerPort = url_opener

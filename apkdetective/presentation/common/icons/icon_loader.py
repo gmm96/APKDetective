@@ -17,7 +17,7 @@ class IconLoader:
     def __init__(self, asset_path_resolver: AssetPathResolver | None = None) -> None:
         self._asset_path_resolver: AssetPathResolver = asset_path_resolver or AssetPathResolver()
 
-    def load_icon(
+    def load_png_icon(
         self,
         relative_path: str,
         size: tuple[int, int] = (16, 16),

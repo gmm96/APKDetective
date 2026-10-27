@@ -85,7 +85,7 @@ class FilesContextMenu:
             self._menu.entryconfigure(index, image=self._load_icon(icon_file))
 
     def _load_icon(self, icon_file: str) -> ImageTk.PhotoImage:
-        icon = self._icon_loader.load_icon(
+        icon = self._icon_loader.load_png_icon(
             f"assets/icons/outline/{icon_file}",
             hex_color=self._palette.foreground,
             padding_left=8,

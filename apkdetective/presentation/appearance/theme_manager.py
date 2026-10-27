@@ -15,7 +15,7 @@ from apkdetective.domain.entities.appearance.color_scheme_enum import ColorSchem
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkdetective.presentation.appearance.theme_palette_builder import ThemePaletteBuilder
 from apkdetective.presentation.viewmodels.appearance.theme_custom_colors import ThemeCustomColors
-from apkdetective.presentation.config.theme import THEMES, CUSTOM_COLORS
+from apkdetective.presentation.config.theme_config import ThemeConfig
 
 
 class ThemeManager:
@@ -36,7 +36,7 @@ class ThemeManager:
         self._palette_builder: ThemePaletteBuilder = ThemePaletteBuilder()
         self._palette: ThemePalette
         self._theme_name: str = ""
-        self._base_theme: str = THEMES[0] if THEMES else "bootstrap"
+        self._base_theme: str = ThemeConfig.THEMES[0] if ThemeConfig.THEMES else "nord"
 
         # Resolve initial setup
         self._color_scheme: ColorSchemeEnum
@@ -89,7 +89,7 @@ class ThemeManager:
 
     def set_theme(self, base_theme_name: str) -> None:
         """Apply a base theme, selecting the correct variant based on the current mode."""
-        if THEMES and base_theme_name not in THEMES:
+        if ThemeConfig.THEMES and base_theme_name not in ThemeConfig.THEMES:
             raise ValueError(f"Unsupported base theme: {base_theme_name!r}")
         self._base_theme = base_theme_name
         self._update_theme_state()
@@ -113,7 +113,7 @@ class ThemeManager:
         variant: str = f"{base_theme}{suffix}"
         if variant in self._style.theme_names():
             return variant
-        fallback_base: str = THEMES[0] if THEMES else "bootstrap"
+        fallback_base: str = ThemeConfig.THEMES[0] if ThemeConfig.THEMES else "nord"
         return f"{fallback_base}{suffix}"
 
     def _apply_theme(self, theme_name: str, color_scheme: ColorSchemeEnum) -> None:
@@ -128,7 +128,7 @@ class ThemeManager:
 
     def _extract_theme_palette(self, color_scheme: ColorSchemeEnum) -> ThemePalette:
         """Create a ThemePalette combining ttkbootstrap colors and custom static colors."""
-        custom_colors: ThemeCustomColors = CUSTOM_COLORS[color_scheme]
+        custom_colors: ThemeCustomColors = ThemeConfig.CUSTOM_COLORS[color_scheme]
         try:
             colors: Any = self._style.colors
             return self._palette_builder.build(colors, custom_colors)

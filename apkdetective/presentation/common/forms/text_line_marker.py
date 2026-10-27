@@ -8,11 +8,11 @@ comes from the palette (see `apply_palette`).
 import tkinter as tk
 
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
-from apkdetective.presentation.config.layout import MARKED_LINE_TAG
+from apkdetective.presentation.config.layout_config import LayoutConfig
 
 
 class TextLineMarker:
-    def __init__(self, tag_name: str = MARKED_LINE_TAG) -> None:
+    def __init__(self, tag_name: str = LayoutConfig.MARKED_LINE_TAG) -> None:
         self._tag_name: str = tag_name
 
     def bind(self, text_widget: tk.Text) -> None:

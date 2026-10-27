@@ -12,6 +12,7 @@ import tkinter as tk
 from functools import partial
 from tkinter import filedialog, messagebox
 
+from PIL import ImageTk
 import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 
@@ -56,6 +57,7 @@ from apkdetective.presentation.viewmodels.menus.menu_choice_group import MenuCho
 from apkdetective.presentation.viewmodels.menus.menu_item import MenuItem
 from apkdetective.presentation.viewmodels.icons.asset_icon import AssetIcon
 from apkdetective.presentation.viewmodels.icons.bootstrap_icon import BootstrapIcon
+from apkdetective.presentation.config.about_config import AboutConfig
 
 
 class ApkAnalyzerApp:
@@ -80,8 +82,8 @@ class ApkAnalyzerApp:
         AnalysisSectionEnum.COMPONENTS,
         AnalysisSectionEnum.MANIFEST,
     )
-
-    _ICONS_DIR: str = "assets/icons/outline"
+    _ICONS_OUTLINE_DIR: str = "assets/icons/outline"
+    _ICON_APP_DIR: str = "assets/icons/apkdetective"
 
     def __init__(
         self,
@@ -102,17 +104,23 @@ class ApkAnalyzerApp:
         self._focus_announcer: KeyboardFocusAnnouncer = KeyboardFocusAnnouncer(root)
         # Enter presses the filter pills (radiobuttons) like it presses the buttons.
         self._enter_activation: EnterKeyActivation = EnterKeyActivation(root)
-        self.root.title("APKDetective")
-        self.root.minsize(600, 600)
-        self.root.geometry("1000x750")
-        self.maximize_window()
-        self.root.protocol("WM_DELETE_WINDOW", self.exit_app)
-
         self._analyze_apk: AnalyzeApk = analyze_apk
         self._entry_previewer: EntryPreviewer = entry_previewer
         self._icon_loader: IconLoader = icon_loader or IconLoader()
         self._size_formatter: SizeFormatterPort | None = size_formatter
         self._date_formatter: DateFormatterPort | None = date_formatter
+
+        self.root.title(AboutConfig.NAME)
+        self.app_icon: ImageTk.PhotoImage = self._icon_loader.load_png_icon(
+            f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective_512.png",
+            (512, 512)
+        )
+        self.root.iconphoto(True, self.app_icon)    # type: ignore
+        self.root.minsize(600, 600)
+        self.root.geometry("1000x750")
+        self.maximize_window()
+        self.root.protocol("WM_DELETE_WINDOW", self.exit_app)
+
 
         # Activates the ttk theme (AUTO = follow the OS) before any widget exists.
         self._theme: ThemeManager = ThemeManager(root, resolve_color_scheme)
@@ -270,7 +278,7 @@ class ApkAnalyzerApp:
     # --- Public actions ----------------------------------------------------
 
     def load_apk(self) -> None:
-        apk_path = filedialog.askopenfilename(
+        apk_path: str = filedialog.askopenfilename(
             title="Select APK file",
             filetypes=[("APK files", "*.apk"), ("All files", "*.*")],
         )
@@ -305,14 +313,18 @@ class ApkAnalyzerApp:
         if not os.path.exists(apk_path):
             messagebox.showerror("Error", f"File not found:\n{apk_path}")
             return
+        filename: str = os.path.basename(apk_path)
+        full_path: str = os.path.abspath(apk_path)
         self._result = None
+        self.root.title(f"{AboutConfig.NAME} - Analysing {filename}")
         self.menu_bar.set_enabled(self._ANALYSIS_DEPENDENT_ITEMS, False)
         self._set_status(
-            f"Analyzing: {os.path.basename(apk_path)}... (Please wait)", StatusLevelEnum.INFO
+            f"Analyzing: {full_path}... (Please wait)",
+            StatusLevelEnum.INFO
         )
         self._cancellation = CancellationToken()
         self._set_loading(True)
-        self.header.reset_to_placeholder(os.path.basename(apk_path))
+        self.header.reset_to_placeholder(filename)
         self.info_panel.clear()
         self.security_panel.clear()
         self.permissions_panel.clear()
@@ -352,10 +364,12 @@ class ApkAnalyzerApp:
             self.root.after(0, lambda: self._set_loading(False))
 
     def _report_cancelled(self) -> None:
+        self.root.after(0, lambda: self.root.title(AboutConfig.NAME))
         self.root.after(0, self.header.reset_to_idle)
         self._set_status("Analysis cancelled.", StatusLevelEnum.INFO)
 
     def _report_failure(self, message: str) -> None:
+        self.root.after(0, lambda: self.root.title(AboutConfig.NAME))
         self.root.after(
             0,
             lambda: messagebox.showerror(
@@ -395,6 +409,7 @@ class ApkAnalyzerApp:
             self._tab_lock.unlock()
 
     def _render_result(self, result: AnalysisResult) -> None:
+        self.root.title(f"{AboutConfig.NAME} - {result.app_name} ({result.package_name})")
         self._result = result
         inspection = result.inspection
         self.header.show_result(
@@ -427,4 +442,4 @@ class ApkAnalyzerApp:
 
     @staticmethod
     def _asset_icon(file_name: str) -> AssetIcon:
-        return AssetIcon(f"{ApkAnalyzerApp._ICONS_DIR}/{file_name}")
+        return AssetIcon(f"{ApkAnalyzerApp._ICONS_OUTLINE_DIR}/{file_name}")

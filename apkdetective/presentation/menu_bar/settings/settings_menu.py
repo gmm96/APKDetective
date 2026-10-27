@@ -10,7 +10,7 @@ import ttkbootstrap as ttkb
 
 from apkdetective.domain.entities.appearance.color_mode_enum import ColorModeEnum
 from apkdetective.presentation.appearance.theme_manager import ThemeManager
-from apkdetective.presentation.config.theme import THEMES
+from apkdetective.presentation.config.theme_config import ThemeConfig
 
 
 class SettingsMenu:
@@ -34,7 +34,7 @@ class SettingsMenu:
     @property
     def themes(self) -> tuple[str, ...]:
         """Every theme the user can choose."""
-        return tuple(THEMES)
+        return tuple(ThemeConfig.THEMES)
 
     @staticmethod
     def theme_label(base_theme: str) -> str:

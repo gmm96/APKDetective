@@ -8,8 +8,8 @@ import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 from ttkbootstrap.dialogs import Dialog
 
-from apkdetective.presentation.config.about import PROJECT_DESCRIPTION, PROJECT_NAME
-from apkdetective.presentation.config.theme import FONT_TITLE
+from apkdetective.presentation.config.about_config import AboutConfig
+from apkdetective.presentation.config.font_config import FontConfig
 
 
 class AboutDialog(Dialog):
@@ -18,8 +18,8 @@ class AboutDialog(Dialog):
     def __init__(
         self,
         parent: tk.Misc,
-        project_name: str = PROJECT_NAME,
-        description: str = PROJECT_DESCRIPTION,
+        project_name: str = AboutConfig.NAME,
+        description: str = AboutConfig.DESCRIPTION,
     ) -> None:
         super().__init__(parent.winfo_toplevel(), title=f"About {project_name}")
         self._project_name: str = project_name
@@ -28,7 +28,7 @@ class AboutDialog(Dialog):
     def create_body(self, master: tk.Misc) -> None:
         body = ttkb.Frame(master)
         body.pack(fill=tk.BOTH, expand=True, padx=30, pady=(20, 0))
-        ttkb.Label(body, text=self._project_name, font=FONT_TITLE).pack(pady=(0, 10))
+        ttkb.Label(body, text=self._project_name, font=FontConfig.FONT_TITLE).pack(pady=(0, 10))
         ttkb.Label(body, text=self._description, wraplength=380, justify=tk.LEFT).pack()
 
     def create_buttonbox(self, master: tk.Misc) -> None:

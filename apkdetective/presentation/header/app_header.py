@@ -4,7 +4,6 @@ Top header: app icon, name/package labels and the "Load APK" button.
 
 import io
 import tkinter as tk
-from typing import Optional
 from collections.abc import Callable
 
 import ttkbootstrap as ttkb
@@ -12,15 +11,13 @@ import ttkbootstrap.constants as ttkb_constants
 from PIL import Image, ImageTk
 
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
-from apkdetective.presentation.config.layout import ICON_SIZE
-from apkdetective.presentation.config.theme import FONT_SUBTITLE, FONT_TITLE
+from apkdetective.presentation.config.font_config import FontConfig
 from apkdetective.presentation.common.icons.placeholder_icon_factory import PlaceholderIconFactory
 
 
 class AppHeader(ttkb.Frame):
-    # Characters; wide enough for both labels so the button keeps its size when it changes.
+    _ICON_SIZE: tuple[int, int]  = (96, 96)
     _BUTTON_WIDTH: int = 8
-
     _IDLE_TITLE: str = "No APK Loaded"
     _IDLE_SUBTITLE: str = "Select an application file to begin analysis."
 
@@ -30,14 +27,14 @@ class AppHeader(ttkb.Frame):
         on_load_click: Callable[[], None],
         on_cancel_click: Callable[[], None],
         palette: ThemePalette,
-        icon_factory: Optional[PlaceholderIconFactory] = None
+        icon_factory: PlaceholderIconFactory | None = None
     ) -> None:
         super().__init__(parent)
         self._on_load_click: Callable[[], None] = on_load_click
         self._on_cancel_click: Callable[[], None] = on_cancel_click
-        self._icon_factory: PlaceholderIconFactory = icon_factory or PlaceholderIconFactory()
+        self._icon_factory: PlaceholderIconFactory = icon_factory or PlaceholderIconFactory(self._ICON_SIZE)
         self._placeholder_icon: tk.PhotoImage = self._icon_factory.create(palette)
-        self._current_icon: Optional[ImageTk.PhotoImage] = None
+        self._current_icon: ImageTk.PhotoImage | None = None
 
         left = ttkb.Frame(self)
         left.pack(side=tk.LEFT, fill=tk.Y)
@@ -48,13 +45,13 @@ class AppHeader(ttkb.Frame):
         text_frame = ttkb.Frame(left)
         text_frame.pack(side=tk.LEFT, expand=True, fill=tk.Y)
 
-        self.name_label: ttkb.Label = ttkb.Label(text_frame, text=self._IDLE_TITLE, font=FONT_TITLE)
+        self.name_label: ttkb.Label = ttkb.Label(text_frame, text=self._IDLE_TITLE, font=FontConfig.FONT_TITLE)
         self.name_label.pack(side=tk.TOP, anchor="sw", expand=True)
 
         self.package_label: ttkb.Label = ttkb.Label(
             text_frame,
             text=self._IDLE_SUBTITLE,
-            font=FONT_SUBTITLE,
+            font=FontConfig.FONT_SUBTITLE,
             foreground=palette.foreground,
         )
         self.package_label.pack(side=tk.TOP, anchor="nw", expand=True)
@@ -115,12 +112,12 @@ class AppHeader(ttkb.Frame):
         self.package_label.configure(text=package_name or "Unknown Package")
 
     @staticmethod
-    def _create_thumbnail(icon_png: bytes | None) -> Optional[ImageTk.PhotoImage]:
+    def _create_thumbnail(icon_png: bytes | None) -> ImageTk.PhotoImage | None:
         """Scale the full-resolution icon to the header size; None if it can't be decoded."""
         if icon_png is None:
             return None
         try:
-            image = Image.open(io.BytesIO(icon_png)).resize(ICON_SIZE, Image.Resampling.LANCZOS)
+            image = Image.open(io.BytesIO(icon_png)).resize(AppHeader._ICON_SIZE, Image.Resampling.LANCZOS)
         except (OSError, ValueError):
             return None
         return ImageTk.PhotoImage(image)

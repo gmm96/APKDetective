@@ -22,8 +22,8 @@ from apkdetective.presentation.common.scrolling.scrollable_frame import Scrollab
 from apkdetective.presentation.common.menus.text_context_menu import TextContextMenu
 from apkdetective.presentation.common.forms.text_line_marker import TextLineMarker
 from apkdetective.presentation.common.feedback.warning_banner import WarningBanner
-from apkdetective.presentation.config.theme import FONT_MONO_SMALL
-from apkdetective.presentation.config.layout import FIELD_PADX, FIELD_PADY
+from apkdetective.presentation.config.font_config import FontConfig
+from apkdetective.presentation.config.layout_config import LayoutConfig
 from apkdetective.presentation.viewmodels.forms.chip_spec import ChipSpec
 from apkdetective.presentation.viewmodels.appearance.color_pair import ColorPair
 
@@ -150,7 +150,7 @@ class FormPanel(ttkb.Frame):
             icon_color=self._palette.primary_icon,
             active_icon_color=self._palette.success_text,
             background=self._palette.input_background,
-            font=FONT_MONO_SMALL if monospace else None
+            font=FontConfig.FONT_MONO_SMALL if monospace else None
         )
         self._copy_entries.append(entry)
         return entry
@@ -194,7 +194,7 @@ class FormPanel(ttkb.Frame):
             wrap=tk.NONE,
             borderwidth=1,
             relief="solid",
-            font=FONT_MONO_SMALL,
+            font=FontConfig.FONT_MONO_SMALL,
             auto_hide=False
         )
         text_widget.grid(row=0, column=0, sticky="ew")
@@ -212,8 +212,8 @@ class FormPanel(ttkb.Frame):
                     icon_color=self._palette.primary_icon,
                     active_icon_color=self._palette.success_text,
                     background=self._palette.input_background,
-                    top_offset=FIELD_PADX,
-                    right_offset=FIELD_PADY
+                    top_offset=LayoutConfig.FIELD_PADX,
+                    right_offset=LayoutConfig.FIELD_PADY
                 )
             )
 

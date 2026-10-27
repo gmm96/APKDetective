@@ -7,7 +7,7 @@ from typing import Any
 
 import ttkbootstrap as ttkb
 
-from apkdetective.presentation.config.layout import FIELD_PADX, FIELD_PADY
+from apkdetective.presentation.config.layout_config import LayoutConfig
 
 
 class IconEntry(ttkb.Entry):
@@ -23,5 +23,5 @@ class IconEntry(ttkb.Entry):
         """ttk keeps style settings per theme, so this must be called on initialization and theme changes."""
         ttkb.Style().configure(
             cls.ENTRY_STYLE,
-            padding=(FIELD_PADX, FIELD_PADY, cls.ENTRY_ICON_AREA, FIELD_PADY),
+            padding=(LayoutConfig.FIELD_PADX, LayoutConfig.FIELD_PADY, cls.ENTRY_ICON_AREA, LayoutConfig.FIELD_PADY),
         )

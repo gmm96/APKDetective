@@ -38,7 +38,7 @@ class FileIconProvider:
 
     def _load(self, icon_name: str) -> ImageTk.PhotoImage:
         try:
-            return self._icon_loader.load_icon(
+            return self._icon_loader.load_png_icon(
                 f"{self.ICON_DIR}/{icon_name}",
                 padding_left=self._PADDING_LEFT,
                 padding_right=self._PADDING_RIGHT,

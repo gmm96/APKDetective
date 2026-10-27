@@ -15,7 +15,7 @@ from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemeP
 from apkdetective.presentation.common.tree.base_tree_panel import BaseTreePanel
 from apkdetective.presentation.viewmodels.tree.record_node import RecordNode
 from apkdetective.presentation.viewmodels.tree.tree_column import TreeColumn
-from apkdetective.presentation.config.theme import FONT_MONO_SMALL
+from apkdetective.presentation.config.font_config import FontConfig
 
 _TAG: str = "record"
 
@@ -109,7 +109,7 @@ class RecordTablePanel(BaseTreePanel[RecordNode]):
             self._reverse = False
 
     def _configure_tags(self, palette: ThemePalette) -> None:
-        self.tree.tag_configure(_TAG, font=FONT_MONO_SMALL)
+        self.tree.tag_configure(_TAG, font=FontConfig.FONT_MONO_SMALL)
         for row_style, color_of in self._row_styles.items():
             self.tree.tag_configure(row_style, foreground=color_of(palette))
         base_style: str = self.tree.cget("style")

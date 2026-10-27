@@ -9,7 +9,6 @@ import tkinter as tk
 import ttkbootstrap as ttkb
 
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
-from apkdetective.presentation.config.layout import ICON_SIZE
 
 
 class PlaceholderIconFactory:
@@ -19,7 +18,7 @@ class PlaceholderIconFactory:
     # swapping the placeholder for the real icon does not look like a jump in size.
     _SIZE_FRACTION: float = 0.85
 
-    def __init__(self, size: tuple[int, int] = ICON_SIZE) -> None:
+    def __init__(self, size: tuple[int, int]) -> None:
         self._size: tuple[int, int] = size
 
     def create(self, palette: ThemePalette) -> tk.PhotoImage:

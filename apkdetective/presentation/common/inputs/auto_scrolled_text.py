@@ -5,7 +5,7 @@ import ttkbootstrap as ttkb
 
 from apkdetective.presentation.common.scrolling.auto_hide_scrollbar import AutoHideScrollbar
 from apkdetective.presentation.common.scrolling.wheel_lines import WheelLines
-from apkdetective.presentation.config.layout import FIELD_PADX, FIELD_PADY
+from apkdetective.presentation.config.layout_config import LayoutConfig
 
 
 class AutoScrolledText(ttkb.ScrolledText):
@@ -32,7 +32,7 @@ class AutoScrolledText(ttkb.ScrolledText):
         kwargs.setdefault("hbar", True)
         super().__init__(*args, **kwargs)
 
-        self.text.configure(padx=FIELD_PADX, pady=FIELD_PADY, takefocus=True)
+        self.text.configure(padx=LayoutConfig.FIELD_PADX, pady=LayoutConfig.FIELD_PADY, takefocus=True)
         ttk.Frame.configure(self, takefocus=False)  # not self.configure: that one is delegated to the Text
 
         # ttkbootstrap grids the bars as soon as it creates them: start with both hidden and
