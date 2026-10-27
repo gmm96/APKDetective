@@ -4,7 +4,6 @@ UI sizing/layout constants shared across widgets.
 
 
 class LayoutConfig:
-    MAIN_ICON_SIZE: tuple[int, int]  = (96, 96)
     MIN_LIST_LINES: int = 3
     # The list boxes of the forms show at most this many lines and scroll inside beyond that: a box as tall
     # as its whole content makes every scroll of the page repaint it, and for thousands of lines Tk fails.
