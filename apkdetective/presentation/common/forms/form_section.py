@@ -18,7 +18,7 @@ from apkdetective.presentation.common.forms.column_planner import ColumnPlanner
 from apkdetective.presentation.common.inputs.copyable_entry import CopyableEntry
 from apkdetective.presentation.common.forms.form_widget_factory import FormWidgetFactory
 from apkdetective.presentation.common.forms.label_width_meter import LabelWidthMeter
-from apkdetective.presentation.config.layout import MAX_LIST_LINES, MIN_LIST_LINES
+from apkdetective.presentation.config.layout_config import LayoutConfig
 
 
 class FormSection:
@@ -193,7 +193,7 @@ class FormSection:
     def _display_text(items: Sequence[str], separator: str) -> tuple[str, int]:
         text = separator.join(items) if items else "None found"
         content_lines = text.count("\n") + 1
-        line_count = max(min(content_lines, MAX_LIST_LINES), MIN_LIST_LINES)
+        line_count = max(min(content_lines, LayoutConfig.MAX_LIST_LINES), LayoutConfig.MIN_LIST_LINES)
         text += "\n" * max(0, line_count - content_lines)
         return text, line_count
 

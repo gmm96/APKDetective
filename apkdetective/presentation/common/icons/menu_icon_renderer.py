@@ -30,7 +30,7 @@ class MenuIconRenderer:
         """An image of `size` plus the horizontal paddings (transparent), with the icon tinted `color`."""
         match icon:
             case AssetIcon(path=path):
-                return self._icon_loader.load_icon(
+                return self._icon_loader.load_png_icon(
                     path,
                     size=size,
                     hex_color=color,

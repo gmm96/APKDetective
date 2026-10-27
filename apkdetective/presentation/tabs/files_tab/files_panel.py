@@ -23,7 +23,7 @@ from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemeP
 from apkdetective.presentation.common.dialogs.extract_to_dialog import ExtractToDialog
 from apkdetective.presentation.common.tree.base_tree_panel import BaseTreePanel
 from apkdetective.presentation.viewmodels.tree.tree_column import TreeColumn
-from apkdetective.presentation.config.theme import FONT_MONO_SMALL
+from apkdetective.presentation.config.font_config import FontConfig
 from apkdetective.presentation.tabs.files_tab.file_activation_opener import FileActivationOpener
 from apkdetective.presentation.tabs.files_tab.file_icon_provider import FileIconProvider
 from apkdetective.presentation.tabs.files_tab.file_open_action import FileOpenAction
@@ -181,12 +181,12 @@ class FilesPanel(BaseTreePanel[FileNode]):
         self._sorter.toggle(self.COLUMN_SORT_KEYS[column_id])
 
     def _configure_tags(self, palette: ThemePalette) -> None:
-        self.tree.tag_configure("file", font=FONT_MONO_SMALL)
+        self.tree.tag_configure("file", font=FontConfig.FONT_MONO_SMALL)
         self.tree.tag_configure(
             "folder",
             background=palette.folder_row.background,
             foreground=palette.folder_row.foreground,
-            font=FONT_MONO_SMALL,
+            font=FontConfig.FONT_MONO_SMALL,
         )
 
     def _insert(self, parent_iid: str, node: FileNode, iid: str, is_open: bool) -> None:

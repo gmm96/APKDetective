@@ -12,8 +12,8 @@ import ttkbootstrap.constants as ttkb_constants
 from PIL import Image, ImageTk
 
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
-from apkdetective.presentation.config.layout import ICON_SIZE
-from apkdetective.presentation.config.theme import FONT_SUBTITLE, FONT_TITLE
+from apkdetective.presentation.config.layout_config import LayoutConfig
+from apkdetective.presentation.config.font_config import FontConfig
 from apkdetective.presentation.common.icons.placeholder_icon_factory import PlaceholderIconFactory
 
 
@@ -48,13 +48,13 @@ class AppHeader(ttkb.Frame):
         text_frame = ttkb.Frame(left)
         text_frame.pack(side=tk.LEFT, expand=True, fill=tk.Y)
 
-        self.name_label: ttkb.Label = ttkb.Label(text_frame, text=self._IDLE_TITLE, font=FONT_TITLE)
+        self.name_label: ttkb.Label = ttkb.Label(text_frame, text=self._IDLE_TITLE, font=FontConfig.FONT_TITLE)
         self.name_label.pack(side=tk.TOP, anchor="sw", expand=True)
 
         self.package_label: ttkb.Label = ttkb.Label(
             text_frame,
             text=self._IDLE_SUBTITLE,
-            font=FONT_SUBTITLE,
+            font=FontConfig.FONT_SUBTITLE,
             foreground=palette.foreground,
         )
         self.package_label.pack(side=tk.TOP, anchor="nw", expand=True)
@@ -120,7 +120,7 @@ class AppHeader(ttkb.Frame):
         if icon_png is None:
             return None
         try:
-            image = Image.open(io.BytesIO(icon_png)).resize(ICON_SIZE, Image.Resampling.LANCZOS)
+            image = Image.open(io.BytesIO(icon_png)).resize(LayoutConfig.MAIN_ICON_SIZE, Image.Resampling.LANCZOS)
         except (OSError, ValueError):
             return None
         return ImageTk.PhotoImage(image)

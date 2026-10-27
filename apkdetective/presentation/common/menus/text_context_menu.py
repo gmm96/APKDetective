@@ -12,7 +12,7 @@ from collections.abc import Callable
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkdetective.presentation.appearance.tk_widget_styler import TkWidgetStyler
 from apkdetective.presentation.common.menus.popup_menu_controller import PopupMenuController
-from apkdetective.presentation.config.layout import MARKED_LINE_TAG
+from apkdetective.presentation.config.layout_config import LayoutConfig
 
 
 class TextContextMenu:
@@ -62,7 +62,7 @@ class TextContextMenu:
             if widget.tag_ranges(tk.SEL):
                 text_to_copy = widget.get(tk.SEL_FIRST, tk.SEL_LAST)
             else:
-                marked = widget.tag_ranges(MARKED_LINE_TAG)
+                marked = widget.tag_ranges(LayoutConfig.MARKED_LINE_TAG)
                 text_to_copy = widget.get(marked[0], marked[1]) if marked else self._full_texts[widget]()
             text_to_copy = self._strip_trailing_padding(text_to_copy)
             if text_to_copy:

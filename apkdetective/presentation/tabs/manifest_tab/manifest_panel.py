@@ -8,7 +8,7 @@ from typing import Optional
 import ttkbootstrap as ttkb
 
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
-from apkdetective.presentation.config.theme import FONT_MONO
+from apkdetective.presentation.config.font_config import FontConfig
 from apkdetective.presentation.common.inputs.auto_scrolled_text import AutoScrolledText
 from apkdetective.presentation.common.menus.text_context_menu import TextContextMenu
 
@@ -30,7 +30,7 @@ class ManifestPanel(ttkb.Frame):
         self.columnconfigure(0, weight=1)
 
         # ttkbootstrap styles the inner Text (colors, selection) and follows the theme by itself.
-        scrolled_text = AutoScrolledText(self, wrap=tk.NONE, font=FONT_MONO)
+        scrolled_text = AutoScrolledText(self, wrap=tk.NONE, font=FontConfig.FONT_MONO)
         scrolled_text.grid(row=0, column=0, sticky="nsew")
         self.text: tk.Text = scrolled_text.text
 

@@ -13,7 +13,7 @@ from bisect import bisect_right
 from collections.abc import Callable
 
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
-from apkdetective.presentation.config.theme import FONT_MONO_SMALL_ITALIC
+from apkdetective.presentation.config.font_config import FontConfig
 
 
 class XmlSyntaxHighlighter:
@@ -29,7 +29,7 @@ class XmlSyntaxHighlighter:
         text_widget.tag_configure(
             "xml_comment",
             foreground=palette.xml_comment,
-            font=FONT_MONO_SMALL_ITALIC
+            font=FontConfig.FONT_MONO_SMALL_ITALIC
         )
         self._keep_selection_on_top(text_widget)
 

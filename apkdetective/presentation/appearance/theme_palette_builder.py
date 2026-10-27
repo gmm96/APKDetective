@@ -12,15 +12,7 @@ from typing import Any
 
 from apkdetective.presentation.appearance.contrast_adjuster import ContrastAdjuster
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
-from apkdetective.presentation.config.theme import (
-    DISABLED_TEXT_AMOUNT,
-    FOLDER_ROW_TINT,
-    MARKED_LINE_TINT,
-    MIN_COMMENT_CONTRAST,
-    MIN_ICON_CONTRAST,
-    MIN_TEXT_CONTRAST,
-    MUTED_TEXT_AMOUNT,
-)
+from apkdetective.presentation.config.theme_config import ThemeConfig
 from apkdetective.presentation.viewmodels.appearance.color_pair import ColorPair
 from apkdetective.presentation.viewmodels.appearance.theme_custom_colors import ThemeCustomColors
 
@@ -32,11 +24,11 @@ class ThemePaletteBuilder:
         surfaces: tuple[str, str] = (colors.bg, colors.inputbg)
 
         def readable(color: str) -> str:
-            return ContrastAdjuster.ensure_contrast(color, surfaces, MIN_TEXT_CONTRAST)
+            return ContrastAdjuster.ensure_contrast(color, surfaces, ThemeConfig.MIN_TEXT_CONTRAST)
 
         def chip(fill: str) -> ColorPair:
             text: str = ContrastAdjuster.best_contrast(fill, (colors.bg, colors.fg))
-            return ColorPair(ContrastAdjuster.ensure_contrast(fill, (text,), MIN_TEXT_CONTRAST), text)
+            return ColorPair(ContrastAdjuster.ensure_contrast(fill, (text,), ThemeConfig.MIN_TEXT_CONTRAST), text)
 
         return ThemePalette(
             primary=colors.primary,
@@ -59,16 +51,16 @@ class ThemePaletteBuilder:
             xml_attr=readable(custom_colors.xml_attr),
             xml_value=readable(custom_colors.xml_value),
             xml_comment=ContrastAdjuster.ensure_contrast(
-                custom_colors.xml_comment, surfaces, MIN_COMMENT_CONTRAST
+                custom_colors.xml_comment, surfaces, ThemeConfig.MIN_COMMENT_CONTRAST
             ),
-            muted_text=readable(ContrastAdjuster.blend(colors.fg, colors.bg, MUTED_TEXT_AMOUNT)),
+            muted_text=readable(ContrastAdjuster.blend(colors.fg, colors.bg, ThemeConfig.MUTED_TEXT_AMOUNT)),
             info_text=readable(colors.info),
-            primary_icon=ContrastAdjuster.ensure_contrast(colors.primary, surfaces, MIN_ICON_CONTRAST),
+            primary_icon=ContrastAdjuster.ensure_contrast(colors.primary, surfaces, ThemeConfig.MIN_ICON_CONTRAST),
             success_text=readable(colors.success),
             danger_text=readable(colors.danger),
-            disabled_text=ContrastAdjuster.blend(colors.fg, colors.bg, DISABLED_TEXT_AMOUNT),
-            marked_line=self._tinted_band(colors.primary, colors, MARKED_LINE_TINT),
-            folder_row=self._tinted_band(colors.primary, colors, FOLDER_ROW_TINT),
+            disabled_text=ContrastAdjuster.blend(colors.fg, colors.bg, ThemeConfig.DISABLED_TEXT_AMOUNT),
+            marked_line=self._tinted_band(colors.primary, colors, ThemeConfig.MARKED_LINE_TINT),
+            folder_row=self._tinted_band(colors.primary, colors, ThemeConfig.FOLDER_ROW_TINT),
             chip_success=chip(colors.success),
             chip_danger=chip(colors.danger),
             chip_neutral=chip(colors.warning),
@@ -82,5 +74,5 @@ class ThemePaletteBuilder:
         drawn), with the input text color nudged, if needed, so it stays readable on the band.
         """
         band: str = ContrastAdjuster.blend(tint, colors.inputbg, amount)
-        text: str = ContrastAdjuster.ensure_contrast(colors.inputfg, (band,), MIN_TEXT_CONTRAST)
+        text: str = ContrastAdjuster.ensure_contrast(colors.inputfg, (band,), ThemeConfig.MIN_TEXT_CONTRAST)
         return ColorPair(band, text)
