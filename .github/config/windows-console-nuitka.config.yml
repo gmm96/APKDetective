@@ -1,0 +1,26 @@
+
+---
+- module-name: 'ttkbootstrap'
+  implicit-imports:
+    - depends:
+        - 'ctypes'
+        - 'os'
+        - 'sys'
+      pre-import-code:
+        - |
+          import ctypes
+          import os
+          import sys
+
+          kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+          get_console_window = kernel32.GetConsoleWindow
+          get_console_window.argtypes = []
+          get_console_window.restype = ctypes.c_void_p
+
+          if not get_console_window():
+              null_stream = open(os.devnull, "w", encoding="utf-8")
+              sys.stdout = null_stream
+              sys.stderr = null_stream
+              sys.__stdout__ = null_stream
+              sys.__stderr__ = null_stream
+      when: 'win32'
