@@ -4,15 +4,15 @@
 
 <img src="assets/icons/apkdetective/apkdetective_128.png" alt="APKDetective logo" width="128">
 
-**Open and inspect any Android app (`.apk`) from your PC.**
+**Inspect and deeply analyse any Android app (`.apk`) from your PC.**
 
-[![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/gmm96/APKDetective?label=release&color=success)](https://github.com/gmm96/APKDetective/releases/latest)
-[![Lint & type analysis](https://github.com/gmm96/APKDetective/actions/workflows/analyze.yml/badge.svg)](https://github.com/gmm96/APKDetective/actions/workflows/analyze.yml)
-![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
-![GUI](https://img.shields.io/badge/GUI-tkinter%20%2B%20ttkbootstrap-informational)
-![Engine](https://img.shields.io/badge/engine-androguard-orange)
+
+![Supported Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-darksalmon?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iNDhweCIgdmlld0JveD0iMCAtOTYwIDk2MCA5NjAiIHdpZHRoPSI0OHB4IiBmaWxsPSIjRkZGRkZGIj48cGF0aCBkPSJNMC0xNjB2LTYwaDgwdi02MjBoODAwdjYyMGg4MHY2MEgwWm0zOTYtNjBoMTcwdi00MkgzOTZ2NDJaTTE0NC0zMjJoNjgwdi00NThIMTQ0djQ1OFptMzQwLTIyOVoiLz48L3N2Zz4=)
+[![Latest release](https://img.shields.io/github/v/release/gmm96/APKDetective?label=release&color=goldenrod&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBhcmlhLWhpZGRlbj0idHJ1ZSIgcm9sZT0iaW1nIiBzdHlsZT0iY29sb3I6IHJnYigyNTUsIDI1NSwgMjU1KTsgb3BhY2l0eTogMTsgdHJhbnNmb3JtOiByb3RhdGUoMGRlZyk7IiB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIyIiBkPSJtMTIgM2w4IDQuNXY5TDEyIDIxbC04LTQuNXYtOXptMCA5bDgtNC41TTEyIDEydjltMC05TDQgNy41Ij48L3BhdGg+PC9zdmc+)](https://github.com/gmm96/APKDetective/releases/latest)
+[![Lint & type analysis](https://img.shields.io/github/actions/workflow/status/gmm96/APKDetective/analyze.yml?logo=github&logoColor=white&label=Lint%20%26%20Type%20Analysis)](https://github.com/gmm96/APKDetective/actions/workflows/analyze.yml)
+![Python](https://img.shields.io/badge/python-3.11-3776AB?logo=python&logoColor=white)
+[![License: GPL v3](https://img.shields.io/badge/license-GPLv3-slategrey?logo=data:image/svg%2Bxml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjxzdmcKICAgYXJpYS1oaWRkZW49InRydWUiCiAgIHJvbGU9ImltZyIKICAgc3R5bGU9ImNvbG9yOiByZ2IoMjU1LCAyNTUsIDI1NSk7IG9wYWNpdHk6IDE7IHRyYW5zZm9ybTogcm90YXRlKDBkZWcpOyIKICAgd2lkdGg9IjY0IgogICBoZWlnaHQ9IjY0IgogICB2aWV3Qm94PSIwIDAgMjQgMjQiCiAgIHZlcnNpb249IjEuMSIKICAgaWQ9InN2ZzEiCiAgIHNvZGlwb2RpOmRvY25hbWU9Imp1c3RpY2Utb3V0bGluZS0yNHB4My5zdmciCiAgIGlua3NjYXBlOnZlcnNpb249IjEuNC40IChkY2FmM2U3ZDllLCAyMDI2LTA1LTA1KSIKICAgeG1sbnM6aW5rc2NhcGU9Imh0dHA6Ly93d3cuaW5rc2NhcGUub3JnL25hbWVzcGFjZXMvaW5rc2NhcGUiCiAgIHhtbG5zOnNvZGlwb2RpPSJodHRwOi8vc29kaXBvZGkuc291cmNlZm9yZ2UubmV0L0RURC9zb2RpcG9kaS0wLmR0ZCIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcwogICAgIGlkPSJkZWZzMSIgLz4KICA8c29kaXBvZGk6bmFtZWR2aWV3CiAgICAgaWQ9Im5hbWVkdmlldzEiCiAgICAgcGFnZWNvbG9yPSIjZmZmZmZmIgogICAgIGJvcmRlcmNvbG9yPSIjMDAwMDAwIgogICAgIGJvcmRlcm9wYWNpdHk9IjAuMjUiCiAgICAgaW5rc2NhcGU6c2hvd3BhZ2VzaGFkb3c9IjIiCiAgICAgaW5rc2NhcGU6cGFnZW9wYWNpdHk9IjAuMCIKICAgICBpbmtzY2FwZTpwYWdlY2hlY2tlcmJvYXJkPSJ0cnVlIgogICAgIGlua3NjYXBlOmRlc2tjb2xvcj0iI2QxZDFkMSIKICAgICBpbmtzY2FwZTp6b29tPSIxNy45MDYyNSIKICAgICBpbmtzY2FwZTpjeD0iMzIuMDI3OTIzIgogICAgIGlua3NjYXBlOmN5PSIzMiIKICAgICBpbmtzY2FwZTp3aW5kb3ctd2lkdGg9IjI1NjAiCiAgICAgaW5rc2NhcGU6d2luZG93LWhlaWdodD0iMTM2MCIKICAgICBpbmtzY2FwZTp3aW5kb3cteD0iMCIKICAgICBpbmtzY2FwZTp3aW5kb3cteT0iMCIKICAgICBpbmtzY2FwZTp3aW5kb3ctbWF4aW1pemVkPSIxIgogICAgIGlua3NjYXBlOmN1cnJlbnQtbGF5ZXI9InN2ZzEiIC8+CiAgPHBhdGgKICAgICBmaWxsPSJjdXJyZW50Q29sb3IiCiAgICAgZmlsbC1ydWxlPSJldmVub2RkIgogICAgIGQ9Ik0gMTguNzksMy43NDQgMTQuNTc2LDQuNDYyIEMgMTMuMTcwMDkxLDIuMTEwOTA3MyA5LjYwNzg1NDksMi43MTc5NiA5LjA2LDUuNDAyIEwgMy44NzMsNi4yODUgQyAyLjU1ODMzMzksNi41MDg5OTk5IDIuODk0MzMzOSw4LjQ4MDk5OTkgNC4yMDksOC4yNTcgTCA0LjQzNSw4LjIxOCAyLDEzLjQ5NSB2IDAuMjIgYyAwLDIuMTU4IDEuODYyLDMuNzg1IDQsMy43ODUgMi4xMzgsMCA0LC0xLjYyNiA0LC0zLjc4NiB2IC0wLjIyIGwgLTIuNjYzLC01Ljc3IDIsLTAuMzQgQyA5LjY4ODIxMTQsOC4wNTg3NjQ3IDEwLjI4MjY0MSw4LjU3NDkxMzkgMTEsOC44MjggViAxOSBIIDQgdiAyIEggMjAgViAxOSBIIDEzIFYgOC44MyBDIDE0LjA1MzUxLDguNDU3NDc5MiAxNC44MTI2NzEsNy41MzAzMDE1IDE0Ljk3LDYuNDI0IEwgMTYuNzA4LDYuMTI4IDE0LDExLjk5NSB2IDAuMjIgYyAwLDIuMTU4IDEuODYyLDMuNzg1IDQsMy43ODUgMi4xMzgsMCA0LC0xLjYyNiA0LC0zLjc4NiB2IC0wLjIyIEwgMTkuMTA0LDUuNzIgMTkuMTI3LDUuNzE2IEMgMjAuNDc4MDkyLDUuNTE4NjIyOSAyMC4xMzExNzYsMy40ODM1OTE2IDE4Ljc5MSwzLjc0NSBNIDE4LDguMSAxNi41NjMsMTEuMjE0IGggMi44NzQgeiBNIDQuNTYzLDEyLjcxNCA2LDkuNiA3LjQzNywxMi43MTQgWiIKICAgICBjbGlwLXJ1bGU9ImV2ZW5vZGQiCiAgICAgaWQ9InBhdGgxIgogICAgIHNvZGlwb2RpOm5vZGV0eXBlcz0iY2NjY2NjY3Nzc2NjY2NjY2NjY2NjY2Njc3NzY2NjY2NjY2NjY2NjIiAvPgo8L3N2Zz4K)](LICENSE)
+
 
 [Download](#download) ·
 [Quick start](#quick-start) ·
@@ -22,8 +22,6 @@
 [Contributing](#contributing)
 
 <img src="docs/screenshots/main_dark.png" alt="APKDetective showing the Info tab of a loaded APK" width="900">
-<br><br>
-<img src="docs/screenshots/main_light.png" alt="APKDetective showing the Info tab of a loaded APK" width="900">
 
 </div>
 
@@ -41,8 +39,6 @@
 - [Architecture](#architecture)
 - [Tech stack](#tech-stack)
 - [Running from source](#running-from-source)
-- [Building the executables](#building-the-executables)
-- [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
@@ -51,15 +47,9 @@
 
 ## What is APKDetective?
 
-An **APK** is the file Android apps are distributed in (it is what an app store downloads to your phone). It is a
-compressed package full of code, images and configuration, and it is **not** meant to be read by humans.
+**APKDetective** is a powerful, cross-platform desktop tool for *deep, offline static analysis* of **Android applications** (.apk).
 
-**APKDetective is a desktop application that opens that package and presents everything useful in it as clean,
-readable tabs**: the app's name and version, which permissions it asks for, who signed it, which trackers and
-libraries it carries, how it can be launched from other apps, the decoded `AndroidManifest.xml`, and every file inside.
-
-It does **not** install, run or modify the app. It only reads it. Nothing is uploaded anywhere: the analysis is
-100 % local and works offline.
+Without running or installing the app, APKDetective dissects application packages 100% locally—providing developers, security analysts, and power users with immediate visibility into manifest declarations, DEX code metrics, signature schemes, embedded trackers, exported components, and internal assets.
 
 
 
@@ -67,11 +57,10 @@ It does **not** install, run or modify the app. It only reads it. Nothing is upl
 
 | You are... | APKDetective helps you... |
 |---|---|
-| **A curious user** | Check what an app asks for (camera? contacts? SMS?) and who made it, before installing it. |
-| **A developer** | Verify the final package: SDK range, flags like *debuggable*, signing scheme, size of the code, exported components. |
+| **A curious user** | Check package name, version, permissions, etc. |
+| **A developer / modder** | Verify SDK range, flags like *debuggable*, signing scheme, size of the code, exported components or internal files. |
 | **An automation fan** (Tasker, `adb`, MacroDroid...) | Find every action and component you can launch with an *intent*, in one flat table. |
 | **A security / privacy reviewer** | Spot dangerous permissions, certificate fingerprints, embedded URLs and known tracker/ad SDKs. |
-| **A modder / tinkerer** | Browse and extract any file from inside the APK without unzipping it by hand. |
 
 
 
@@ -131,10 +120,9 @@ python main.py path/to/app.apk
 
 ### Info
 
-Identity, SDK range, file data, security flags, device configuration and a code-size report.
-
 <details>
-<summary>More details</summary>
+<summary>Identity, SDK range, file data, security flags, device configuration and a code-size report.</summary>
+<br>
 
 Organised in sections; values are read-only fields with a copy button.
 
@@ -156,10 +144,9 @@ locales or URLs) show a limited number of lines and scroll inside their box.
 
 ### Security
 
-Signature schemes, signing certificates with fingerprints, trackers and third-party libraries.
-
 <details>
-<summary>More details</summary>
+<summary>Signature schemes, signing certificates with fingerprints, trackers and third-party libraries.</summary>
+<br>
 
 - **Signature schemes**: a table showing which of **v1 (JAR), v2, v3, v3.1 and v4** the APK uses, the first
   Android version that verifies each, and notes (for example, v3 allows key rotation).
@@ -177,10 +164,9 @@ Signature schemes, signing certificates with fingerprints, trackers and third-pa
 
 ### Permissions
 
-Every permission the app requests, split in three filterable tables.
-
 <details>
-<summary>More details</summary>
+<summary>Every permission the app requests, split in three filterable tables.</summary>
+<br>
 
 Three independent tables, each with its own **filter box**:
 
@@ -198,10 +184,9 @@ in the error colour** so they stand out at a glance.
 
 ### Components
 
-Activities, services, receivers and providers, with their properties and intent filters.
-
 <details>
-<summary>More details</summary>
+<summary>Activities, services, receivers and providers, with their properties and intent filters.</summary>
+<br>
 
 - A row of **pills** filters the table by kind: *Activities, Services, Receivers, Providers*
   (a kind with no entries is dimmed).
@@ -216,10 +201,9 @@ Activities, services, receivers and providers, with their properties and intent 
 
 ### Intents
 
-A flat table of every entry point you can trigger from `adb`, Tasker or another app.
-
 <details>
-<summary>More details</summary>
+<summary>A flat table of every entry point you can trigger from `adb`, Tasker or another app.</summary>
+<br>
 
 One row per **action + component** pair, which is exactly what you need to launch something from `adb`, Tasker or
 another app. Columns: **Action, Component, Type, Categories, Data, Auto-verify**. Filterable and sortable.
@@ -232,10 +216,9 @@ another app. Columns: **Action, Component, Type, Categories, Data, Auto-verify**
 
 ### Manifest
 
-The decoded `AndroidManifest.xml` with syntax highlighting.
-
 <details>
-<summary>More details</summary>
+<summary>The decoded `AndroidManifest.xml` with syntax highlighting.</summary>
+<br>
 
 Android stores `AndroidManifest.xml` in a binary format nobody can read. APKDetective decodes it back to normal
 XML and shows it read-only with **syntax highlighting** (tags, attributes, values and comments in different
@@ -246,10 +229,8 @@ colours that adapt to the active theme). Right-click offers **Copy Text**.
 
 ### Files
 
-A browsable tree of every file inside the APK, with open / copy / extract actions.
-
 <details>
-<summary>More details</summary>
+<summary>A browsable tree of every file inside the APK, with open / copy / extract actions.</summary>
 
 - A **tree** of every entry inside the APK, starting collapsed. Filtering opens the folders that contain matches.
 - Columns with **sortable headers** and a human-readable size.
@@ -322,12 +303,11 @@ A browsable tree of every file inside the APK, with open / copy / extract action
     <td align="center"><b>Manifest</b><br><img src="docs/screenshots/manifest_tab.png" alt="Manifest tab" width="440"></td>
   </tr>
   <tr>
-    <td align="center"><b>Files</b><br><img src="docs/screenshots/files_tab.png" alt="Files tab" width="440"></td>
     <td align="center"><b>Files: right-click menu</b><br><img src="docs/screenshots/files_tab_menu.png" alt="Files context menu" width="440"></td>
+    <td align="center"><b>Color mode</b><br><img src="docs/screenshots/light_mode.png" alt="Color mode" width="440"></td>
   </tr>
   <tr>
-    <td align="center"><b>Light mode</b><br><img src="docs/screenshots/light_mode.png" alt="Dark mode" width="440"></td>
-    <td align="center"><b>Theme picker</b><br><img src="docs/screenshots/themes.png" alt="Theme menu" width="440"></td>
+    <td align="center"><b>Theme picker</b><br><img src="docs/screenshots/themes.png" alt="Theme picker" width="440"></td>
   </tr>
 </table>
 
@@ -339,7 +319,7 @@ You do not need to know any of this to use the app, but it explains what you are
 | Word | In plain English |
 |---|---|
 | **APK** | The installable file of an Android app. Think of it as a `.zip` with a very specific structure. |
-| **Package name** | The app's unique ID, e.g. `com.whatsapp`. Two apps can't share one. |
+| **Package name** | The app's unique ID, e.g. `com.whatsapp`. |
 | **Manifest** | The app's "ID card and rulebook": its name, permissions and what it can do. |
 | **Permission** | Something the app asks the user to allow (camera, location...). *Dangerous* ones touch private data. |
 | **SDK / API level** | The Android version number. *Min SDK* = oldest Android it runs on, *Target SDK* = the version it was designed for. |
@@ -495,7 +475,7 @@ APKDetective/
 
 **Requirements**
 
-- Python **3.10 or newer** with `tkinter`
+- Python **3.11 or newer** with `tkinter`
   - Windows / macOS: included with the official Python installer.
   - Debian / Ubuntu: `sudo apt install python3-tk`
   - Fedora: `sudo dnf install python3-tkinter`
@@ -518,21 +498,6 @@ pip install -r requirements.txt
 python main.py                     # empty window, then Ctrl+O
 python main.py path/to/app.apk     # or open an APK directly
 ```
-
-
-
-## Development
-
-```bash
-pip install pylint mypy
-pylint main.py apkdetective/
-mypy --explicit-package-bases --ignore-missing-imports main.py apkdetective/
-```
-
-The *Linting & Type Analysis* workflow runs Pylint and mypy on Linux, macOS and Windows for every push and pull
-request (each OS skips the other platforms' OS-specific modules).
-
-Helper scripts live in [`utils/`](utils).
 
 
 
