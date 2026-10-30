@@ -42,6 +42,7 @@ from apkdetective.infrastructure.androguard.extractors.dex_metrics_extractor imp
 from apkdetective.infrastructure.androguard.extractors.embedded_content_extractor import EmbeddedContentExtractor
 from apkdetective.infrastructure.androguard.extractors.permissions_extractor import PermissionsExtractor
 from apkdetective.infrastructure.androguard.extractors.security_info_extractor import SecurityInfoExtractor
+from apkdetective.infrastructure.androguard.paused_garbage_collector import PausedGarbageCollector
 from apkdetective.infrastructure.androguard.extractors.tracker_detector import TrackerDetector
 from apkdetective.infrastructure.androguard.extractors.icon_extractor import IconExtractor
 from apkdetective.infrastructure.androguard.manifest.manifest_formatter import ManifestFormatter
@@ -81,6 +82,10 @@ class AndroguardApkInspector(ApkInspectorPort):
         self._components = components_extractor or ComponentsExtractor()
 
     def inspect(self, apk_path: str, cancellation: CancellationToken) -> ApkInspection:
+        with PausedGarbageCollector():
+            return self._inspect(apk_path, cancellation)
+
+    def _inspect(self, apk_path: str, cancellation: CancellationToken) -> ApkInspection:
         warnings = AnalysisWarningCollector()
         cancellation.raise_if_cancelled()
         apk = self._apk_loader.load(apk_path)  # an APK that can't even be opened is a real error

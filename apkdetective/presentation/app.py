@@ -294,7 +294,7 @@ class ApkAnalyzerApp:
             return
         self._cancellation.cancel()
         self.header.set_cancelling()
-        self._set_status("Cancelling the analysis...", StatusLevelEnum.INFO)
+        self.root.after(0, lambda: self._set_status("Cancelling the analysis...", StatusLevelEnum.INFO))
 
     def exit_app(self) -> None:
         self.files_panel.cleanup()  # drop temp files extracted for Open / Open with / Copy
@@ -318,10 +318,7 @@ class ApkAnalyzerApp:
         self._result = None
         self.root.title(f"{AboutConfig.NAME} - Analysing {filename}")
         self.menu_bar.set_enabled(self._ANALYSIS_DEPENDENT_ITEMS, False)
-        self._set_status(
-            f"Analyzing: {full_path}... (Please wait)",
-            StatusLevelEnum.INFO
-        )
+        self.root.after(0, lambda: self._set_status(f"Analyzing: {full_path}... (Please wait)", StatusLevelEnum.INFO))
         self._cancellation = CancellationToken()
         self._set_loading(True)
         self.header.reset_to_placeholder(filename)
@@ -353,20 +350,20 @@ class ApkAnalyzerApp:
             self.root.after(0, lambda: self._render_result(result))
             count = len(result.inspection.warnings)
             if count:
-                self._set_status(
+                self.root.after(0, lambda: self._set_status(
                     f"Analysis completed with {count} warning(s): some data could not be read "
                     "(see the notice at the top of the tabs).",
                     StatusLevelEnum.INFO,
-                )
+                ))
             else:
-                self._set_status("Analysis completed successfully.", StatusLevelEnum.SUCCESS)
+                self.root.after(0, lambda: self._set_status("Analysis completed successfully.", StatusLevelEnum.SUCCESS))
         finally:
             self.root.after(0, lambda: self._set_loading(False))
 
     def _report_cancelled(self) -> None:
         self.root.after(0, lambda: self.root.title(AboutConfig.NAME))
         self.root.after(0, self.header.reset_to_idle)
-        self._set_status("Analysis cancelled.", StatusLevelEnum.INFO)
+        self.root.after(0, lambda: self._set_status("Analysis cancelled.", StatusLevelEnum.INFO))
 
     def _report_failure(self, message: str) -> None:
         self.root.after(0, lambda: self.root.title(AboutConfig.NAME))
@@ -378,7 +375,7 @@ class ApkAnalyzerApp:
             ),
         )
         self.root.after(0, self.header.show_error)
-        self._set_status("Analysis failed.", StatusLevelEnum.ERROR)
+        self.root.after(0, lambda: self._set_status("Analysis failed.", StatusLevelEnum.ERROR))
 
     # --- UI updates (must run on the Tk main thread) ---------------------------
 
