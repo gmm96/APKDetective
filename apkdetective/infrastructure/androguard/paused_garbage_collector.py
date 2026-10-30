@@ -1,5 +1,5 @@
 """
-Pauses Python's cyclic garbage collector while an APK is analysed.
+Pauses Python's cyclic garbage collector while an APK is analyzed.
 
 Androguard builds millions of small objects that stay alive until the analysis ends (the entries of the resource
 table, the strings and classes of the code...). The collector keeps walking all of them, looking for cycles that

@@ -267,6 +267,7 @@ class ApkAnalyzerApp:
                 "Help": [
                     MenuItem("source_code", "Source code", help_.open_source_code, self._asset_icon("code.png")),
                     MenuItem("report_issue", "Report issue", help_.report_issue, self._asset_icon("bug_report.png")),
+                    MenuItem("show_license", "View license", help_.view_license, self._asset_icon("license.png")),
                     MenuItem("about", "About", help_.show_about, self._asset_icon("info.png")),
                 ],
             },
@@ -316,7 +317,7 @@ class ApkAnalyzerApp:
         filename: str = os.path.basename(apk_path)
         full_path: str = os.path.abspath(apk_path)
         self._result = None
-        self.root.title(f"{AboutConfig.NAME} - Analysing {filename}")
+        self.root.title(f"{AboutConfig.NAME} - Analyzing {filename}")
         self.menu_bar.set_enabled(self._ANALYSIS_DEPENDENT_ITEMS, False)
         self.root.after(0, lambda: self._set_status(f"Analyzing: {full_path}... (Please wait)", StatusLevelEnum.INFO))
         self._cancellation = CancellationToken()

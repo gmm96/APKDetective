@@ -4,7 +4,7 @@
 
 <img src="assets/icons/apkdetective/apkdetective_128.png" alt="APKDetective logo" width="128">
 
-**Inspect and deeply analyse any Android app (`.apk`) from your PC.**
+**Inspect and deeply analyze any Android app (`.apk`) from your PC.**
 
 
 ![Supported Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-darksalmon?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iNDhweCIgdmlld0JveD0iMCAtOTYwIDk2MCA5NjAiIHdpZHRoPSI0OHB4IiBmaWxsPSIjRkZGRkZGIj48cGF0aCBkPSJNMC0xNjB2LTYwaDgwdi02MjBoODAwdjYyMGg4MHY2MEgwWm0zOTYtNjBoMTcwdi00MkgzOTZ2NDJaTTE0NC0zMjJoNjgwdi00NThIMTQ0djQ1OFptMzQwLTIyOVoiLz48L3N2Zz4=)
@@ -91,7 +91,7 @@ Ready-to-run executables (no Python needed) are attached to every
 
 ### Opening an APK from the command line
 
-Pass the path of the APK as the only argument and it is analysed as soon as the window opens:
+Pass the path of the APK as the only argument and it is analyzed as soon as the window opens:
 
 ```text
 APKDetective-<platform>.<ext> /path/to/file.apk

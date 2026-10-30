@@ -12,3 +12,4 @@ class AboutConfig:
     )
     REPOSITORY_URL: str = "https://github.com/gmm96/APKDetective"
     ISSUES_URL: str = f"{REPOSITORY_URL}/issues"
+    LICENSE_URL: str = f"{REPOSITORY_URL}/blob/main/LICENSE"

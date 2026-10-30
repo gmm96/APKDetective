@@ -4,11 +4,10 @@ Actions behind the Help menu: project links and the About dialog.
 
 import tkinter as tk
 from tkinter import messagebox
-from typing import Optional
 
 from apkdetective.presentation.config.about_config import AboutConfig
+from apkdetective.presentation.menu_bar.help.about_dialog import AboutDialog
 from apkdetective.ports.system.url_opener_port import UrlOpenerPort
-from .about_dialog import AboutDialog
 
 
 class HelpMenu:
@@ -16,21 +15,26 @@ class HelpMenu:
         self,
         parent: tk.Misc,
         url_opener: UrlOpenerPort,
-        about_dialog: Optional[AboutDialog] = None,
+        about_dialog: AboutDialog | None = None,
         repository_url: str = AboutConfig.REPOSITORY_URL,
         issues_url: str = AboutConfig.ISSUES_URL,
+        license_url: str = AboutConfig.LICENSE_URL,
     ) -> None:
         self._parent: tk.Misc = parent
         self._url_opener: UrlOpenerPort = url_opener
         self._about_dialog: AboutDialog = about_dialog or AboutDialog(parent)
         self._repository_url: str = repository_url
         self._issues_url: str = issues_url
+        self._license_url: str = license_url
 
     def open_source_code(self) -> None:
         self._open_url(self._repository_url)
 
     def report_issue(self) -> None:
         self._open_url(self._issues_url)
+
+    def view_license(self) -> None:
+        self._open_url(self._license_url)
 
     def show_about(self) -> None:
         self._about_dialog.show()
