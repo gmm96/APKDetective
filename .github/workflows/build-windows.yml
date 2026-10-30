@@ -55,20 +55,24 @@ jobs:
               --lto=yes `
               main.py
 
-      - name: 'Copy binary with commit ID'
+      - name: 'Prepare binary as an artifact'
         run: cp dist/APKDetective-windows.exe dist/APKDetective-windows-${{ github.sha }}.exe
 
-      - name: 'Upload binary as artifact'
+      - name: 'Upload artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: APKDetective-windows-binary
+          name: APKDetective-windows
           path: dist/APKDetective-windows-${{ github.sha }}.exe
           retention-days: 90
+
+      - name: 'Prepare binary for release'
+        if: startsWith(github.ref, 'refs/tags/')
+        run: cp dist/APKDetective-windows.exe dist/APKDetective-windows-${{ github.ref_name }}.exe
 
       - name: 'Upload binary to release'
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/APKDetective-windows.exe
+          files: dist/APKDetective-windows-${{ github.ref_name }}.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

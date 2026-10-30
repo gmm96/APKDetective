@@ -53,20 +53,24 @@ jobs:
               --lto=yes \
               main.py
 
-      - name: 'Copy binary with commit ID'
+      - name: 'Prepare binary as an artifact'
         run: cp dist/APKDetective-macos.bin dist/APKDetective-macos-${{ github.sha }}.bin
 
-      - name: 'Upload binary as artifact'
+      - name: 'Upload artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: APKDetective-macos-binary
+          name: APKDetective-macos
           path: dist/APKDetective-macos-${{ github.sha }}.bin
           retention-days: 90
+
+      - name: 'Prepare binary for release'
+        if: startsWith(github.ref, 'refs/tags/')
+        run: cp dist/APKDetective-macos.bin dist/APKDetective-macos-${{ github.ref_name }}.bin
 
       - name: 'Upload binary to release'
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/APKDetective-macos.bin
+          files: dist/APKDetective-macos-${{ github.ref_name }}.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
