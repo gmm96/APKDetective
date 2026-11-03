@@ -7,6 +7,8 @@ APK parser, another GUI toolkit, another storage) means changing this
 file and nothing else.
 """
 
+import os
+
 import ttkbootstrap as ttkb
 
 from apkdetective.application.analysis.analyze_apk import AnalyzeApk
@@ -17,6 +19,7 @@ from apkdetective.application.export.export_icon import ExportIcon
 from apkdetective.application.export.extract_apk_entries import ExtractApkEntries
 from apkdetective.application.appearance.resolve_color_scheme import ResolveColorScheme
 from apkdetective.infrastructure.androguard.androguard_apk_inspector import AndroguardApkInspector
+from apkdetective.infrastructure.androguard.dex.dex_analysis_starter import DexAnalysisStarter
 from apkdetective.infrastructure.filesystem.local_file_writer import LocalFileWriter
 from apkdetective.infrastructure.filesystem.temp_directory_workspace import TempDirectoryWorkspace
 from apkdetective.infrastructure.platforms.platform_services_resolver import PlatformServicesResolver
@@ -33,10 +36,12 @@ def build_app(root: ttkb.App) -> ApkAnalyzerApp:
     file_writer = LocalFileWriter()
     size_formatter = HumanReadableSizeFormatter()
     date_formatter = EnglishLongDateFormatter()
+    # The code of the APK is analyzed in another process; APKDETECTIVE_DEX_IN_PROCESS=1 does it in this one.
+    dex_analysis_starter = DexAnalysisStarter(use_child_process=os.environ.get("APKDETECTIVE_DEX_IN_PROCESS") != "1")
 
     return ApkAnalyzerApp(
         root,
-        analyze_apk=AnalyzeApk(AndroguardApkInspector(), ZipArchiveReader()),
+        analyze_apk=AnalyzeApk(AndroguardApkInspector(dex_analysis_starter=dex_analysis_starter), ZipArchiveReader()),
         extract_entries=ExtractApkEntries(apk_extractor),
         entry_previewer=EntryPreviewer(
             extractor=apk_extractor,

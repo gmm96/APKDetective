@@ -23,14 +23,15 @@ import time
 import os
 from pathlib import Path
 import __main__
-__main__.__file__ = sys.argv[0]  # Engaña a los módulos que localizan el root usando el entry point
 
-# --- FIX DEFINITIVO ---
+# --- DEFINITIVE FIX ---
 root_dir = Path(__file__).resolve().parent.parent
 os.chdir(root_dir)
-sys.argv[0] = str(root_dir / "main.py")
-sys.path[0] = str(root_dir)  # Sobrescribe 'utils' por la raíz del proyecto en el path de Python
+main_script_path = str(root_dir / "main.py")
 
+sys.argv[0] = main_script_path
+__main__.__file__ = main_script_path  # Trick the modules using the correct entry point path
+sys.path[0] = str(root_dir)           # Overwrite 'utils' with the project root in Python path
 
 #sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
