@@ -50,6 +50,7 @@ jobs:
               --onefile \
               --output-dir=dist \
               --output-filename=APKDetective-linux.bin \
+              --linux-icon=assets/icons/apkdetective/apkdetective_512.png \
               --include-package-data=androguard \
               --include-package-data=ttkbootstrap \
               --include-package-data=babel \

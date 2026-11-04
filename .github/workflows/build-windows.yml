@@ -44,6 +44,7 @@ jobs:
               --assume-yes-for-downloads `
               --output-dir=dist `
               --output-filename=APKDetective-windows.exe `
+              --windows-icon-from-ico=assets/icons/apkdetective/apkdetective.ico `
               --user-package-configuration-file=.github/config/windows-console-nuitka.config.yml `
               --windows-console-mode=attach `
               --include-package-data=androguard `

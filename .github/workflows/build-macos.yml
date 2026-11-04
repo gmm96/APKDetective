@@ -42,6 +42,7 @@ jobs:
               --onefile \
               --output-dir=dist \
               --output-filename=APKDetective-macos.bin \
+              --macos-app-icon=assets/icons/apkdetective/apkdetective.icns \
               --include-package-data=androguard \
               --include-package-data=ttkbootstrap \
               --include-package-data=babel \
