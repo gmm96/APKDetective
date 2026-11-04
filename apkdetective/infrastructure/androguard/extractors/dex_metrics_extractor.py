@@ -17,6 +17,7 @@ from apkdetective.domain.entities.analysis.sections.dex_metrics import DexMetric
 from apkdetective.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkdetective.infrastructure.androguard.dex.dex_code_scanner import DexCodeScanner
 from apkdetective.domain.entities.analysis.sections.dex_contents import DexContents
+from apkdetective.domain.entities.analysis.sections.dex_file_scan import DexFileScan
 from apkdetective.domain.entities.analysis.sections.dex_header import DexHeader
 from apkdetective.infrastructure.androguard.dex.dex_strings import DexStrings
 
@@ -36,43 +37,76 @@ class DexMetricsExtractor:
         `contents`: the strings and class names already read from the same files. Raises
         AnalysisCancelledError when a `cancellation` is given and gets cancelled.
         """
-        classes = method_references = strings = 0
-        methods = methods_with_code = native_methods = fields = 0
-        instructions = code_units = complexity = 0
-        most_complex: tuple[int, str | None] = (0, None)  # (complexity, name of the method)
-        longest: tuple[int, str | None] = (0, None)       # (instructions, name of the method)
-
+        scans = []
         for number, data in enumerate(dex_files, start=1):
             if cancellation is not None:
                 cancellation.raise_if_cancelled()
-            header = DexHeader.parse(data)
-            if header is None:
-                self._warn(warnings, f"DEX file #{number} is not a valid DEX file: its metrics are missing.")
+            scans.append(self.scan_file(number, data, cancellation))
+        return self.combine(scans, dex_files, contents, warnings)
+
+    def scan_file(self, number: int, data: bytes, cancellation: CancellationToken | None = None) -> DexFileScan:
+        """Everything the metrics need from one DEX file. It is the long part of them, and it is independent per file."""
+        header = DexHeader.parse(data)
+        if header is None:
+            return DexFileScan(number, problems=(f"DEX file #{number} is not a valid DEX file: its metrics are missing.",))
+        if not header.fits_in(len(data)):
+            return DexFileScan(number, problems=(
+                f"The header of DEX file #{number} declares tables that do not fit in the file: its metrics are missing.",
+            ))
+        classes, method_references, strings = header.class_defs_size, header.method_ids_size, header.string_ids_size
+        try:
+            stats = self._scanner.scan(data, header, cancellation)
+        except (struct.error, IndexError, ValueError):
+            return DexFileScan(number, classes, method_references, strings, problems=(
+                f"The class table of DEX file #{number} could not be read: its code metrics are missing.",
+            ))
+        problems: tuple[str, ...] = ()
+        if stats.damaged_classes:
+            problems = (
+                f"{stats.damaged_classes} class(es) of DEX file #{number} could not be read to the end: "
+                "the DEX metrics may be incomplete.",
+            )
+        return DexFileScan(
+            number,
+            classes,
+            method_references,
+            strings,
+            stats=stats,
+            most_complex_method=self._method_name(data, header, stats.most_complex_method),
+            longest_method=self._method_name(data, header, stats.longest_method),
+            problems=problems,
+        )
+
+    def combine(
+        self,
+        scans: Sequence[DexFileScan],
+        dex_files: Sequence[bytes],
+        contents: DexContents,
+        warnings: AnalysisWarningCollector | None = None,
+    ) -> DexMetrics:
+        """The metrics of the whole APK, from the scan of each of its DEX files (in the order of the files)."""
+        classes: int = 0
+        method_references: int = 0
+        strings: int = 0
+        methods: int = 0
+        methods_with_code: int = 0
+        native_methods: int = 0
+        fields: int = 0
+        instructions: int = 0
+        code_units: int = 0
+        complexity: int = 0
+        most_complex: tuple[int, str | None] = (0, None)  # (complexity, name of the method)
+        longest: tuple[int, str | None] = (0, None)       # (instructions, name of the method)
+
+        for scan in scans:
+            for problem in scan.problems:
+                self._warn(warnings, problem)
+            classes += scan.classes
+            method_references += scan.method_references
+            strings += scan.strings
+            stats = scan.stats
+            if stats is None:
                 continue
-            if not header.fits_in(len(data)):
-                self._warn(
-                    warnings,
-                    f"The header of DEX file #{number} declares tables that do not fit in the file: "
-                    "its metrics are missing.",
-                )
-                continue
-            classes += header.class_defs_size
-            method_references += header.method_ids_size
-            strings += header.string_ids_size
-            try:
-                stats = self._scanner.scan(data, header, cancellation)
-            except (struct.error, IndexError, ValueError):
-                self._warn(
-                    warnings,
-                    f"The class table of DEX file #{number} could not be read: its code metrics are missing.",
-                )
-                continue
-            if stats.damaged_classes:
-                self._warn(
-                    warnings,
-                    f"{stats.damaged_classes} class(es) of DEX file #{number} could not be read to the end: "
-                    "the DEX metrics may be incomplete.",
-                )
             methods += stats.methods
             methods_with_code += stats.methods_with_code
             native_methods += stats.native_methods
@@ -81,9 +115,9 @@ class DexMetricsExtractor:
             code_units += stats.code_units
             complexity += stats.complexity
             if stats.max_complexity > most_complex[0]:
-                most_complex = (stats.max_complexity, self._method_name(data, header, stats.most_complex_method))
+                most_complex = (stats.max_complexity, scan.most_complex_method)
             if stats.max_instructions > longest[0]:
-                longest = (stats.max_instructions, self._method_name(data, header, stats.longest_method))
+                longest = (stats.max_instructions, scan.longest_method)
 
         return DexMetrics(
             dex_files=len(dex_files),

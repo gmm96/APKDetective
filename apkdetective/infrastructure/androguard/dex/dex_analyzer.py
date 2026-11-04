@@ -13,6 +13,7 @@ from apkdetective.domain.entities.analysis.sections.embedded_content import Embe
 from apkdetective.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkdetective.domain.entities.analysis.sections.dex_analysis import DexAnalysis
 from apkdetective.domain.entities.analysis.sections.dex_contents import DexContents
+from apkdetective.domain.entities.analysis.sections.dex_file_scan import DexFileScan
 from apkdetective.infrastructure.androguard.dex.dex_reader import DexReader
 from apkdetective.infrastructure.androguard.extractors.dex_metrics_extractor import DexMetricsExtractor
 from apkdetective.infrastructure.androguard.extractors.embedded_content_extractor import EmbeddedContentExtractor
@@ -29,8 +30,16 @@ class DexAnalyzer:
         self._metrics = metrics_extractor or DexMetricsExtractor()
         self._embedded_content = embedded_content_extractor or EmbeddedContentExtractor()
 
-    def analyze(self, dex_files: Sequence[bytes], cancellation: CancellationToken | None = None) -> DexAnalysis:
-        """Each part guarded as in the rest of the analysis: one that fails leaves a warning, not a hole."""
+    def analyze(
+        self,
+        dex_files: Sequence[bytes],
+        cancellation: CancellationToken | None = None,
+        file_scans: Sequence[DexFileScan] | None = None,
+    ) -> DexAnalysis:
+        """
+        Each part guarded as in the rest of the analysis: one that fails leaves a warning, not a hole.
+        `file_scans`: the scan of every DEX file, if it was already done (in other processes, one per file).
+        """
         warnings = AnalysisWarningCollector()
         section = AnalysisSectionEnum
         contents = warnings.attempt(
@@ -42,7 +51,10 @@ class DexAnalyzer:
         metrics = warnings.attempt(
             "The DEX metrics",
             (section.DEX_METRICS,),
-            lambda: self._metrics.extract(dex_files, contents, warnings, cancellation),
+            lambda: (
+                self._metrics.extract(dex_files, contents, warnings, cancellation) if file_scans is None
+                else self._metrics.combine(file_scans, dex_files, contents, warnings)
+            ),
             DexMetrics(),
         )
         embedded_content = warnings.attempt(

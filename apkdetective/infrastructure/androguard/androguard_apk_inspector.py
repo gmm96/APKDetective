@@ -46,6 +46,7 @@ from apkdetective.infrastructure.androguard.extractors.tracker_detector import T
 from apkdetective.infrastructure.androguard.extractors.icon_extractor import IconExtractor
 from apkdetective.infrastructure.androguard.manifest.manifest_formatter import ManifestFormatter
 
+
 logger.disable("androguard")  # it logs thousands of DEBUG lines per APK
 
 T = TypeVar("T")

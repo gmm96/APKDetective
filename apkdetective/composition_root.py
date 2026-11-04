@@ -25,19 +25,23 @@ from apkdetective.infrastructure.filesystem.temp_directory_workspace import Temp
 from apkdetective.infrastructure.platforms.platform_services_resolver import PlatformServicesResolver
 from apkdetective.infrastructure.zip.zip_apk_extractor import ZipApkExtractor
 from apkdetective.infrastructure.zip.zip_archive_reader import ZipArchiveReader
+from apkdetective.ports.apk.apk_extractor_port import ApkExtractorPort
+from apkdetective.ports.filesystem.file_writer_port import FileWriterPort
+from apkdetective.ports.formatting.date_formatter_port import DateFormatterPort
+from apkdetective.ports.formatting.size_formatter_port import SizeFormatterPort
+from apkdetective.ports.system.platform_services_port import PlatformServicesPort
 from apkdetective.presentation.app import ApkAnalyzerApp
 from apkdetective.presentation.formatting.english_long_date_formatter import EnglishLongDateFormatter
 from apkdetective.presentation.formatting.human_readable_size_formatter import HumanReadableSizeFormatter
 
 
 def build_app(root: ttkb.App) -> ApkAnalyzerApp:
-    platform_services = PlatformServicesResolver().resolve()
-    apk_extractor = ZipApkExtractor()
-    file_writer = LocalFileWriter()
-    size_formatter = HumanReadableSizeFormatter()
-    date_formatter = EnglishLongDateFormatter()
-    # The code of the APK is analyzed in another process; APKDETECTIVE_DEX_IN_PROCESS=1 does it in this one.
-    dex_analysis_starter = DexAnalysisStarter(use_parallel=os.environ.get("APKDETECTIVE_DEX_IN_PROCESS") != "1")
+    platform_services: PlatformServicesPort = PlatformServicesResolver().resolve()
+    apk_extractor: ApkExtractorPort = ZipApkExtractor()
+    file_writer: FileWriterPort = LocalFileWriter()
+    size_formatter: SizeFormatterPort = HumanReadableSizeFormatter()
+    date_formatter: DateFormatterPort = EnglishLongDateFormatter()
+    dex_analysis_starter: DexAnalysisStarter = DexAnalysisStarter(parallel=os.environ.get("APKDETECTIVE_DEX_IN_PROCESS") != "1")
 
     return ApkAnalyzerApp(
         root,
