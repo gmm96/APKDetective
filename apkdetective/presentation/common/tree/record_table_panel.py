@@ -59,6 +59,10 @@ class RecordTablePanel(BaseTreePanel[RecordNode]):
         if refresh:
             self._apply_filter()
 
+    def show(self, root: RecordNode) -> None:
+        self._category = None  # new data: like the filter text, the category starts over
+        super().show(root)
+
     # --- BaseTreePanel hooks -------------------------------------------------------
 
     def _empty_root(self) -> RecordNode:

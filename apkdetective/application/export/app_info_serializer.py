@@ -114,7 +114,7 @@ class AppInfoSerializer:
 
     @staticmethod
     def _permission_text(permission: Permission) -> str:
-        lines = [f"{permission.name} [{permission.type_text}]"]
+        lines = [f"{permission.name} [{permission.level_text}]"]
         if permission.origin is not PermissionOriginEnum.REQUESTED:
             lines.append(f"Origin: {permission.origin.value}")
         if permission.max_sdk:

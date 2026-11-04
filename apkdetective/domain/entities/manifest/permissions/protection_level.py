@@ -55,3 +55,13 @@ class ProtectionLevel:
     def includes(protection: str | None, token: str) -> bool:
         """Whether the level (or one of its flags) is `token`, e.g. 'dangerous' or 'appop'."""
         return protection is not None and token in protection.split("|")
+
+    @staticmethod
+    def is_dangerous(protection: str | None) -> bool:
+        """Whether the level is 'dangerous' (or has that flag)."""
+        return ProtectionLevel.includes(protection, "dangerous")
+
+    @staticmethod
+    def is_app_op(protection: str | None) -> bool:
+        """Whether the level is 'appop' (or has that flag)."""
+        return ProtectionLevel.includes(protection, "appop")

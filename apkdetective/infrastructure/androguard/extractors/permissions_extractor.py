@@ -16,6 +16,7 @@ from androguard.core.apk import APK
 from apkdetective.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkdetective.domain.entities.manifest.permissions.permission import Permission
 from apkdetective.domain.entities.manifest.permissions.permission_origin_enum import PermissionOriginEnum
+from apkdetective.domain.entities.manifest.permissions.permission_type_enum import PermissionTypeEnum
 from apkdetective.domain.entities.manifest.permissions.permissions_info import PermissionsInfo
 from apkdetective.domain.entities.manifest.permissions.protection_level import ProtectionLevel
 from apkdetective.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
@@ -50,18 +51,20 @@ class PermissionsExtractor:
         for name, max_sdk in requested.items():
             if name in declared:
                 custom[name] = replace(
-                    declared[name], max_sdk=max_sdk, origin=PermissionOriginEnum.DECLARED_AND_REQUESTED
+                    declared[name], max_sdk=max_sdk, origin=PermissionOriginEnum.DECLARED_AND_REQUESTED, type=PermissionTypeEnum.CUSTOM
                 )
                 continue
             entry = self._catalog.lookup(name) or target_entries.get(name)
             if entry is None:
-                custom[name] = Permission(name, max_sdk=max_sdk)
+                custom[name] = Permission(name, max_sdk=max_sdk, type=PermissionTypeEnum.CUSTOM)
                 continue
+            protection: str | None = ProtectionLevel.parse(entry.get("protectionLevel"))
             permission = Permission(
                 name=name,
-                protection=ProtectionLevel.parse(entry.get("protectionLevel")),
+                protection=protection,
                 label=self._clean(entry.get("label")) or self._clean(entry.get("description")),
                 max_sdk=max_sdk,
+                type=PermissionTypeEnum.APPOPS if ProtectionLevel.is_app_op(protection) else PermissionTypeEnum.PERMISSION,
             )
             (app_ops if permission.is_app_op else framework).append(permission)
         for name, permission in declared.items():

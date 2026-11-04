@@ -1,14 +1,16 @@
 """
-"Permissions" tab: three plain tables (no tree), each with its own filter:
+"Permissions" tab: one table with every permission of the APK, built like the
+Components tab but without nesting (its rows have no detail, so there are no
+expand / collapse buttons). Above it, a row of pills restricts the table to one
+type, and the table's own header line carries the filter and the counter:
 
   * Permissions: requested permissions that Android defines.
   * AppOps: the requested ones with the "appop" protection (special access
     the user grants from Settings: overlays, install packages, all files...).
-  * Custom permissions: anything Android doesn't define, whether the app only
-    requests it (another app or a library defines it) or declares it itself.
+  * Custom: anything Android doesn't define, whether the app only requests it
+    (another app or a library defines it) or declares it itself.
 
-The tables share the tab's height in proportion to their rows. Dangerous
-permissions are written in the error color.
+Dangerous permissions are written in the error color.
 """
 
 import tkinter as tk
@@ -16,13 +18,14 @@ import tkinter as tk
 import ttkbootstrap as ttkb
 import ttkbootstrap.constants as ttkb_constants
 
-from apkdetective.domain.entities.manifest.permissions.permission import Permission
+from apkdetective.domain.entities.manifest.permissions.permission_type_enum import PermissionTypeEnum
 from apkdetective.domain.entities.manifest.permissions.permissions_info import PermissionsInfo
+from apkdetective.presentation.common.feedback.warning_banner import WarningBanner
+from apkdetective.presentation.common.tree.category_pill_bar import CategoryPillBar
+from apkdetective.presentation.common.tree.record_table_panel import RecordTablePanel
+from apkdetective.presentation.tabs.permissions_tab.permission_row_builder import PermissionRowBuilder
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkdetective.presentation.viewmodels.tree.tree_column import TreeColumn
-from apkdetective.presentation.common.feedback.warning_banner import WarningBanner
-from apkdetective.presentation.tabs.permissions_tab.permission_rows import PermissionRowBuilder
-from apkdetective.presentation.tabs.permissions_tab.permission_table_group import PermissionTableGroup
 
 
 class PermissionsPanel(ttkb.Frame):
@@ -39,6 +42,13 @@ class PermissionsPanel(ttkb.Frame):
     _TYPE = TreeColumn(
         "type",
         "Type",
+        min_width=100,
+        weight=1,
+        tooltip="Type of the permission: permission, appops or custom."
+    )
+    _LEVEL = TreeColumn(
+        "level",
+        "Level",
         min_width=150,
         weight=2,
         tooltip="Protection level of the permission. The dangerous ones are highlighted."
@@ -65,8 +75,14 @@ class PermissionsPanel(ttkb.Frame):
         tooltip="What the permission is for, in plain words."
     )
 
-    _STANDARD_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _MAX_SDK, _SUMMARY)
-    _CUSTOM_COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _ORIGIN, _MAX_SDK, _SUMMARY)
+    _COLUMNS: tuple[TreeColumn, ...] = (_NAME, _TYPE, _LEVEL, _ORIGIN, _MAX_SDK, _SUMMARY)
+
+    # Pill label of each permission type (the category of a row is the value of its type).
+    _PILL_LABELS: dict[str, str] = {
+        PermissionTypeEnum.PERMISSION.value: "Permissions",
+        PermissionTypeEnum.APPOPS.value: "AppOps",
+        PermissionTypeEnum.CUSTOM.value: "Custom",
+    }
 
     def __init__(
         self,
@@ -77,60 +93,41 @@ class PermissionsPanel(ttkb.Frame):
         super().__init__(parent)
         self._row_builder: PermissionRowBuilder = row_builder or PermissionRowBuilder()
 
-        self._container: ttkb.Frame = ttkb.Frame(self)
-        self._container.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
-        self._container.columnconfigure(0, weight=1)
-        self._banner: WarningBanner = WarningBanner(self, palette, self._container)
+        self._table: RecordTablePanel = RecordTablePanel(
+            self,
+            palette,
+            self._COLUMNS,
+            item_noun="permissions",
+            empty_text="No permissions requested or declared.",
+            row_styles={PermissionRowBuilder.DANGEROUS_STYLE: lambda current: current.danger_text},
+            toolbar_row=True,
+            bootstyle=ttkb_constants.PRIMARY
+        )
+        self._table.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self._banner: WarningBanner = WarningBanner(self, palette, self._table)
 
-        self._permissions: PermissionTableGroup = PermissionTableGroup(
-            self._container,
-            0,
-            "Permissions",
-            self._STANDARD_COLUMNS,
-            "permissions",
-            "No Android permissions requested.",
-            palette,
-            bootstyle=ttkb_constants.PRIMARY
+        toolbar = self._table.toolbar  # the table's first line, where the pills go
+        assert toolbar is not None
+        self._pills: CategoryPillBar = CategoryPillBar(
+            toolbar,
+            self._PILL_LABELS,
+            on_select=self._table.set_category,
         )
-        self._app_ops: PermissionTableGroup = PermissionTableGroup(
-            self._container,
-            1,
-            "AppOps",
-            self._STANDARD_COLUMNS,
-            "app ops",
-            "No special-access permissions requested.",
-            palette,
-            bootstyle=ttkb_constants.PRIMARY
-        )
-        self._custom: PermissionTableGroup = PermissionTableGroup(
-            self._container,
-            2,
-            "Custom permissions",
-            self._CUSTOM_COLUMNS,
-            "custom permissions",
-            "No custom permissions requested or declared.",
-            palette,
-            bootstyle=ttkb_constants.PRIMARY
-        )
-        self._groups: tuple[PermissionTableGroup, ...] = (self._permissions, self._app_ops, self._custom)
 
     def apply_palette(self, palette: ThemePalette) -> None:
+        self._table.apply_palette(palette)
         self._banner.apply_palette(palette)
-        for group in self._groups:
-            group.apply_palette(palette)
+        self._pills.restyle()
 
     def show_warnings(self, messages: list[str]) -> None:
         self._banner.show(messages)
 
     def clear(self) -> None:
         self._banner.show(())
-        for group in self._groups:
-            group.clear()
+        self._table.clear()
+        self._pills.reset(())
 
     def render(self, info: PermissionsInfo) -> None:
-        self._show(self._permissions, info.permissions, with_origin=False)
-        self._show(self._app_ops, info.app_ops, with_origin=False)
-        self._show(self._custom, info.custom_permissions, with_origin=True)
-
-    def _show(self, group: PermissionTableGroup, permissions: tuple[Permission, ...], with_origin: bool) -> None:
-        group.show(self._row_builder.build(permissions, with_origin))
+        root = self._row_builder.build(info)
+        self._table.show(root)
+        self._pills.reset(row.category for row in root.children)

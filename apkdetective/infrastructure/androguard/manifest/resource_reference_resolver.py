@@ -8,13 +8,13 @@ import re
 
 from androguard.core.apk import APK
 
-_REFERENCE = re.compile(r"@[0-9A-Fa-f]{8}")
-_NAME = re.compile(r"@([^:/]+):(.+)")
-_FILE_EXTENSIONS = (".xml", ".png", ".webp", ".jpg", ".jpeg")
-_MAX_TEXT = 120
-
 
 class ResourceReferenceResolver:
+    _REFERENCE = re.compile(r"@[0-9A-Fa-f]{8}")
+    _NAME = re.compile(r"@([^:/]+):(.+)")
+    _FILE_EXTENSIONS = (".xml", ".png", ".webp", ".jpg", ".jpeg")
+    _MAX_TEXT = 120
+
     def __init__(self, apk: APK) -> None:
         try:
             self._arsc = apk.get_android_resources()
@@ -25,7 +25,7 @@ class ResourceReferenceResolver:
 
     @staticmethod
     def is_reference(value: str) -> bool:
-        return bool(_REFERENCE.fullmatch(value))
+        return bool(ResourceReferenceResolver._REFERENCE.fullmatch(value))
 
     def describe(self, value: str) -> str:
         """`value (@type/name)` for plain resources, `@type/name` for styles, drawables..."""
@@ -87,7 +87,7 @@ class ResourceReferenceResolver:
         """'@com.app:string/x' -> '@string/x' for the app's own resources."""
         if not full_name:
             return None
-        match = _NAME.fullmatch(full_name)
+        match = self._NAME.fullmatch(full_name)
         if match and match.group(1) in self._packages:
             return f"@{match.group(2)}"
         return full_name
@@ -101,9 +101,9 @@ class ResourceReferenceResolver:
 
     @staticmethod
     def _is_file(value: str) -> bool:
-        return value.startswith("res/") or ("/" in value and value.lower().endswith(_FILE_EXTENSIONS))
+        return value.startswith("res/") or ("/" in value and value.lower().endswith(ResourceReferenceResolver._FILE_EXTENSIONS))
 
     @staticmethod
     def _shorten(text: str) -> str:
         text = " ".join(text.split())
-        return text if len(text) <= _MAX_TEXT else text[: _MAX_TEXT - 1] + "…"
+        return text if len(text) <= ResourceReferenceResolver._MAX_TEXT else text[: ResourceReferenceResolver._MAX_TEXT - 1] + "…"
