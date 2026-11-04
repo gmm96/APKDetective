@@ -22,7 +22,7 @@ class DexAnalysis:
         return DexAnalysis(DexMetrics(), EmbeddedContent(()), (), ())
 
     @classmethod
-    def aggregate(cls, analyses: Iterable['DexAnalysis']) -> 'DexAnalysis':
+    def aggregate(cls, analyses: Iterable["DexAnalysis"]) -> "DexAnalysis":
         """
         Combines multiple DexAnalysis entities into a single one.
         This is pure domain logic, entirely decoupled from how the analyses were executed.
@@ -34,7 +34,7 @@ class DexAnalysis:
         all_class_names: list[str] = []
         all_urls: list[str] = []
         all_warnings: list[AnalysisWarning] = []
-        
+
         for analysis in analyses_list:
             all_class_names.extend(analysis.class_names)
             all_urls.extend(analysis.embedded_content.urls)

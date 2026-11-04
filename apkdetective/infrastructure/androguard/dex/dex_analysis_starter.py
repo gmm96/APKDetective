@@ -14,15 +14,19 @@ from apkdetective.infrastructure.androguard.dex.sequential_dex_analysis_job impo
 class DexAnalysisStarter:
     MIN_CPUS: int = 2  # with a single core a second process only adds work
 
-    def __init__(self, analyzer: DexAnalyzer | None = None, use_child_process: bool = True) -> None:
+    def __init__(
+            self,
+            analyzer: DexAnalyzer | None = None,
+            use_parallel: bool = True
+        ) -> None:
         self._analyzer: DexAnalyzer = analyzer or DexAnalyzer()
-        self._use_child_process: bool = use_child_process
+        self._use_parallel: bool = use_parallel
 
     def start(self, dex_files: Sequence[bytes]) -> DexAnalysisJob:
-        in_process = SequentialDexAnalysisJob(dex_files, self._analyzer)
-        if not dex_files or not self._use_child_process or (os.cpu_count() or 1) < self.MIN_CPUS:
-            return in_process
+        sequential_job = SequentialDexAnalysisJob(dex_files, self._analyzer)
+        if not dex_files or not self._use_parallel or (os.cpu_count() or 1) < self.MIN_CPUS:
+            return sequential_job
         try:
-            return ParallelDexAnalysisJob(dex_files, in_process)
+            return ParallelDexAnalysisJob(dex_files, sequential_job)
         except (OSError, ValueError, RuntimeError):  # the child could not be started
-            return in_process
+            return sequential_job

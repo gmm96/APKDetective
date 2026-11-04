@@ -5,7 +5,7 @@ The analysis of the code, done in this process when the result is asked for.
 from collections.abc import Sequence
 
 from apkdetective.domain.entities.analysis.cancellation_token import CancellationToken
-from apkdetective.infrastructure.androguard.dex.dex_analysis import DexAnalysis
+from apkdetective.domain.entities.analysis.sections.dex_analysis import DexAnalysis
 from apkdetective.infrastructure.androguard.dex.dex_analysis_job import DexAnalysisJob
 from apkdetective.infrastructure.androguard.dex.dex_analyzer import DexAnalyzer
 

@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from concurrent.futures import Future, ProcessPoolExecutor
 
 from apkdetective.domain.entities.analysis.cancellation_token import CancellationToken
-from apkdetective.infrastructure.androguard.dex.dex_analysis import DexAnalysis
+from apkdetective.domain.entities.analysis.sections.dex_analysis import DexAnalysis
 from apkdetective.infrastructure.androguard.dex.dex_analysis_job import DexAnalysisJob
 from apkdetective.infrastructure.androguard.dex.dex_analyzer import DexAnalyzer
 
@@ -21,8 +21,8 @@ class ParallelDexAnalysisJob(DexAnalysisJob):
     """
     Infrastructure adapter responsible ONLY for parallel execution orchestration.
     """
-    def __init__(self, dex_files: Sequence[bytes], in_process: DexAnalysisJob) -> None:
-        self._in_process: DexAnalysisJob = in_process
+    def __init__(self, dex_files: Sequence[bytes], sequential_job: DexAnalysisJob) -> None:
+        self._sequential_job: DexAnalysisJob = sequential_job
         self._executor: ProcessPoolExecutor = ProcessPoolExecutor(
             max_workers=os.cpu_count() or 4,
             mp_context=multiprocessing.get_context("spawn")
@@ -41,7 +41,7 @@ class ParallelDexAnalysisJob(DexAnalysisJob):
             return DexAnalysis.aggregate(results)
         except Exception:
             # Fallback to single-process analysis if the pool fails or crashes
-            return self._in_process.result(cancellation)
+            return self._sequential_job.result(cancellation)
         finally:
             self.discard()
 

@@ -15,8 +15,8 @@ from collections.abc import Iterable
 from apkdetective.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkdetective.domain.entities.analysis.cancellation_token import CancellationToken
 from apkdetective.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
-from apkdetective.infrastructure.androguard.dex.dex_contents import DexContents
-from apkdetective.infrastructure.androguard.dex.dex_header import DexHeader
+from apkdetective.domain.entities.analysis.sections.dex_contents import DexContents
+from apkdetective.domain.entities.analysis.sections.dex_header import DexHeader
 from apkdetective.infrastructure.androguard.dex.dex_strings import DexStrings
 
 _CLASS_DEF_WORDS: int = 8  # a class_def_item is 8 uint32 (32 bytes); the first is the class type

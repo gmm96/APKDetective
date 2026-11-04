@@ -37,7 +37,7 @@ def build_app(root: ttkb.App) -> ApkAnalyzerApp:
     size_formatter = HumanReadableSizeFormatter()
     date_formatter = EnglishLongDateFormatter()
     # The code of the APK is analyzed in another process; APKDETECTIVE_DEX_IN_PROCESS=1 does it in this one.
-    dex_analysis_starter = DexAnalysisStarter(use_child_process=os.environ.get("APKDETECTIVE_DEX_IN_PROCESS") != "1")
+    dex_analysis_starter = DexAnalysisStarter(use_parallel=os.environ.get("APKDETECTIVE_DEX_IN_PROCESS") != "1")
 
     return ApkAnalyzerApp(
         root,

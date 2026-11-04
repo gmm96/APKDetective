@@ -5,7 +5,7 @@ Scans the strings of the DEX files to extract hardcoded HTTP/HTTPS URLs.
 import re
 
 from apkdetective.domain.entities.analysis.sections.embedded_content import EmbeddedContent
-from apkdetective.infrastructure.androguard.dex.dex_contents import DexContents
+from apkdetective.domain.entities.analysis.sections.dex_contents import DexContents
 
 
 class EmbeddedContentExtractor:

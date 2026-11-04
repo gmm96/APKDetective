@@ -16,8 +16,8 @@ from apkdetective.domain.entities.analysis.cancellation_token import Cancellatio
 from apkdetective.domain.entities.analysis.sections.dex_metrics import DexMetrics
 from apkdetective.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkdetective.infrastructure.androguard.dex.dex_code_scanner import DexCodeScanner
-from apkdetective.infrastructure.androguard.dex.dex_contents import DexContents
-from apkdetective.infrastructure.androguard.dex.dex_header import DexHeader
+from apkdetective.domain.entities.analysis.sections.dex_contents import DexContents
+from apkdetective.domain.entities.analysis.sections.dex_header import DexHeader
 from apkdetective.infrastructure.androguard.dex.dex_strings import DexStrings
 
 

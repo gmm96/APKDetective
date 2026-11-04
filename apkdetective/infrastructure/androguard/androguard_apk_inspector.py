@@ -33,8 +33,8 @@ from apkdetective.domain.entities.analysis.sections.third_party_info import Thir
 from apkdetective.ports.apk.apk_inspector_port import ApkInspectorPort
 from apkdetective.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkdetective.infrastructure.androguard.apk_loader import ApkLoader
-from apkdetective.infrastructure.androguard.dex.dex_contents import DexContents
-from apkdetective.infrastructure.androguard.dex.dex_analysis import DexAnalysis
+from apkdetective.domain.entities.analysis.sections.dex_contents import DexContents
+from apkdetective.domain.entities.analysis.sections.dex_analysis import DexAnalysis
 from apkdetective.infrastructure.androguard.dex.dex_analysis_starter import DexAnalysisStarter
 from apkdetective.infrastructure.androguard.extractors.app_info_extractor import ApplicationInfoExtractor
 from apkdetective.infrastructure.androguard.extractors.components_extractor import ComponentsExtractor

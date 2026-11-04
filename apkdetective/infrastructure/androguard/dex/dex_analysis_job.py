@@ -5,7 +5,7 @@ An analysis of the code that has been started and whose result is asked for late
 from abc import ABC, abstractmethod
 
 from apkdetective.domain.entities.analysis.cancellation_token import CancellationToken
-from apkdetective.infrastructure.androguard.dex.dex_analysis import DexAnalysis
+from apkdetective.domain.entities.analysis.sections.dex_analysis import DexAnalysis
 
 
 class DexAnalysisJob(ABC):
