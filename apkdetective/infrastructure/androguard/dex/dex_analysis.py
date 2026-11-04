@@ -3,6 +3,7 @@ What the analysis of the code of an APK finds: everything that comes from its DE
 """
 
 from dataclasses import dataclass
+from typing import Iterable
 
 from apkdetective.domain.entities.analysis.analysis_warning import AnalysisWarning
 from apkdetective.domain.entities.analysis.sections.dex_metrics import DexMetrics
