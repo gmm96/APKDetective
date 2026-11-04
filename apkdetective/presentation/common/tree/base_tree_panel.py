@@ -1,8 +1,10 @@
 """
 Starting point of every tree and table of the app. It owns what all of them
 share: the Treeview with auto-hiding scrollbars (vertical and horizontal,
-each shown only on overflow), proportional column widths that the user can
-still resize by hand, header-click sorting with arrow indicators, the filter
+each shown only on overflow), column widths laid out from their weights and
+minimum widths (see ColumnWidthPlanner: when not even the minimums fit, the
+horizontal scrollbar shows, and it goes away once they fit again) that the user
+can still resize by hand, header-click sorting with arrow indicators, the filter
 line (filter field, item counter and optional expand / collapse buttons), an
 optional row above it for extra widgets (e.g. category pills), the "nothing
 to show" message, open/closed state preservation and an optional maximum
@@ -31,6 +33,7 @@ from apkdetective.presentation.common.scrolling.auto_hide_scrollbar import AutoH
 from apkdetective.presentation.common.inputs.clearable_entry import ClearableEntry
 from apkdetective.presentation.viewmodels.tree.tree_column import TreeColumn
 from apkdetective.presentation.common.layout.wrap_frame import WrapFrame
+from apkdetective.presentation.common.tree.column_width_planner import ColumnWidthPlanner
 from apkdetective.presentation.common.tree.heading_tool_tip import HeadingToolTip
 from apkdetective.presentation.common.icons.icon_loader import IconLoader
 
@@ -79,7 +82,8 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         self._bootstyle: str | None = bootstyle
         self._total_items: int = 0
         self._viewport_margin: int = self._WIDTH_MARGIN  # widget width minus the width columns can use
-        self._weights_frozen: bool = False          # the user resized a column by hand
+        self._widths_frozen: bool = False           # the user resized a column by hand
+        self._width_planner: ColumnWidthPlanner = ColumnWidthPlanner()
         self._last_tree_width: int = 0
         self._filter_row: int = 1 if toolbar_row else 0
         self._tree_row: int = self._filter_row + 1
@@ -165,8 +169,8 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
 
     def show(self, root: NodeT) -> None:
         self._root_node = root
-        self._weights_frozen = False  # new data: lay the columns out from their weights again
-        self._apply_column_weights()
+        self._widths_frozen = False  # new data: lay the columns out again
+        self._apply_column_layout()
         self._total_items = self._item_count(root)
         self._node_states.clear()
         self._filtering = False
@@ -221,7 +225,7 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
                 width=column.width,
                 # A weighted column's min_width only guides the automatic layout; dragging is freer.
                 minwidth=column.min_width if column.weight is None else min(column.min_width, self._DRAG_MIN_WIDTH),
-                stretch=column.stretch and column.weight is None,
+                stretch=False,  # the widths are laid out by _apply_column_layout, not by Tk
                 anchor="w",
             )
             self.tree.heading(column.id, anchor="w", command=partial(self._on_heading_click, column.id))
@@ -233,9 +237,8 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         self.tree.configure(yscrollcommand=v_auto.scroll_command, xscrollcommand=h_auto.scroll_command)
         self.tree.grid(row=self._tree_row, column=0, sticky="nsew")
 
-        if any(column.weight for column in self._columns):
-            self.tree.bind("<Configure>", self._on_tree_configure, add="+")
-            self.tree.bind("<ButtonPress-1>", self._on_tree_press, add="+")
+        self.tree.bind("<Configure>", self._on_tree_configure, add="+")
+        self.tree.bind("<ButtonPress-1>", self._on_tree_press, add="+")
         self._heading_tool_tip = HeadingToolTip(self.tree, self._columns)
         self.tree.bind(KeyboardFocusAnnouncer.EVENT, self._on_keyboard_focus, add="+")
         self.tree.bind("<<TreeviewOpen>>", self._on_toggle, add="+")
@@ -345,39 +348,23 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         # height, and re-laying the columns then would undo what the user just dragged.
         if event.width != self._last_tree_width:
             self._last_tree_width = event.width
-            self._apply_column_weights()
+            self._apply_column_layout()
 
     def _on_tree_press(self, event: tk.Event) -> None:
         """Dragging a column border hands the widths over to the user until new data arrives."""
         if self.tree.identify_region(event.x, event.y) == "separator":
-            self._weights_frozen = True
+            self._widths_frozen = True
 
-    def _apply_column_weights(self, recalibrate: bool = True) -> None:
+    def _apply_column_layout(self, recalibrate: bool = True) -> None:
         """
-        Share the width the fixed columns leave among the weighted ones, in proportion to their
-        weights. A column that would end up under its minimum width gets the minimum and the
-        rest share what is left; if even the minimums don't fit, the table overflows and the
-        horizontal scrollbar appears.
+        Lay the columns out for the current width (see ColumnWidthPlanner). When the viewport is too
+        narrow for the minimum widths, every column gets its minimum and the horizontal scrollbar
+        appears; when the window grows enough for them, the layout fits again and it goes away.
         """
         available = self.tree.winfo_width() - self._viewport_margin
-        pending = [column for column in self._columns if column.weight]
-        if self._weights_frozen or available <= 0 or not pending:
+        if self._widths_frozen or available <= 0:
             return
-        remaining = available - sum(column.width for column in self._columns if not column.weight)
-        widths: dict[str, int] = {}
-        while pending:
-            total_weight = sum(column.weight or 0 for column in pending)
-            too_narrow = next(
-                (c for c in pending if remaining * (c.weight or 0) / total_weight < c.min_width), None
-            )
-            if too_narrow is None:
-                for column in pending:
-                    widths[column.id] = int(remaining * (column.weight or 0) / total_weight)
-                break
-            widths[too_narrow.id] = too_narrow.min_width
-            remaining -= too_narrow.min_width
-            pending.remove(too_narrow)
-        for column_id, width in widths.items():
+        for column_id, width in self._width_planner.plan(self._columns, available).items():
             self.tree.column(column_id, width=width)
         if recalibrate:
             self.after_idle(self._calibrate_viewport)
@@ -389,13 +376,13 @@ class BaseTreePanel(ttkb.Frame, Generic[NodeT], ABC):   # type: ignore
         it and lay the columns out again (once), so no scrollbar shows without real overflow.
         """
         first, last = self.tree.xview()
-        if self._weights_frozen or last >= 1.0 or last <= first:
+        if self._widths_frozen or last >= 1.0 or last <= first:
             return
         total = sum(int(self.tree.column(column.id, "width")) for column in self._columns)
         margin = self.tree.winfo_width() - round(total * (last - first))
         if self._viewport_margin < margin < self._viewport_margin + 80:
             self._viewport_margin = margin
-            self._apply_column_weights(recalibrate=False)
+            self._apply_column_layout(recalibrate=False)
 
     def _on_keyboard_focus(self, _event: tk.Event) -> None:
         """

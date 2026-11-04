@@ -35,8 +35,8 @@ class PermissionsPanel(ttkb.Frame):
     _NAME = TreeColumn(
         "#0",
         "Permission",
-        min_width=280,
-        weight=4,
+        min_width=300,
+        weight=5,
         tooltip="Name of the permission."
     )
     _TYPE = TreeColumn(
@@ -50,7 +50,7 @@ class PermissionsPanel(ttkb.Frame):
         "level",
         "Level",
         min_width=150,
-        weight=2,
+        weight=3,
         tooltip="Protection level of the permission. The dangerous ones are highlighted."
     )
     _ORIGIN = TreeColumn(
@@ -63,7 +63,7 @@ class PermissionsPanel(ttkb.Frame):
     _MAX_SDK = TreeColumn(
         "max_sdk",
         "Max SDK",
-        min_width=75,
+        min_width=70,
         weight=1,
         tooltip="Last Android API level on which the app requests the permission (android:maxSdkVersion)."
     )
