@@ -1,4 +1,4 @@
-name: '[MacOS] Build APKDetective'
+name: '[Build][MacOS] Build APKDetective binary for MacOS'
 on:
   push:
     tags:

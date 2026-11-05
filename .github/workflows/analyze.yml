@@ -1,4 +1,4 @@
-name: 'Linting & Type Analysis'
+name: '[CI] Linting & Type Analysis'
 on:
   push:
     branches:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   pylint:
-    name: '[Pylint] Linting for ${{ matrix.os.name }}'
+    name: '[Pylint][${{ matrix.os.name }}] Linting for ${{ matrix.os.name }}'
     runs-on: ${{ matrix.os.runner }}
     permissions:
       contents: read
@@ -51,7 +51,7 @@ jobs:
 
 
   mypy:
-    name: '[Mypy] ${{ matrix.os.name }}'
+    name: '[Mypy][${{ matrix.os.name }}] Type analysis for ${{ matrix.os.name }}'
     runs-on: ${{ matrix.os.runner }}
     permissions:
       contents: read
