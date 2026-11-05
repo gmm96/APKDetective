@@ -1,4 +1,4 @@
-name: '[Windows] Build APKDetective'
+name: '[Build][Windows] Build APKDetective binary for Windows'
 
 on:
   push:

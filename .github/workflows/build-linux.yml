@@ -1,4 +1,4 @@
-name: '[Linux] Build APKDetective'
+name: '[Build][Linux] Build APKDetective binary for Linux'
 on:
   push:
     tags:
