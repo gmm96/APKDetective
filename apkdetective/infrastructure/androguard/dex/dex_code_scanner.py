@@ -42,7 +42,7 @@ class DexCodeScanner:
         """
         stats = DexCodeStats()
         words = struct.unpack_from(f"<{header.class_defs_size * self._CLASS_DEF_WORDS}I", data, header.class_defs_off)
-        for index, class_data_off in enumerate(words[self._CLASS_DATA_WORD:self._CLASS_DEF_WORDS]):
+        for index, class_data_off in enumerate(words[self._CLASS_DATA_WORD::self._CLASS_DEF_WORDS]):
             if cancellation is not None and not index & self._CANCEL_CHECK_MASK:
                 cancellation.raise_if_cancelled()
             if class_data_off == 0:

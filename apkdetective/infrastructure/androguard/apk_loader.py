@@ -24,7 +24,7 @@ class ApkLoader:
 
     def load(self, apk_path: str) -> APK:
         apk = APK(apk_path)
-        self._use_trimmed_resource_table(apk)
+        #self._use_trimmed_resource_table(apk)
         return apk
 
     def _use_trimmed_resource_table(self, apk: APK) -> None:

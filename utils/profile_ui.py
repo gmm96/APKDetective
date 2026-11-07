@@ -5,58 +5,100 @@ everything is measured inside it:
 
     python utils/profile_ui.py path/to/app.apk
     python utils/profile_ui.py path/to/app.apk --no-loading-bar    # without the animated bar, to compare
+    python utils/profile_ui.py path/to/app.apk --dex-in-process    # no worker processes, to compare
 
 It reports
-- how long the analysis takes in its worker thread, in the window, and how long drawing each tab takes;
-- what each thread was doing (sampled 10 times a second): the functions where the time goes, whatever they are;
+- how long the analysis takes in its worker thread (and how much of it is the final garbage collection), in the
+  window, and how long drawing each tab takes (every tab of the window is found by itself: a new tab is measured
+  without touching this file);
+- what each thread was doing (sampled 10 times a second): the functions where it was busy, whatever they are, and
+  where it was waiting (sleeping, on a lock or idle in the Tk event loop);
 - how long the Tk event loop took to answer (a long delay means the window was frozen).
 
-Nothing in the application is changed: only stopwatches are put around some of its methods. The window closes by
-itself when the analysis is shown.
+The code of the DEX files is scanned in other processes, which this sampler cannot see: while they work, the analysis
+thread shows as waiting in ParallelDexAnalysisJob._wait_for_scans. profile_analysis.py says when each of them finished.
+
+Nothing in the application is changed: only stopwatches are put around some of its methods (the ones inside the
+Files tab are called about 100,000 times, so they add 0.1-0.2 s to it: compare them with each other). The window closes by
+itself when the analysis is shown. Run it from a plain terminal, not from the debugger: debugpy made the same APK take
+four times longer, and it also follows the worker processes.
 """
 
+# pylint: disable=duplicate-code  # standalone script: it shares no module with profile_analysis.py on purpose
 import argparse
 import collections
+import linecache
+import os
 import sys
 import threading
 import time
-import os
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 import __main__
 
-# --- DEFINITIVE FIX ---
-root_dir = Path(__file__).resolve().parent.parent
-os.chdir(root_dir)
-main_script_path = str(root_dir / "main.py")
-
-sys.argv[0] = main_script_path
-__main__.__file__ = main_script_path  # Trick the modules using the correct entry point path
-sys.path[0] = str(root_dir)           # Overwrite 'utils' with the project root in Python path
-
-#sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ROOT_DIR = Path(__file__).resolve().parent.parent
+MAIN_SCRIPT = str(ROOT_DIR / "main.py")
+os.chdir(ROOT_DIR)
+sys.argv[0] = MAIN_SCRIPT
+# Modules that look for the entry point of the program find main.py, and so do the worker processes that scan the DEX
+# files: they are started with "spawn" and begin by importing the main module of the program. In the application that
+# is main.py, which imports almost nothing; this file imports the whole window, which would make them start later here.
+__main__.__file__ = MAIN_SCRIPT
+sys.path[0] = str(ROOT_DIR)  # replaces utils/ with the project root
 
 # pylint: disable=wrong-import-position,import-error
 import ttkbootstrap as ttkb
 import ttkbootstrap.localization
 
 from apkdetective.composition_root import build_app
+from apkdetective.infrastructure.androguard.paused_garbage_collector import PausedGarbageCollector
 
 ttkbootstrap.localization.initialize_localities = bool  # as main.py does
 
+DEX_IN_PROCESS_VARIABLE = "APKDETECTIVE_DEX_IN_PROCESS"  # the same switch composition_root.py reads
 SAMPLE_INTERVAL_S = 0.1
 LAG_TICK_MS = 100
 STALL_S = 0.5
-PANELS = ("info_panel", "security_panel", "permissions_panel", "components_panel", "intents_panel",
-          "manifest_panel", "files_panel")
+TOP_FUNCTIONS = 8
+# What the line a thread is on says when the thread is waiting (a C function such as time.sleep has no frame of its
+# own: the frame seen is the one that called it).
+WAIT_MARKS = ("wait", "sleep(", "select(", "mainloop(", "acquire(", ".join(", "recv(", "poll(")
+ANALYSIS = "analysis"   # groups of the stopwatches of the Timeline
+DRAWING = "drawing"
+INSIDE = "inside"       # calls made inside the drawing: shown, never added up
+
+
+def find_tracers() -> list[str]:
+    """Whatever is watching every line this process runs (a debugger, a coverage tool...): it slows Python down a lot."""
+    # pylint: disable=no-member  # the stubs of sys.monitoring that pylint knows lack get_tool
+    found: list[str] = [name for name in ("debugpy", "pydevd", "pydevd_pycharm", "coverage") if name in sys.modules]
+    if sys.gettrace() is not None:
+        found.append("a sys.settrace hook")
+    if sys.getprofile() is not None:
+        found.append("a sys.setprofile hook")
+    monitoring: Any = getattr(sys, "monitoring", None)  # Python 3.12+
+    if monitoring is not None:
+        found.extend(f"sys.monitoring tool '{monitoring.get_tool(tool_id)}'" for tool_id in range(6)
+                     if monitoring.get_tool(tool_id))
+    return found
+
+
+def tracer_warning(tracers: list[str]) -> str:
+    return (f"!! {', '.join(tracers)} is attached to this process: the times are NOT what the application takes.\n"
+            "!! Run this from a plain terminal (python utils/profile_ui.py ...), not from the debugger.")
 
 
 class StackSampler(threading.Thread):
-    """Looks, ten times a second, at the function every other thread is in, and counts."""
+    """Looks, ten times a second, at the function every other thread is in, and counts: busy or waiting."""
 
     def __init__(self) -> None:
         super().__init__(daemon=True)
         self._stop_event = threading.Event()
+        self._app_prefix = os.path.normcase(str(ROOT_DIR / "apkdetective")) + os.sep
         self.samples: collections.Counter[str] = collections.Counter()
+        self.waiting: collections.Counter[str] = collections.Counter()
+        self.waiting_at: dict[str, collections.Counter[str]] = collections.defaultdict(collections.Counter)
         self.innermost: dict[str, collections.Counter[str]] = collections.defaultdict(collections.Counter)
         self.in_app: dict[str, collections.Counter[str]] = collections.defaultdict(collections.Counter)
 
@@ -71,23 +113,35 @@ class StackSampler(threading.Thread):
                     continue
                 name = names.get(ident, str(ident))
                 self.samples[name] += 1
+                if self._is_waiting(frame):
+                    self.waiting[name] += 1
+                    self.waiting_at[name][self._label(frame)] += 1
+                    continue
                 self.innermost[name][self._label(frame)] += 1
                 app_frame = self._innermost_app_frame(frame)
                 if app_frame is not None:
                     self.in_app[name][self._label(app_frame)] += 1
 
     @staticmethod
-    def _label(frame) -> str:
-        path = Path(frame.f_code.co_filename)
-        parts = path.parts
-        shown = "/".join(parts[parts.index("apkdetective"):]) if "apkdetective" in parts else \
-            "/".join(parts[-2:])
-        return f"{shown}:{frame.f_code.co_name}:{frame.f_lineno}"
+    def _is_waiting(frame) -> bool:
+        if frame.f_lineno is None:  # a frame that is not running a line right now
+            return False
+        if f"{os.sep}multiprocessing{os.sep}" in frame.f_code.co_filename:  # its threads only block on pipes and queues
+            return True
+        line = linecache.getline(frame.f_code.co_filename, frame.f_lineno).lower()
+        return any(mark in line for mark in WAIT_MARKS)
 
-    @staticmethod
-    def _innermost_app_frame(frame):
+    def _in_app(self, filename: str) -> bool:
+        return os.path.normcase(filename).startswith(self._app_prefix)
+
+    def _label(self, frame) -> str:
+        filename = frame.f_code.co_filename
+        shown = os.path.relpath(filename, ROOT_DIR) if self._in_app(filename) else "/".join(Path(filename).parts[-2:])
+        return f"{shown}:{frame.f_code.co_name}:{frame.f_lineno or 0}"
+
+    def _innermost_app_frame(self, frame):
         while frame is not None:
-            if "apkdetective" in Path(frame.f_code.co_filename).parts:
+            if self._in_app(frame.f_code.co_filename):
                 return frame
             frame = frame.f_back
         return None
@@ -115,62 +169,143 @@ class LoopLagMonitor:  # pylint: disable=too-few-public-methods
 class Timeline:
     def __init__(self) -> None:
         self.marks: dict[str, float] = {}
-        self.panel_seconds: dict[str, float] = {}
+        self.durations: dict[str, dict[str, float]] = collections.defaultdict(lambda: collections.defaultdict(float))
+        self.calls: dict[str, dict[str, int]] = collections.defaultdict(lambda: collections.defaultdict(int))
 
     def mark(self, name: str) -> None:
         self.marks[name] = time.perf_counter()
 
-    def around(self, owner, method: str, label: str, store_as_panel: bool = False) -> None:
-        original = getattr(owner, method)
+    def around(self, owner, method: str, label: str, group: str) -> None:
+        """Times every call of `owner.method` (an object or a class) and adds it up under `label` in `group`."""
+        try:
+            original = getattr(owner, method)
+        except AttributeError:
+            print(f"(cannot time {label}: {method} does not exist any more)", file=sys.stderr)
+            return
 
         def timed(*args, **kwargs):
             started = time.perf_counter()
             try:
                 return original(*args, **kwargs)
             finally:
-                if store_as_panel:
-                    self.panel_seconds[label] = self.panel_seconds.get(label, 0.0) + time.perf_counter() - started
+                self.durations[group][label] += time.perf_counter() - started
+                self.calls[group][label] += 1
 
         setattr(owner, method, timed)
 
 
-def report(timeline: Timeline, sampler: StackSampler, lag: LoopLagMonitor) -> None:
+def print_timeline(timeline: Timeline) -> None:
     marks = timeline.marks
     since = marks["click"]
     print("\n=== Timeline (seconds since the click) ===")
     print(f"  analysis, in the worker thread : {marks['analysis_start'] - since:6.1f} -> {marks['analysis_end'] - since:6.1f}"
           f"   ({marks['analysis_end'] - marks['analysis_start']:.1f} s)")
+    for label, seconds in timeline.durations[ANALYSIS].items():
+        print(f"        {seconds:6.2f} s  of which {label}")
     if "render_start" in marks:
+        drawing = marks["render_end"] - marks["render_start"]
         print(f"  waiting for the window to draw : {marks['analysis_end'] - since:6.1f} -> {marks['render_start'] - since:6.1f}"
               f"   ({marks['render_start'] - marks['analysis_end']:.1f} s)")
         print(f"  drawing the tabs (main thread) : {marks['render_start'] - since:6.1f} -> {marks['render_end'] - since:6.1f}"
-              f"   ({marks['render_end'] - marks['render_start']:.1f} s)")
-        for label, seconds in sorted(timeline.panel_seconds.items(), key=lambda item: -item[1]):
+              f"   ({drawing:.1f} s)")
+        parts = dict(timeline.durations[DRAWING])
+        parts["(the rest of _render_result)"] = max(0.0, drawing - sum(parts.values()))
+        for label, seconds in sorted(parts.items(), key=lambda item: -item[1]):
             print(f"        {seconds:6.2f} s  {label}")
+        for label, seconds in sorted(timeline.durations[INSIDE].items(), key=lambda item: -item[1]):
+            calls = timeline.calls[INSIDE][label]
+            print(f"        {seconds:6.2f} s  inside the above: {label}: {calls} calls, {seconds / calls * 1e6:.0f} us each")
     print(f"  window ready                   : {marks['ready'] - since:6.1f} s")
 
+
+def print_lag(lag: LoopLagMonitor) -> None:
     worst = max(lag.delays, default=0.0)
     stalls = [delay for delay in lag.delays if delay > STALL_S]
     print("\n=== Tk event loop (asked to answer every 100 ms) ===")
     print(f"  worst delay: {worst:.2f} s | answers later than {STALL_S} s: {len(stalls)} | total delay: {sum(lag.delays):.1f} s")
 
+
+def print_threads(sampler: StackSampler) -> None:
+    quiet = []
     for name, count in sampler.samples.most_common():
-        print(f"\n=== {name}: {count} samples ({count * SAMPLE_INTERVAL_S:.0f} s) ===")
-        print("  inside the code of the application (where the time goes):")
-        for label, hits in sampler.in_app[name].most_common(8):
-            print(f"    {hits / count * 100:5.1f}%  {label}")
-        print("  function it was executing at that moment:")
-        for label, hits in sampler.innermost[name].most_common(8):
-            print(f"    {hits / count * 100:5.1f}%  {label}")
+        waiting = sampler.waiting[name]
+        busy = count - waiting
+        if not busy:
+            quiet.append(name)
+            continue
+        print(f"\n=== {name}: busy {busy * SAMPLE_INTERVAL_S:.0f} s, waiting {waiting * SAMPLE_INTERVAL_S:.0f} s "
+              f"(of {count * SAMPLE_INTERVAL_S:.0f} s) ===")
+        print("  busy, inside the code of the application (where the time goes):")
+        print_top(sampler.in_app[name], busy)
+        print("  busy, in the function it was executing at that moment:")
+        print_top(sampler.innermost[name], busy)
+        if waiting:
+            print("  waiting at:")
+            print_top(sampler.waiting_at[name], waiting, 3)
+    if quiet:
+        print(f"\n(threads that only waited: {', '.join(quiet)})")
 
 
-def main() -> None:
+def print_top(counter: collections.Counter[str], total: int, how_many: int = TOP_FUNCTIONS) -> None:
+    for label, hits in counter.most_common(how_many):
+        print(f"    {hits / total * 100:5.1f}%  {label}")
+
+
+def report(timeline: Timeline, sampler: StackSampler, lag: LoopLagMonitor, tracers: list[str]) -> None:
+    if tracers:
+        print(f"\n{tracer_warning(tracers)}")
+    print(f"\nDEX analysis: {dex_mode()}")
+    print_timeline(timeline)
+    print_lag(lag)
+    print_threads(sampler)
+
+
+def dex_mode() -> str:
+    if os.environ.get(DEX_IN_PROCESS_VARIABLE) == "1":
+        return f"in this process ({DEX_IN_PROCESS_VARIABLE}=1)"
+    return f"in worker processes when there are 2 CPUs or more ({os.cpu_count()} here)"
+
+
+def files_hot_spots(panel) -> list[tuple[object, str, str]]:
+    """What FilesPanel does for every row and every folder: which part of its Python side weighs."""
+    spots: list[tuple[object, str, str]] = [
+        (panel, "_insert", "files: _insert, the whole row (it contains the Tcl call, the icon, the date and the sizes)"),
+        (panel, "_format_modified", "files: date of the row (strftime)"),
+        (panel, "_fit_height", "files: _fit_height"),
+        (panel, "_after_rebuild", "files: _after_rebuild (counter)"),
+        (panel, "_apply_column_layout", "files: _apply_column_layout"),
+    ]
+    for attribute, method, label in (
+        ("_size_formatter", "format", "files: size formatter (two calls per row)"),
+        ("_file_icons", "icon_for", "files: icon of the row"),
+        ("_sorter", "sorted_children", "files: sorting the children of a folder"),
+    ):
+        owner = getattr(panel, attribute, None)
+        if owner is not None:
+            spots.append((owner, method, label))
+    return spots
+
+
+def drawable_panels(app) -> dict[str, Callable]:
+    """Every tab of the window: an attribute called *_panel that has a render method."""
+    return {name.removesuffix("_panel"): panel for name, panel in vars(app).items()
+            if name.endswith("_panel") and callable(getattr(panel, "render", None))}
+
+
+def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
     parser = argparse.ArgumentParser(description="Where does the time of the window go?")
     parser.add_argument("apk", type=Path)
     parser.add_argument("--no-loading-bar", action="store_true", help="do not animate the progress bar")
+    parser.add_argument("--dex-in-process", action="store_true",
+                        help=f"analyze the DEX files in this process, as with {DEX_IN_PROCESS_VARIABLE}=1, to compare")
     arguments = parser.parse_args()
     if not arguments.apk.is_file():
         sys.exit(f"{arguments.apk} is not a file")
+    if arguments.dex_in_process:
+        os.environ[DEX_IN_PROCESS_VARIABLE] = "1"  # read by build_app
+    tracers = find_tracers()
+    if tracers:
+        print(tracer_warning(tracers), file=sys.stderr)
 
     root: ttkb.App = ttkb.App()
     app = build_app(root)
@@ -199,8 +334,17 @@ def main() -> None:
             timeline.mark("render_end")
 
     app._render_result = render  # type: ignore[method-assign]
-    for panel_name in PANELS:
-        timeline.around(getattr(app, panel_name), "render", panel_name.replace("_panel", ""), store_as_panel=True)
+    timeline.around(PausedGarbageCollector, "__exit__", "the final gc.collect() (PausedGarbageCollector)", ANALYSIS)
+    timeline.around(app.header, "show_result", "header (show_result)", DRAWING)
+    timeline.around(app, "_show_warnings", "warnings of the tabs (_show_warnings)", DRAWING)
+    panels = drawable_panels(app)
+    for name, panel in panels.items():
+        timeline.around(panel, "render", name, DRAWING)
+        if hasattr(panel, "tree"):
+            timeline.around(panel.tree, "insert", f"{name}: Treeview.insert (the call into Tcl)", INSIDE)
+    if "files" in panels:
+        for owner, method, label in files_hot_spots(panels["files"]):
+            timeline.around(owner, method, label, INSIDE)
     original_set_loading = app._set_loading
 
     def set_loading(loading: bool) -> None:
@@ -222,7 +366,7 @@ def main() -> None:
     root.after(300, go)
     root.mainloop()
     sampler.stop()
-    report(timeline, sampler, lag)
+    report(timeline, sampler, lag, tracers)
 
 
 if __name__ == "__main__":
