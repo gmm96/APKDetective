@@ -26,6 +26,7 @@ process is profiled, not the workers.
 import argparse
 import collections
 import cProfile
+import gc
 import inspect
 import os
 import platform
@@ -66,6 +67,7 @@ from apkdetective.infrastructure.zip.zip_archive_reader import ZipArchiveReader
 READ_CHUNK_BYTES = 8 * 1024 * 1024
 DEX_IN_PROCESS_VARIABLE = "APKDETECTIVE_DEX_IN_PROCESS"  # the same switch composition_root.py reads
 WATCH_INTERVAL_S = 0.02
+SLOW_COLLECTION_S = 0.01
 HIDDEN_DEX_WAIT_S = 0.2  # a wait shorter than this is noise, not a bottleneck
 
 # The inspector guards two steps with the same text; these are the names they get in the report.
@@ -98,6 +100,36 @@ def find_tracers() -> list[str]:
     return found
 
 
+class CollectionRecorder:
+    """Records every pass of the cyclic garbage collector: thread, generation, objects freed and seconds."""
+
+    def __init__(self) -> None:
+        self.rows: list[tuple[str, int, int, float, int]] = []  # + the objects it had to look at
+        self._started = 0.0
+        self._tracked = 0
+
+    def __call__(self, phase: str, info: dict[str, int]) -> None:
+        if phase == "start":
+            # counting the objects takes a while: it is done before the clock starts and only for the full passes
+            self._tracked = len(gc.get_objects()) if info["generation"] == 2 else 0
+            self._started = time.perf_counter()
+        else:
+            self.rows.append((threading.current_thread().name, info["generation"], info["collected"],
+                              time.perf_counter() - self._started, self._tracked))
+
+    def install(self) -> None:
+        gc.callbacks.append(self)
+
+    def print_slow(self) -> None:
+        slow = [row for row in self.rows if row[3] >= SLOW_COLLECTION_S]
+        print(f"\n=== Garbage collections slower than {SLOW_COLLECTION_S * 1000:.0f} ms "
+              f"({len(self.rows)} in total) ===")
+        for thread, generation, freed, seconds, tracked in slow:
+            print(f"  {seconds:6.2f} s  generation {generation}, {freed:,} objects freed out of {tracked:,} tracked, in {thread}")
+        if not slow:
+            print("  none")
+
+
 class DexScanWatcher(threading.Thread):
     """Notes when the worker process of each DEX file has finished scanning it."""
 
@@ -127,6 +159,7 @@ class StepTimer:
         self.inside: list[Step] = []   # inside those steps: shown, never added up
         self.repeats: dict[str, list[tuple[Hashable, float]]] = collections.defaultdict(list)
         self.watchers: list[DexScanWatcher] = []
+        self.collections = CollectionRecorder()
         self._occurrences: collections.Counter[str] = collections.Counter()
 
     def begin(self) -> None:
@@ -282,9 +315,10 @@ def print_report(apk_path: Path, total: float, timer: StepTimer, read_seconds: f
     print_inside(timer, total)
     print_repeats(timer)
     print_critical_path(timer)
+    timer.collections.print_slow()
 
 
-def main() -> None:  # pylint: disable=too-many-locals
+def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
     parser = argparse.ArgumentParser(description="Where does the time of an analysis go?")
     parser.add_argument("apk", type=Path)
     parser.add_argument("--cprofile", action="store_true", help="also profile every function (slower)")
@@ -298,6 +332,7 @@ def main() -> None:  # pylint: disable=too-many-locals
     read_seconds = time_reading(arguments.apk)  # before the analysis, so the disk is measured and not the cache of it
 
     timer = StepTimer()
+    timer.collections.install()
     # one after the other: they add up to the use case
     timer.around(ApkLoader, "load", "open the APK (Androguard)")
     timer.around_guarded_steps()

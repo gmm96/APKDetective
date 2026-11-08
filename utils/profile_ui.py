@@ -4,7 +4,8 @@ Shows where the time goes when the WINDOW loads an APK. profile_analysis.py only
 everything is measured inside it:
 
     python utils/profile_ui.py path/to/app.apk
-    python utils/profile_ui.py path/to/app.apk --no-loading-bar    # without the animated bar, to compare
+    python utils/profile_ui.py path/to/app.apk --no-loading-bar    # without the progress bar, to compare
+    python utils/profile_ui.py path/to/app.apk --static-loading-bar  # the bar is shown but does not move
     python utils/profile_ui.py path/to/app.apk --dex-in-process    # no worker processes, to compare
 
 It reports
@@ -27,6 +28,7 @@ four times longer, and it also follows the worker processes.
 # pylint: disable=duplicate-code  # standalone script: it shares no module with profile_analysis.py on purpose
 import argparse
 import collections
+import gc
 import linecache
 import os
 import sys
@@ -61,6 +63,7 @@ SAMPLE_INTERVAL_S = 0.1
 LAG_TICK_MS = 100
 STALL_S = 0.5
 TOP_FUNCTIONS = 8
+SLOW_COLLECTION_S = 0.01
 # What the line a thread is on says when the thread is waiting (a C function such as time.sleep has no frame of its
 # own: the frame seen is the one that called it).
 WAIT_MARKS = ("wait", "sleep(", "select(", "mainloop(", "acquire(", ".join(", "recv(", "poll(")
@@ -89,6 +92,36 @@ def tracer_warning(tracers: list[str]) -> str:
             "!! Run this from a plain terminal (python utils/profile_ui.py ...), not from the debugger.")
 
 
+class CollectionRecorder:
+    """Records every pass of the cyclic garbage collector: thread, generation, objects freed and seconds."""
+
+    def __init__(self) -> None:
+        self.rows: list[tuple[str, int, int, float, int]] = []  # + the objects it had to look at
+        self._started = 0.0
+        self._tracked = 0
+
+    def __call__(self, phase: str, info: dict[str, int]) -> None:
+        if phase == "start":
+            # counting the objects takes a while: it is done before the clock starts and only for the full passes
+            self._tracked = len(gc.get_objects()) if info["generation"] == 2 else 0
+            self._started = time.perf_counter()
+        else:
+            self.rows.append((threading.current_thread().name, info["generation"], info["collected"],
+                              time.perf_counter() - self._started, self._tracked))
+
+    def install(self) -> None:
+        gc.callbacks.append(self)
+
+    def print_slow(self) -> None:
+        slow = [row for row in self.rows if row[3] >= SLOW_COLLECTION_S]
+        print(f"\n=== Garbage collections slower than {SLOW_COLLECTION_S * 1000:.0f} ms "
+              f"({len(self.rows)} in total) ===")
+        for thread, generation, freed, seconds, tracked in slow:
+            print(f"  {seconds:6.2f} s  generation {generation}, {freed:,} objects freed out of {tracked:,} tracked, in {thread}")
+        if not slow:
+            print("  none")
+
+
 class StackSampler(threading.Thread):
     """Looks, ten times a second, at the function every other thread is in, and counts: busy or waiting."""
 
@@ -107,29 +140,37 @@ class StackSampler(threading.Thread):
 
     def run(self) -> None:
         while not self._stop_event.wait(SAMPLE_INTERVAL_S):
-            names = {thread.ident: thread.name for thread in threading.enumerate()}
-            for ident, frame in sys._current_frames().items():  # pylint: disable=protected-access
-                if ident == self.ident:
-                    continue
-                name = names.get(ident, str(ident))
-                self.samples[name] += 1
-                if self._is_waiting(frame):
-                    self.waiting[name] += 1
-                    self.waiting_at[name][self._label(frame)] += 1
-                    continue
-                self.innermost[name][self._label(frame)] += 1
-                app_frame = self._innermost_app_frame(frame)
-                if app_frame is not None:
-                    self.in_app[name][self._label(app_frame)] += 1
+            self._sample_once()  # in its own method: the frames it looks at must not outlive the sample
+
+    def _sample_once(self) -> None:
+        """A frame keeps every local variable of its function alive: holding on to one of the analysis thread would
+        keep the whole APK in memory (1.5 million objects) and make the garbage collector slower, so nothing of the
+        frames is kept once the sample is taken."""
+        main_ident = threading.main_thread().ident
+        names = {thread.ident: thread.name for thread in threading.enumerate()}
+        for ident, frame in sys._current_frames().items():  # pylint: disable=protected-access
+            if ident == self.ident:
+                continue
+            name = names.get(ident, str(ident))
+            self.samples[name] += 1
+            if self._is_waiting(frame, ident == main_ident):
+                self.waiting[name] += 1
+                self.waiting_at[name][self._label(frame)] += 1
+                continue
+            self.innermost[name][self._label(frame)] += 1
+            app_frame = self._innermost_app_frame(frame)
+            if app_frame is not None:
+                self.in_app[name][self._label(app_frame)] += 1
 
     @staticmethod
-    def _is_waiting(frame) -> bool:
+    def _is_waiting(frame, in_main_thread: bool) -> bool:
         if frame.f_lineno is None:  # a frame that is not running a line right now
             return False
         if f"{os.sep}multiprocessing{os.sep}" in frame.f_code.co_filename:  # its threads only block on pipes and queues
             return True
         line = linecache.getline(frame.f_code.co_filename, frame.f_lineno).lower()
-        return any(mark in line for mark in WAIT_MARKS)
+        # a call into Tk from another thread (root.after) blocks until the main thread, if it is busy, answers
+        return any(mark in line for mark in WAIT_MARKS) or (not in_main_thread and ".after(" in line)
 
     def _in_app(self, filename: str) -> bool:
         return os.path.normcase(filename).startswith(self._app_prefix)
@@ -169,6 +210,8 @@ class LoopLagMonitor:  # pylint: disable=too-few-public-methods
 class Timeline:
     def __init__(self) -> None:
         self.marks: dict[str, float] = {}
+        self.analysis_cpu: float | None = None  # seconds the analysis thread was really running on a CPU
+        self.main_thread_collection: float | None = None  # a full gc.collect() made in the main thread at the end
         self.durations: dict[str, dict[str, float]] = collections.defaultdict(lambda: collections.defaultdict(float))
         self.calls: dict[str, dict[str, int]] = collections.defaultdict(lambda: collections.defaultdict(int))
 
@@ -200,6 +243,10 @@ def print_timeline(timeline: Timeline) -> None:
     print("\n=== Timeline (seconds since the click) ===")
     print(f"  analysis, in the worker thread : {marks['analysis_start'] - since:6.1f} -> {marks['analysis_end'] - since:6.1f}"
           f"   ({marks['analysis_end'] - marks['analysis_start']:.1f} s)")
+    if timeline.analysis_cpu is not None:
+        wall = marks["analysis_end"] - marks["analysis_start"]
+        print(f"        {timeline.analysis_cpu:6.2f} s  of those it was running on a CPU; the other {wall - timeline.analysis_cpu:.2f} s "
+              f"it was not (waiting for the GIL or for a core)")
     for label, seconds in timeline.durations[ANALYSIS].items():
         print(f"        {seconds:6.2f} s  of which {label}")
     if "render_start" in marks:
@@ -216,6 +263,9 @@ def print_timeline(timeline: Timeline) -> None:
             calls = timeline.calls[INSIDE][label]
             print(f"        {seconds:6.2f} s  inside the above: {label}: {calls} calls, {seconds / calls * 1e6:.0f} us each")
     print(f"  window ready                   : {marks['ready'] - since:6.1f} s")
+    if timeline.main_thread_collection is not None:
+        print(f"  a full gc.collect() made afterwards in the main thread, with nothing left to free: "
+              f"{timeline.main_thread_collection:.2f} s")
 
 
 def print_lag(lag: LoopLagMonitor) -> None:
@@ -251,12 +301,14 @@ def print_top(counter: collections.Counter[str], total: int, how_many: int = TOP
         print(f"    {hits / total * 100:5.1f}%  {label}")
 
 
-def report(timeline: Timeline, sampler: StackSampler, lag: LoopLagMonitor, tracers: list[str]) -> None:
+def report(timeline: Timeline, sampler: StackSampler, lag: LoopLagMonitor, collections_: CollectionRecorder,
+           tracers: list[str]) -> None:
     if tracers:
         print(f"\n{tracer_warning(tracers)}")
     print(f"\nDEX analysis: {dex_mode()}")
     print_timeline(timeline)
     print_lag(lag)
+    collections_.print_slow()
     print_threads(sampler)
 
 
@@ -295,7 +347,10 @@ def drawable_panels(app) -> dict[str, Callable]:
 def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
     parser = argparse.ArgumentParser(description="Where does the time of the window go?")
     parser.add_argument("apk", type=Path)
-    parser.add_argument("--no-loading-bar", action="store_true", help="do not animate the progress bar")
+    loading_bar = parser.add_mutually_exclusive_group()
+    loading_bar.add_argument("--no-loading-bar", action="store_true", help="do not show the progress bar")
+    loading_bar.add_argument("--static-loading-bar", action="store_true",
+                     help="show the progress bar but do not animate it: tells whether the cost is the animation or the bar")
     parser.add_argument("--dex-in-process", action="store_true",
                         help=f"analyze the DEX files in this process, as with {DEX_IN_PROCESS_VARIABLE}=1, to compare")
     arguments = parser.parse_args()
@@ -312,16 +367,19 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
     timeline = Timeline()
     lag = LoopLagMonitor(root)
     sampler = StackSampler()
+    collections_ = CollectionRecorder()
 
     # pylint: disable=protected-access
     original_execute = app._analyze_apk.execute
 
     def execute(*args, **kwargs):
         timeline.mark("analysis_start")
+        cpu_started = time.thread_time()  # of this thread only: it does not tick while the thread waits
         try:
             return original_execute(*args, **kwargs)
         finally:
             timeline.mark("analysis_end")
+            timeline.analysis_cpu = time.thread_time() - cpu_started
 
     app._analyze_apk.execute = execute  # type: ignore[method-assign]
     original_render = app._render_result
@@ -351,14 +409,24 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
         original_set_loading(loading)
         if not loading:
             timeline.mark("ready")
-            root.after(200, root.quit)
+            root.after(200, probe_main_thread_collection)
+
+    def probe_main_thread_collection() -> None:
+        """What a full collection costs in the main thread when there is nothing left to free: the price of the heap."""
+        started = time.perf_counter()
+        gc.collect()
+        timeline.main_thread_collection = time.perf_counter() - started
+        root.after(100, root.quit)
 
     app._set_loading = set_loading  # type: ignore[method-assign]
     if arguments.no_loading_bar:
         app.loading_bar.start = lambda: None  # type: ignore[method-assign]
+    elif arguments.static_loading_bar:
+        app.loading_bar._bar.start = lambda *args, **kwargs: None  # type: ignore[method-assign]
 
     def go() -> None:
         timeline.mark("click")
+        collections_.install()
         sampler.start()
         lag.start()
         app.start_analysis(str(arguments.apk))
@@ -366,7 +434,7 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
     root.after(300, go)
     root.mainloop()
     sampler.stop()
-    report(timeline, sampler, lag, tracers)
+    report(timeline, sampler, lag, collections_, tracers)
 
 
 if __name__ == "__main__":

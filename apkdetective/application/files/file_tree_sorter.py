@@ -34,6 +34,8 @@ class FileTreeSorter:
             self.reverse = False
 
     def sorted_children(self, node: FileNode) -> list[FileNode]:
+        if not node.children:  # a file, or an empty folder: nothing to sort
+            return []
         children = list(node.children.values())
         folders = [child for child in children if not child.is_file]
         files = [child for child in children if child.is_file]

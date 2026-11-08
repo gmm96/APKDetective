@@ -13,7 +13,7 @@ import ttkbootstrap.constants as ttkb_constants
 class LoadingBar(ttkb.Frame):
     _STRIP_HEIGHT: int = 30     # the gap that used to separate the header from the tabs
     _BAR_MARGIN: tuple[int, int] = (10, 10)
-    _STEP_MS: int = 15
+    _STEP_MS: int = 100
 
     def __init__(self, parent: tk.Misc, **options) -> None:
         super().__init__(parent, height=self._STRIP_HEIGHT, **options)

@@ -10,6 +10,7 @@ folders that hold matches. The icon of each row comes from FileIconProvider.
 import tkinter as tk
 from collections.abc import Callable, Sequence
 from datetime import datetime
+from functools import lru_cache
 
 import ttkbootstrap.constants as ttkb_constants
 
@@ -81,6 +82,7 @@ class FilesPanel(BaseTreePanel[FileNode]):
         "modified": FileSortKeyEnum.MODIFIED,
     }
     DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+    _DATE_CACHE_SIZE: int = 4096  # the entries of an APK share a few timestamps, so there are few different ones
 
     _expand_on_filter = True
 
@@ -209,5 +211,6 @@ class FilesPanel(BaseTreePanel[FileNode]):
             )
 
     @staticmethod
+    @lru_cache(maxsize=_DATE_CACHE_SIZE)
     def _format_modified(modified: datetime | None) -> str:
         return modified.strftime(FilesPanel.DATE_FORMAT) if modified is not None else ""
