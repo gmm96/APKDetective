@@ -7,6 +7,7 @@ everything is measured inside it:
     python utils/profile_ui.py path/to/app.apk --no-loading-bar    # without the progress bar, to compare
     python utils/profile_ui.py path/to/app.apk --static-loading-bar  # the bar is shown but does not move
     python utils/profile_ui.py path/to/app.apk --dex-in-process    # no worker processes, to compare
+    python utils/profile_ui.py path/to/app.apk --no-sampler        # only the timeline: no sampling, no lag monitor
 
 It reports
 - how long the analysis takes in its worker thread (and how much of it is the final garbage collection), in the
@@ -301,15 +302,17 @@ def print_top(counter: collections.Counter[str], total: int, how_many: int = TOP
         print(f"    {hits / total * 100:5.1f}%  {label}")
 
 
-def report(timeline: Timeline, sampler: StackSampler, lag: LoopLagMonitor, collections_: CollectionRecorder,
-           tracers: list[str]) -> None:
+def report(timeline: Timeline, sampler: StackSampler | None, lag: LoopLagMonitor | None,
+           collections_: CollectionRecorder, tracers: list[str]) -> None:
     if tracers:
         print(f"\n{tracer_warning(tracers)}")
     print(f"\nDEX analysis: {dex_mode()}")
     print_timeline(timeline)
-    print_lag(lag)
+    if lag is not None:
+        print_lag(lag)
     collections_.print_slow()
-    print_threads(sampler)
+    if sampler is not None:
+        print_threads(sampler)
 
 
 def dex_mode() -> str:
@@ -347,6 +350,8 @@ def drawable_panels(app) -> dict[str, Callable]:
 def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
     parser = argparse.ArgumentParser(description="Where does the time of the window go?")
     parser.add_argument("apk", type=Path)
+    parser.add_argument("--no-sampler", action="store_true",
+                        help="do not sample the threads nor watch the Tk event loop: only the timeline is measured")
     loading_bar = parser.add_mutually_exclusive_group()
     loading_bar.add_argument("--no-loading-bar", action="store_true", help="do not show the progress bar")
     loading_bar.add_argument("--static-loading-bar", action="store_true",
@@ -365,8 +370,8 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
     root: ttkb.App = ttkb.App()
     app = build_app(root)
     timeline = Timeline()
-    lag = LoopLagMonitor(root)
-    sampler = StackSampler()
+    lag = None if arguments.no_sampler else LoopLagMonitor(root)
+    sampler = None if arguments.no_sampler else StackSampler()
     collections_ = CollectionRecorder()
 
     # pylint: disable=protected-access
@@ -427,13 +432,15 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
     def go() -> None:
         timeline.mark("click")
         collections_.install()
-        sampler.start()
-        lag.start()
+        if sampler is not None and lag is not None:
+            sampler.start()
+            lag.start()
         app.start_analysis(str(arguments.apk))
 
     root.after(300, go)
     root.mainloop()
-    sampler.stop()
+    if sampler is not None:
+        sampler.stop()
     report(timeline, sampler, lag, collections_, tracers)
 
 

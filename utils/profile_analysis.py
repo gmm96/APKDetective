@@ -12,8 +12,8 @@ changing anything in them. The report has four parts:
 - what happens INSIDE those steps (the resource table of Androguard, the end of the DEX analysis, the resolution of
   resource references...): already counted above, shown to see what a step is made of;
 - the repeated work: the same call made again with the same argument, which a cache shared by the extractors would save;
-- the critical path: when the worker processes had scanned each DEX file and whether the main process had to wait for
-  them (if it did not, making the scan faster would not shorten the analysis).
+- the critical path: when the worker processes had analyzed each DEX file and whether the main process had to wait for
+  them (if it did not, making the analysis of the files faster would not shorten it).
 
 Run it from a plain terminal, not from the debugger: debugpy made the same APK take four times longer, and it also
 follows the worker processes. Run it twice too: the first time the operating system (or the antivirus) may still have
@@ -41,7 +41,7 @@ from typing import Any, NamedTuple
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 if __name__ == "__main__":
-    # The workers that scan the DEX files are started with "spawn": each one begins by importing the main module of the
+    # The workers that analyze the DEX files are started with "spawn": each one begins by importing the main module of the
     # program. In the application that is main.py, which imports almost nothing; this file imports Androguard and more,
     # so here the workers would start later than in the application. They are told that the main module is main.py.
     sys.modules["__main__"].__file__ = str(ROOT_DIR / "main.py")
@@ -56,6 +56,7 @@ from apkdetective.infrastructure.androguard.androguard_apk_inspector import Andr
 from apkdetective.infrastructure.androguard.apk_loader import ApkLoader
 from apkdetective.infrastructure.androguard.dex.dex_analysis_starter import DexAnalysisStarter
 from apkdetective.infrastructure.androguard.dex.dex_analyzer import DexAnalyzer
+from apkdetective.infrastructure.androguard.dex.dex_file_analyzer import DexFileAnalyzer
 from apkdetective.infrastructure.androguard.dex.dex_reader import DexReader
 from apkdetective.infrastructure.androguard.dex.parallel_dex_analysis_job import ParallelDexAnalysisJob
 from apkdetective.infrastructure.androguard.extractors.dex_metrics_extractor import DexMetricsExtractor
@@ -76,7 +77,7 @@ GUARDED_NAMES = {
     ("The code (DEX) of the app", 2): "wait for the DEX analysis (started earlier)",
 }
 WAIT_FOR_DEX = GUARDED_NAMES[("The code (DEX) of the app", 2)]
-DEX_MERGE = "DEX: strings, packages, URLs and totals (DexAnalyzer.analyze, in this process)"
+DEX_MERGE = "DEX: DexAnalyzer.analyze in this process (adds the files up; with no workers it does everything)"
 
 
 class Step(NamedTuple):
@@ -130,12 +131,12 @@ class CollectionRecorder:
             print("  none")
 
 
-class DexScanWatcher(threading.Thread):
-    """Notes when the worker process of each DEX file has finished scanning it."""
+class DexAnalysisWatcher(threading.Thread):
+    """Notes when the worker process of each DEX file has finished analyzing it."""
 
-    def __init__(self, scans: list, origin: float) -> None:
+    def __init__(self, analyses: list, origin: float) -> None:
         super().__init__(daemon=True)
-        self._scans = scans
+        self._analyses = analyses
         self._origin = origin
         self._stop_event = threading.Event()
         self.finished: dict[int, float] = {}  # DEX file number -> seconds since the analysis began
@@ -144,9 +145,9 @@ class DexScanWatcher(threading.Thread):
         self._stop_event.set()
 
     def run(self) -> None:
-        while len(self.finished) < len(self._scans) and not self._stop_event.wait(WATCH_INTERVAL_S):
-            for number, scan in enumerate(self._scans, start=1):
-                if number not in self.finished and scan.ready():
+        while len(self.finished) < len(self._analyses) and not self._stop_event.wait(WATCH_INTERVAL_S):
+            for number, analysis in enumerate(self._analyses, start=1):
+                if number not in self.finished and analysis.ready():
                     self.finished[number] = time.perf_counter() - self._origin
 
 
@@ -158,7 +159,7 @@ class StepTimer:
         self.steps: list[Step] = []    # one after the other: they add up to the use case
         self.inside: list[Step] = []   # inside those steps: shown, never added up
         self.repeats: dict[str, list[tuple[Hashable, float]]] = collections.defaultdict(list)
-        self.watchers: list[DexScanWatcher] = []
+        self.watchers: list[DexAnalysisWatcher] = []
         self.collections = CollectionRecorder()
         self._occurrences: collections.Counter[str] = collections.Counter()
 
@@ -211,7 +212,7 @@ class StepTimer:
 
         def init(job: ParallelDexAnalysisJob, *args, **kwargs) -> None:
             original(job, *args, **kwargs)
-            watcher = DexScanWatcher(job._scans, self.origin)  # pylint: disable=protected-access
+            watcher = DexAnalysisWatcher(job._analyses, self.origin)  # pylint: disable=protected-access
             self.watchers.append(watcher)
             watcher.start()
 
@@ -224,7 +225,7 @@ class StepTimer:
     def dex_mode(self) -> str:
         if not self.watchers:
             return "in this process (no worker processes)"
-        return f"{len(self.watchers[0].finished) or 'several'} DEX file(s) scanned in worker processes ({os.cpu_count()} CPUs)"
+        return f"{len(self.watchers[0].finished) or 'several'} DEX file(s) analyzed in worker processes ({os.cpu_count()} CPUs)"
 
 
 def time_reading(path: Path) -> float:
@@ -290,14 +291,14 @@ def print_critical_path(timer: StepTimer) -> None:
     waited = max(0.0, wait.seconds - merge)  # the wait for the workers and, once they are done, the merge
     print("\nCritical path (seconds since the analysis began):")
     for number, finished in sorted(timer.watchers[0].finished.items()):
-        print(f"  DEX file #{number} scanned by its worker at {finished:6.2f}")
+        print(f"  DEX file #{number} analyzed by its worker at {finished:6.2f}")
     print(f"  the main process got to the DEX at {wait.offset:6.2f} and then waited {waited:.2f} s for the workers")
     if waited < HIDDEN_DEX_WAIT_S:
-        print("  -> the scan of the DEX files is hidden behind the rest: making it faster would not shorten the analysis")
+        print("  -> the analysis of the DEX files is hidden behind the rest: making it faster would not shorten the analysis")
     else:
-        print(f"  -> the main process was idle for {waited:.2f} s: a faster scan, or starting it earlier, "
+        print(f"  -> the main process was idle for {waited:.2f} s: a faster analysis of the files, or starting it earlier, "
               f"would shorten the analysis by up to that")
-    print(f"  after the scans, {merge:.2f} s more of work in this process (strings, packages, URLs): "
+    print(f"  after the workers, {merge:.2f} s more of work in this process (adding the results up): "
           f"always on the critical path")
 
 
@@ -348,10 +349,10 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-statements
                  nested=True, key=lambda _resolver, reference: reference)
     timer.around(DexAnalysisStarter, "start", "start of the DEX analysis (worker processes are started)", nested=True)
     timer.around(DexAnalyzer, "analyze", DEX_MERGE, nested=True)
-    timer.around(DexReader, "read", "DEX: read every string and class name (DexReader)", nested=True)
-    timer.around(DexMetricsExtractor, "extract", "DEX: scan every file here (DexMetricsExtractor.extract)", nested=True)
-    timer.around(DexMetricsExtractor, "combine", "DEX: add the scans up (DexMetricsExtractor.combine)", nested=True)
-    timer.around(EmbeddedContentExtractor, "extract", "DEX: embedded URLs (EmbeddedContentExtractor)", nested=True)
+    timer.around(DexFileAnalyzer, "analyze", "DEX: analysis of one file here (DexFileAnalyzer; in the workers when there are any)", nested=True)
+    timer.around(DexReader, "read", "DEX: read the strings and classes of a file (DexReader.read)", nested=True)
+    timer.around(DexMetricsExtractor, "combine", "DEX: add the metrics of the files up (DexMetricsExtractor.combine)", nested=True)
+    timer.around(EmbeddedContentExtractor, "combine", "DEX: add the URLs of the files up (EmbeddedContentExtractor.combine)", nested=True)
     timer.watch_dex_workers()
 
     parallel = not (arguments.dex_in_process or os.environ.get(DEX_IN_PROCESS_VARIABLE) == "1")

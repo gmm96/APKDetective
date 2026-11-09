@@ -9,14 +9,13 @@ what is missing is reported as a warning.
 """
 
 import struct
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from apkdetective.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkdetective.domain.entities.analysis.cancellation_token import CancellationToken
 from apkdetective.domain.entities.analysis.sections.dex_metrics import DexMetrics
 from apkdetective.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkdetective.infrastructure.androguard.dex.dex_code_scanner import DexCodeScanner
-from apkdetective.domain.entities.analysis.sections.dex_contents import DexContents
 from apkdetective.domain.entities.analysis.sections.dex_file_scan import DexFileScan
 from apkdetective.domain.entities.analysis.sections.dex_header import DexHeader
 from apkdetective.infrastructure.androguard.dex.dex_strings import DexStrings
@@ -25,24 +24,6 @@ from apkdetective.infrastructure.androguard.dex.dex_strings import DexStrings
 class DexMetricsExtractor:
     def __init__(self, scanner: DexCodeScanner | None = None) -> None:
         self._scanner: DexCodeScanner = scanner or DexCodeScanner()
-
-    def extract(
-        self,
-        dex_files: Sequence[bytes],
-        contents: DexContents,
-        warnings: AnalysisWarningCollector | None = None,
-        cancellation: CancellationToken | None = None,
-    ) -> DexMetrics:
-        """
-        `contents`: the strings and class names already read from the same files. Raises
-        AnalysisCancelledError when a `cancellation` is given and gets cancelled.
-        """
-        scans = []
-        for number, data in enumerate(dex_files, start=1):
-            if cancellation is not None:
-                cancellation.raise_if_cancelled()
-            scans.append(self.scan_file(number, data, cancellation))
-        return self.combine(scans, dex_files, contents, warnings)
 
     def scan_file(self, number: int, data: bytes, cancellation: CancellationToken | None = None) -> DexFileScan:
         """Everything the metrics need from one DEX file. It is the long part of them, and it is independent per file."""
@@ -81,10 +62,14 @@ class DexMetricsExtractor:
         self,
         scans: Sequence[DexFileScan],
         dex_files: Sequence[bytes],
-        contents: DexContents,
+        class_names: Iterable[str],
+        string_characters: int,
         warnings: AnalysisWarningCollector | None = None,
     ) -> DexMetrics:
-        """The metrics of the whole APK, from the scan of each of its DEX files (in the order of the files)."""
+        """
+        The metrics of the whole APK, from the scan of each of its DEX files (in the order of the files), the class
+        names of all of them and the number of characters of all their strings.
+        """
         classes: int = 0
         method_references: int = 0
         strings: int = 0
@@ -122,7 +107,7 @@ class DexMetricsExtractor:
         return DexMetrics(
             dex_files=len(dex_files),
             dex_size=sum(len(data) for data in dex_files),
-            packages=len({name.rpartition("/")[0] for name in contents.class_names}),
+            packages=len({name.rpartition("/")[0] for name in class_names}),
             classes=classes,
             methods=methods,
             methods_with_code=methods_with_code,
@@ -130,7 +115,7 @@ class DexMetricsExtractor:
             method_references=method_references,
             fields=fields,
             strings=strings,
-            string_characters=sum(map(len, contents.strings)),
+            string_characters=string_characters,
             instructions=instructions,
             code_size=code_units * 2,
             cyclomatic_complexity=complexity,
