@@ -147,7 +147,7 @@ class ApkAnalyzerApp:
 
     def _set_icon(self) -> None:
         if sys.platform == "win32":
-            self.root.iconbitmap(default=AssetPathResolver().resolve(f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective.ico"))
+            self.root.iconbitmap(AssetPathResolver().resolve(f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective.ico"))
         else:
             self.app_icon = self._icon_loader.load_png_icon(
                 f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective_512.png",
