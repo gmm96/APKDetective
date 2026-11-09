@@ -9,6 +9,7 @@ imports the infrastructure layer.
 import os
 import threading
 import tkinter as tk
+import sys
 from functools import partial
 from tkinter import filedialog, messagebox
 
@@ -58,6 +59,7 @@ from apkdetective.presentation.viewmodels.menus.menu_item import MenuItem
 from apkdetective.presentation.viewmodels.icons.asset_icon import AssetIcon
 from apkdetective.presentation.viewmodels.icons.bootstrap_icon import BootstrapIcon
 from apkdetective.presentation.config.about_config import AboutConfig
+from apkdetective.presentation.common.icons.asset_path_resolver import AssetPathResolver
 
 
 class ApkAnalyzerApp:
@@ -111,16 +113,12 @@ class ApkAnalyzerApp:
         self._date_formatter: DateFormatterPort | None = date_formatter
 
         self.root.title(AboutConfig.NAME)
-        self.app_icon: ImageTk.PhotoImage = self._icon_loader.load_png_icon(
-            f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective_512.png",
-            (512, 512)
-        )
-        self.root.iconphoto(True, self.app_icon)    # type: ignore
         self.root.minsize(600, 600)
         self.root.geometry("1000x750")
         self.maximize_window()
         self.root.protocol("WM_DELETE_WINDOW", self.exit_app)
-
+        self.app_icon: ImageTk.PhotoImage | None = None
+        self._set_icon()
 
         # Activates the ttk theme (AUTO = follow the OS) before any widget exists.
         self._theme: ThemeManager = ThemeManager(root, resolve_color_scheme)
@@ -146,6 +144,16 @@ class ApkAnalyzerApp:
         self._build_menu()  # first: the menu bar must be packed at the very top of the window
         self._build_layout()
         self._subscribe_to_theme_changes()
+
+    def _set_icon(self) -> None:
+        if sys.platform == "win32":
+            self.root.iconbitmap(default=AssetPathResolver().resolve(f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective.ico"))
+        else:
+            self.app_icon = self._icon_loader.load_png_icon(
+                f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective_512.png",
+                (512, 512)
+            )
+            self.root.iconphoto(True, self.app_icon)    # type: ignore
 
     def _subscribe_to_theme_changes(self) -> None:
         for listener in (
@@ -221,13 +229,13 @@ class ApkAnalyzerApp:
             self.root,
             {
                 "File": [
-                    MenuItem("load_apk", "Load APK", self.load_apk, self._asset_icon("android.png"), "Ctrl+O", "<Control-o>"),
+                    MenuItem("load_apk", "Load APK", self.load_apk, self._asset_outline_icon("android.png"), "Ctrl+O", "<Control-o>"),
                     None,
-                    MenuItem("export_app_info", "Export app info", export.export_app_info, self._asset_icon("save_file.png")),
-                    MenuItem("extract_apk", "Extract to...", export.extract_apk, self._asset_icon("unarchive_file.png")),
-                    MenuItem("extract_icon", "Extract icon as PNG", export.extract_icon, self._asset_icon("image.png")),
+                    MenuItem("export_app_info", "Export app info", export.export_app_info, self._asset_outline_icon("save_file.png")),
+                    MenuItem("extract_apk", "Extract to...", export.extract_apk, self._asset_outline_icon("unarchive_file.png")),
+                    MenuItem("extract_icon", "Extract icon as PNG", export.extract_icon, self._asset_outline_icon("image.png")),
                     None,
-                    MenuItem("exit", "Exit", self.exit_app, self._asset_icon("exit_app.png"), "Ctrl+Q", "<Control-q>"),
+                    MenuItem("exit", "Exit", self.exit_app, self._asset_outline_icon("exit_app.png"), "Ctrl+Q", "<Control-q>"),
                 ],
                 "Settings": [
                     MenuChoiceGroup(
@@ -237,17 +245,17 @@ class ApkAnalyzerApp:
                             MenuChoice(
                                 ColorModeEnum.LIGHT.value, "Light mode",
                                 lambda: settings.set_color_mode(ColorModeEnum.LIGHT),
-                                self._asset_icon("light_mode.png"),
+                                self._asset_outline_icon("light_mode.png"),
                             ),
                             MenuChoice(
                                 ColorModeEnum.DARK.value, "Dark mode",
                                 lambda: settings.set_color_mode(ColorModeEnum.DARK),
-                                self._asset_icon("dark_mode.png"),
+                                self._asset_outline_icon("dark_mode.png"),
                             ),
                             MenuChoice(
                                 ColorModeEnum.AUTO.value, "Auto (follow system)",
                                 lambda: settings.set_color_mode(ColorModeEnum.AUTO),
-                                self._asset_icon("auto_color_mode.png")
+                                self._asset_outline_icon("auto_color_mode.png")
                             ),
                         ),
                         selected_key=settings.color_mode.value,
@@ -265,10 +273,10 @@ class ApkAnalyzerApp:
                     ),
                 ],
                 "Help": [
-                    MenuItem("source_code", "Source code", help_.open_source_code, self._asset_icon("code.png")),
-                    MenuItem("report_issue", "Report issue", help_.report_issue, self._asset_icon("bug_report.png")),
-                    MenuItem("show_license", "View license", help_.view_license, self._asset_icon("license.png")),
-                    MenuItem("about", "About", help_.show_about, self._asset_icon("info.png")),
+                    MenuItem("source_code", "Source code", help_.open_source_code, self._asset_outline_icon("code.png")),
+                    MenuItem("report_issue", "Report issue", help_.report_issue, self._asset_outline_icon("bug_report.png")),
+                    MenuItem("show_license", "View license", help_.view_license, self._asset_outline_icon("license.png")),
+                    MenuItem("about", "About", help_.show_about, self._asset_outline_icon("info.png")),
                 ],
             },
             self._theme.palette,
@@ -439,5 +447,5 @@ class ApkAnalyzerApp:
         self.intents_panel.show_warnings(components_warnings)
 
     @staticmethod
-    def _asset_icon(file_name: str) -> AssetIcon:
+    def _asset_outline_icon(file_name: str) -> AssetIcon:
         return AssetIcon(f"{ApkAnalyzerApp._ICONS_OUTLINE_DIR}/{file_name}")
