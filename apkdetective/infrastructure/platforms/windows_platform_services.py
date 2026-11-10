@@ -3,6 +3,7 @@ Windows implementations of the OS-dependent services.
 """
 
 from apkdetective.ports.system.clipboard_file_copier_port import ClipboardFileCopierPort
+from apkdetective.ports.system.native_window_icon_port import NativeWindowIconPort
 from apkdetective.ports.system.os_file_opener_port import OsFileOpenerPort
 from apkdetective.ports.system.platform_services_port import PlatformServicesPort
 from apkdetective.ports.system.system_color_scheme_detector_port import SystemColorSchemeDetectorPort
@@ -11,6 +12,7 @@ from apkdetective.infrastructure.appearance.windows_color_scheme_detector import
 from apkdetective.infrastructure.clipboard.windows_clipboard_file_copier import WindowsClipboardFileCopier
 from apkdetective.infrastructure.os_integration.windows_file_opener import WindowsFileOpener
 from apkdetective.infrastructure.url.webbrowser_url_opener import WebBrowserUrlOpener
+from apkdetective.infrastructure.window_icon.windows_native_window_icon import WindowsNativeWindowIcon
 
 
 class WindowsPlatformServices(PlatformServicesPort):
@@ -25,3 +27,6 @@ class WindowsPlatformServices(PlatformServicesPort):
 
     def create_system_color_scheme_detector(self) -> SystemColorSchemeDetectorPort:
         return WindowsColorSchemeDetector()
+
+    def create_native_window_icon(self) -> NativeWindowIconPort:
+        return WindowsNativeWindowIcon()

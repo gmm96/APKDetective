@@ -7,6 +7,7 @@ needs, so the rest of the code never checks the platform itself.
 from abc import ABC, abstractmethod
 
 from .clipboard_file_copier_port import ClipboardFileCopierPort
+from .native_window_icon_port import NativeWindowIconPort
 from .os_file_opener_port import OsFileOpenerPort
 from .system_color_scheme_detector_port import SystemColorSchemeDetectorPort
 from .url_opener_port import UrlOpenerPort
@@ -27,4 +28,8 @@ class PlatformServicesPort(ABC):
 
     @abstractmethod
     def create_system_color_scheme_detector(self) -> SystemColorSchemeDetectorPort:
+        raise NotImplementedError
+
+    @abstractmethod
+    def create_native_window_icon(self) -> NativeWindowIconPort:
         raise NotImplementedError

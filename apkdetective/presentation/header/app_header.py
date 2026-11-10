@@ -17,7 +17,7 @@ from apkdetective.presentation.common.icons.placeholder_icon_factory import Plac
 
 class AppHeader(ttkb.Frame):
     _ICON_SIZE: tuple[int, int]  = (96, 96)
-    _BUTTON_WIDTH: int = 8
+    _BUTTON_WIDTH: int = 12
     _IDLE_TITLE: str = "No APK Loaded"
     _IDLE_SUBTITLE: str = "Select an application file to begin analysis."
 

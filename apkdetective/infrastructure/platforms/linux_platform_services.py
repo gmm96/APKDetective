@@ -3,6 +3,7 @@ Linux implementations of the OS-dependent services.
 """
 
 from apkdetective.ports.system.clipboard_file_copier_port import ClipboardFileCopierPort
+from apkdetective.ports.system.native_window_icon_port import NativeWindowIconPort
 from apkdetective.ports.system.os_file_opener_port import OsFileOpenerPort
 from apkdetective.ports.system.platform_services_port import PlatformServicesPort
 from apkdetective.ports.system.system_color_scheme_detector_port import SystemColorSchemeDetectorPort
@@ -11,6 +12,7 @@ from apkdetective.infrastructure.appearance.linux_color_scheme_detector import L
 from apkdetective.infrastructure.clipboard.linux_clipboard_file_copier import LinuxClipboardFileCopier
 from apkdetective.infrastructure.os_integration.linux_file_opener import LinuxFileOpener
 from apkdetective.infrastructure.url.webbrowser_url_opener import WebBrowserUrlOpener
+from apkdetective.infrastructure.window_icon.no_native_window_icon import NoNativeWindowIcon
 
 
 class LinuxPlatformServices(PlatformServicesPort):
@@ -25,3 +27,6 @@ class LinuxPlatformServices(PlatformServicesPort):
 
     def create_system_color_scheme_detector(self) -> SystemColorSchemeDetectorPort:
         return LinuxColorSchemeDetector()
+
+    def create_native_window_icon(self) -> NativeWindowIconPort:
+        return NoNativeWindowIcon()

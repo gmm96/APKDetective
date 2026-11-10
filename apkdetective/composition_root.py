@@ -41,7 +41,7 @@ def build_app(root: ttkb.App) -> ApkAnalyzerApp:
     file_writer: FileWriterPort = LocalFileWriter()
     size_formatter: SizeFormatterPort = HumanReadableSizeFormatter()
     date_formatter: DateFormatterPort = EnglishLongDateFormatter()
-    dex_analysis_starter: DexAnalysisStarter = DexAnalysisStarter(parallel=os.environ.get("APKDETECTIVE_DEX_IN_PROCESS") != "1")
+    dex_analysis_starter: DexAnalysisStarter = DexAnalysisStarter(parallel=os.environ.get("APKDETECTIVE_PARALLEL") != "1")
 
     return ApkAnalyzerApp(
         root,
@@ -58,6 +58,7 @@ def build_app(root: ttkb.App) -> ApkAnalyzerApp:
         ),
         export_icon=ExportIcon(file_writer),
         url_opener=platform_services.create_url_opener(),
+        native_window_icon=platform_services.create_native_window_icon(),
         resolve_color_scheme=ResolveColorScheme(
             platform_services.create_system_color_scheme_detector()
         ),

@@ -9,7 +9,6 @@ imports the infrastructure layer.
 import os
 import threading
 import tkinter as tk
-import sys
 from functools import partial
 from tkinter import filedialog, messagebox
 
@@ -28,6 +27,7 @@ from apkdetective.domain.entities.analysis.analysis_result import AnalysisResult
 from apkdetective.domain.entities.analysis.cancellation_token import CancellationToken
 from apkdetective.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkdetective.domain.entities.appearance.color_mode_enum import ColorModeEnum
+from apkdetective.ports.system.native_window_icon_port import NativeWindowIconPort
 from apkdetective.ports.system.url_opener_port import UrlOpenerPort
 from apkdetective.ports.formatting.size_formatter_port import SizeFormatterPort
 from apkdetective.ports.formatting.date_formatter_port import DateFormatterPort
@@ -96,6 +96,7 @@ class ApkAnalyzerApp:
         export_app_info: ExportAppInfo,
         export_icon: ExportIcon,
         url_opener: UrlOpenerPort,
+        native_window_icon: NativeWindowIconPort,
         resolve_color_scheme: ResolveColorScheme,
         icon_loader: IconLoader | None = None,
         size_formatter: SizeFormatterPort | None = None,
@@ -109,6 +110,8 @@ class ApkAnalyzerApp:
         self._analyze_apk: AnalyzeApk = analyze_apk
         self._entry_previewer: EntryPreviewer = entry_previewer
         self._icon_loader: IconLoader = icon_loader or IconLoader()
+        self._native_window_icon: NativeWindowIconPort = native_window_icon
+        self._native_icon_applied: bool = False
         self._size_formatter: SizeFormatterPort | None = size_formatter
         self._date_formatter: DateFormatterPort | None = date_formatter
 
@@ -146,14 +149,26 @@ class ApkAnalyzerApp:
         self._subscribe_to_theme_changes()
 
     def _set_icon(self) -> None:
-        if sys.platform == "win32":
-            self.root.iconbitmap(AssetPathResolver().resolve(f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective.ico"))
-        else:
-            self.app_icon = self._icon_loader.load_png_icon(
-                f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective_512.png",
-                (512, 512)
-            )
-            self.root.iconphoto(True, self.app_icon)    # type: ignore
+        # Tk's own icon, the same PNG on every platform: it is what Linux and macOS show everywhere, and what
+        # Windows shows in the taskbar.
+        self.app_icon = self._icon_loader.load_png_icon(
+            f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective_512.png",
+            (512, 512)
+        )
+        self.root.iconphoto(True, self.app_icon)    # type: ignore
+        # What Tk leaves undone (the small icon of the Windows title bar) is finished by the platform, but it needs
+        # the window to exist on screen: that is the first time it is mapped.
+        self.root.bind("<Map>", self._apply_native_icon, add="+")
+
+    def _apply_native_icon(self, event: tk.Event) -> None:
+        # Mapping events of the widgets inside the window reach this binding too.
+        if event.widget is not self.root or self._native_icon_applied:
+            return
+        self._native_icon_applied = True
+        self._native_window_icon.apply(
+            self.root.winfo_id(),
+            AssetPathResolver().resolve(f"{ApkAnalyzerApp._ICON_APP_DIR}/apkdetective.ico"),
+        )
 
     def _subscribe_to_theme_changes(self) -> None:
         for listener in (
