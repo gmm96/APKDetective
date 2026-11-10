@@ -167,7 +167,10 @@ class FormSection:
             list_label.configure(wraplength=label_width)
 
     def _apply_columns_layout(self, columns: int, label_width: int) -> None:
-        """Fixed label and gutter widths; only the value columns absorb the spare space."""
+        """
+        Fixed label and gutter widths; only the value columns absorb the spare space. The entries go down the
+        first column, then down the next one, so they read in the same order as in a single column.
+        """
         self.frame.columnconfigure(0, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
         self.frame.columnconfigure(4 * columns, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
         for column in range(columns):
@@ -178,9 +181,10 @@ class FormSection:
             self.frame.columnconfigure(value_column, weight=1, minsize=0, uniform="entry_values")
             if column < columns - 1:
                 self.frame.columnconfigure(value_column + 1, weight=0, minsize=self.COLUMN_GAP_PX)
-        last_row = (len(self._entries) - 1) // columns
+        rows = self._planner.rows_for(columns, len(self._entries))
+        last_row = rows - 1
         for index, (label, field, _row) in enumerate(self._entries):
-            row, column = divmod(index, columns)
+            row, column = self._planner.cell_of(index, rows)
             label_column = 1 + 4 * column
             top_padding = 0 if row == 0 else self.FIELD_VERTICAL_PADDING_PX
             bottom_padding = self.FIELD_VERTICAL_PADDING_PX * (2 if row == last_row else 1)
