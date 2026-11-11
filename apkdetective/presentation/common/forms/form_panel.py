@@ -11,6 +11,7 @@ change only schedules ONE layout pass for when the UI is idle.
 import tkinter as tk
 
 import ttkbootstrap as ttkb
+from ttkbootstrap import constants as ttkb_constants
 
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkdetective.presentation.common.inputs.auto_scrolled_text import AutoScrolledText
@@ -38,7 +39,7 @@ class FormPanel(ttkb.Frame):
     SECTION_PAD_Y = 10
     BADGE_OFFSET_X = -14
     BADGE_OFFSET_Y = -4
-    LABEL_EXTRA_WIDTH_PX = 10
+    LABEL_EXTRA_WIDTH_PX = 30
     CHIP_PAD_X = 8
     CHIP_PAD_Y = 1
 
@@ -162,7 +163,22 @@ class FormPanel(ttkb.Frame):
         """A check box that only shows `value`: it can't be toggled, pressed, focused or highlighted."""
         variable = tk.BooleanVar(master=parent, value=value)
         self._flag_variables.append(variable)
-        check = ttkb.Checkbutton(parent, variable=variable, takefocus=False, bootstyle="primary toggle")
+        if value:
+            check = ttkb.Checkbutton(
+                parent,
+                text="true",
+                variable=variable,
+                takefocus=False,
+                bootstyle=f"{ttkb_constants.SUCCESS} {ttkb_constants.OUTLINE} {ttkb_constants.TOOLBUTTON}"
+            )
+        else:
+            check = ttkb.Checkbutton(
+                parent,
+                text="false",
+                variable=variable,
+                takefocus=False,
+                bootstyle=f"{ttkb_constants.SECONDARY} {ttkb_constants.OUTLINE} {ttkb_constants.TOOLBUTTON}"
+            )
         # The class bindings are what make a Checkbutton react to the mouse and the keyboard.
         check.bindtags(tuple(tag for tag in check.bindtags() if tag != check.winfo_class()))
         return check

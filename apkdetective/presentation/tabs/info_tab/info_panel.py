@@ -17,6 +17,11 @@ from apkdetective.presentation.formatting.human_readable_size_formatter import H
 
 
 class InfoPanel(FormPanel):
+    # A flag's value is a toggle plus "true" / "false", far narrower than the text fields the sections assume
+    # (FormSection.DEFAULT_MIN_FIELD_WIDTH_PX); with that default the flags would stay in one column in windows
+    # that have room for two.
+    _FLAG_MIN_FIELD_WIDTH_PX: int = 100
+
     def __init__(
         self,
         parent: ttkb.Notebook,
@@ -52,7 +57,12 @@ class InfoPanel(FormPanel):
         file_section.add_entry("File Size", self._format_size(application.file_size))
         file_section.add_entry("Last Modified", self._format_date(application))
 
-        flags_section = self.add_section("Flags", responsive=True, max_columns=2)
+        flags_section = self.add_section(
+            "Flags",
+            responsive=True,
+            max_columns=2,
+            min_field_width=InfoPanel._FLAG_MIN_FIELD_WIDTH_PX,
+        )
         flags_section.add_flag("Debuggable", application.debuggable or False)
         flags_section.add_flag("Allow Backup", application.allow_backup or False)
         flags_section.add_flag("Test Only", application.test_only or False)
