@@ -36,6 +36,7 @@ from apkdetective.presentation.common.dialogs.extract_to_dialog import ExtractTo
 from apkdetective.presentation.status_bar.status_bar import StatusBar
 from apkdetective.presentation.viewmodels.status_bar.status_level_enum import StatusLevelEnum
 from apkdetective.presentation.common.menus.text_context_menu import TextContextMenu
+from apkdetective.presentation.tabs.code_tab.code_panel import CodePanel
 from apkdetective.presentation.tabs.components_tab.components_panel import ComponentsPanel
 from apkdetective.presentation.tabs.files_tab.files_panel import FilesPanel
 from apkdetective.presentation.common.feedback.loading_bar import LoadingBar
@@ -71,18 +72,18 @@ class ApkAnalyzerApp:
     _INFO_SECTIONS: tuple[AnalysisSectionEnum, ...] = (
         AnalysisSectionEnum.APPLICATION,
         AnalysisSectionEnum.CONFIGURATION,
-        AnalysisSectionEnum.EMBEDDED_CONTENT,
-        AnalysisSectionEnum.DEX_METRICS,
         AnalysisSectionEnum.ICON,
     )
-    _SECURITY_SECTIONS: tuple[AnalysisSectionEnum, ...] = (
-        AnalysisSectionEnum.SIGNATURES,
-        AnalysisSectionEnum.THIRD_PARTY,
-    )
+    _SECURITY_SECTIONS: tuple[AnalysisSectionEnum, ...] = (AnalysisSectionEnum.SIGNATURES,)
     _PERMISSIONS_SECTIONS: tuple[AnalysisSectionEnum, ...] = (AnalysisSectionEnum.PERMISSIONS,)
     _COMPONENTS_SECTIONS: tuple[AnalysisSectionEnum, ...] = (  # also for the Intents tab, derived from them
         AnalysisSectionEnum.COMPONENTS,
         AnalysisSectionEnum.MANIFEST,
+    )
+    _CODE_SECTIONS: tuple[AnalysisSectionEnum, ...] = (
+        AnalysisSectionEnum.THIRD_PARTY,
+        AnalysisSectionEnum.DEX_METRICS,
+        AnalysisSectionEnum.EMBEDDED_CONTENT,
     )
     _ICONS_OUTLINE_DIR: str = "assets/icons/outline"
     _ICON_APP_DIR: str = "assets/icons/apkdetective"
@@ -182,6 +183,7 @@ class ApkAnalyzerApp:
             self.components_panel.apply_palette,
             self.intents_panel.apply_palette,
             self.manifest_panel.apply_palette,
+            self.code_panel.apply_palette,
             self.files_panel.apply_palette,
         ):
             self._theme.subscribe(listener)
@@ -217,6 +219,12 @@ class ApkAnalyzerApp:
         self.permissions_panel: PermissionsPanel = PermissionsPanel(notebook, palette)
         self.components_panel: ComponentsPanel = ComponentsPanel(notebook, palette)
         self.intents_panel: IntentsPanel = IntentsPanel(notebook, palette)
+        self.code_panel: CodePanel = CodePanel(
+            notebook,
+            self.context_menu,
+            palette,
+            size_formatter=self._size_formatter,
+        )
         self.manifest_panel: ManifestPanel = ManifestPanel(notebook, self.context_menu, palette)
         self.files_panel: FilesPanel = FilesPanel(
             notebook,
@@ -232,6 +240,7 @@ class ApkAnalyzerApp:
         notebook.add(self.permissions_panel, text="Permissions")
         notebook.add(self.components_panel, text="Components")
         notebook.add(self.intents_panel, text="Intents")
+        notebook.add(self.code_panel, text="Code")
         notebook.add(self.manifest_panel, text="Manifest")
         notebook.add(self.files_panel, text="Files")
         self._tab_lock: NotebookLock = NotebookLock(notebook)
@@ -441,14 +450,13 @@ class ApkAnalyzerApp:
         self.info_panel.render(
             inspection.application,
             inspection.configuration,
-            inspection.embedded_content,
-            inspection.dex_metrics
         )
-        self.security_panel.render(inspection.security, inspection.third_party)
+        self.security_panel.render(inspection.security)
         self.permissions_panel.render(inspection.permissions)
         self.components_panel.render(inspection.components)
         self.intents_panel.render(inspection.components.exported_intents())
         self.manifest_panel.render(result.manifest_xml)
+        self.code_panel.render(inspection.third_party, inspection.dex_metrics, inspection.embedded_content)
         self.files_panel.render(result.apk_path, result.file_tree)
         self._show_warnings(result)
         self.menu_bar.set_enabled(self._ANALYSIS_DEPENDENT_ITEMS, True)
@@ -458,6 +466,7 @@ class ApkAnalyzerApp:
         self.info_panel.show_warnings(result.warning_messages(*self._INFO_SECTIONS))
         self.security_panel.show_warnings(result.warning_messages(*self._SECURITY_SECTIONS))
         self.permissions_panel.show_warnings(result.warning_messages(*self._PERMISSIONS_SECTIONS))
+        self.code_panel.show_warnings(result.warning_messages(*self._CODE_SECTIONS))
         self.components_panel.show_warnings(components_warnings)
         self.intents_panel.show_warnings(components_warnings)
 

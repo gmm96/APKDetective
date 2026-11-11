@@ -57,6 +57,7 @@ class FormPanel(ttkb.Frame):
         self._layout_job: str | None = None
         self._list_widgets: list[AutoScrolledText] = []
         self._copy_entries: list[CopyableEntry] = []
+        self._flag_variables: list[tk.BooleanVar] = []  # Tk forgets a variable nobody refers to
         self._list_copy_icons: list[CopyIconOverlay] = []
         self._chips: list[tuple[ttkb.Label, str]] = []
         self._muted_labels: list[ttkb.Label] = []
@@ -74,13 +75,14 @@ class FormPanel(ttkb.Frame):
         icon_colors: dict[str, str] = {
             "icon_color": palette.primary_icon,
             "active_icon_color": palette.success_text,
-            "background": palette.input_background,
+            "background": palette.background,
         }
         for entry in self._copy_entries:
             entry.update_colors(**icon_colors)
         for overlay in self._list_copy_icons:
             overlay.update_colors(**icon_colors)
         for text_widget in self._list_widgets:
+            text_widget.configure_border_style()
             self._style_list_widget(text_widget.text)
         for chip, kind in self._chips:
             self._style_chip(chip, kind)
@@ -98,6 +100,7 @@ class FormPanel(ttkb.Frame):
         self._label_meter.reset()
         self._list_widgets.clear()
         self._copy_entries.clear()
+        self._flag_variables.clear()
         self._list_copy_icons.clear()
         self._chips.clear()
         self._muted_labels.clear()
@@ -149,11 +152,20 @@ class FormPanel(ttkb.Frame):
             text,
             icon_color=self._palette.primary_icon,
             active_icon_color=self._palette.success_text,
-            background=self._palette.input_background,
+            background=self._palette.background,
             font=FontConfig.FONT_MONO_SMALL if monospace else None
         )
         self._copy_entries.append(entry)
         return entry
+
+    def create_flag_check(self, parent: tk.Misc, value: bool) -> ttkb.Checkbutton:
+        """A check box that only shows `value`: it can't be toggled, pressed, focused or highlighted."""
+        variable = tk.BooleanVar(master=parent, value=value)
+        self._flag_variables.append(variable)
+        check = ttkb.Checkbutton(parent, variable=variable, takefocus=False, bootstyle="primary toggle")
+        # The class bindings are what make a Checkbutton react to the mouse and the keyboard.
+        check.bindtags(tuple(tag for tag in check.bindtags() if tag != check.winfo_class()))
+        return check
 
     def create_chip(self, parent: tk.Misc, text: str, kind: str, description: str | None = None) -> ttkb.Label:
         """`kind`: one of CHIP_KINDS. `description`: a tooltip that explains what the chip means."""
@@ -192,10 +204,9 @@ class FormPanel(ttkb.Frame):
             container,
             height=line_count,
             wrap=tk.NONE,
-            borderwidth=1,
-            relief="solid",
             font=FontConfig.FONT_MONO_SMALL,
-            auto_hide=False
+            auto_hide=False,
+            bordered=False,
         )
         text_widget.grid(row=0, column=0, sticky="ew")
         text_widget.insert(tk.END, text)
@@ -211,13 +222,15 @@ class FormPanel(ttkb.Frame):
                     lambda: copy_text,
                     icon_color=self._palette.primary_icon,
                     active_icon_color=self._palette.success_text,
-                    background=self._palette.input_background,
+                    background=self._palette.background,
                     top_offset=LayoutConfig.FIELD_PADX,
                     right_offset=LayoutConfig.FIELD_PADY
                 )
             )
 
     def _style_list_widget(self, text_widget: tk.Text) -> None:
+        # The page's background, like the fields: the text looks written on the page.
+        text_widget.configure(background=self._palette.background)
         self._line_marker.apply_palette(text_widget, self._palette)
 
     # --- Layout ------------------------------------------------------------------------------------

@@ -27,10 +27,21 @@ class AutoScrolledText(ttkb.ScrolledText):
     it), and Tk takes any widget that has them for one unless it is told otherwise.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    _BORDERLESS_STYLE_PREFIX: str = "Borderless"
+
+    def __init__(self, *args, bordered: bool = True, **kwargs) -> None:
+        """`bordered`: False draws no resting border; the focus ring still shows while the text has the focus."""
         # Ensure horizontal scrollbar is requested by default
         kwargs.setdefault("hbar", True)
         super().__init__(*args, **kwargs)
+        self._borderless_style: str | None = None
+        if not bordered:
+            # ttkbootstrap draws the border with a frame around the text and the bars; a style of its own for
+            # that frame leaves the others (the manifest viewer) alone. It inherits the focus ring map.
+            frame = self._border  # type: ignore[attr-defined]
+            self._borderless_style = f"{self._BORDERLESS_STYLE_PREFIX}.{frame.cget('style')}"
+            frame.configure(style=self._borderless_style)
+            self.configure_border_style()
 
         self.text.configure(padx=LayoutConfig.FIELD_PADX, pady=LayoutConfig.FIELD_PADY, takefocus=True)
         ttk.Frame.configure(self, takefocus=False)  # not self.configure: that one is delegated to the Text
@@ -44,6 +55,17 @@ class AutoScrolledText(ttkb.ScrolledText):
             self.text.configure(yscrollcommand=AutoHideScrollbar(self.vbar).scroll_command)
         for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
             self.text.bind(sequence, self._on_mousewheel)
+
+    def configure_border_style(self) -> None:
+        """
+        Fill the frame around the text with the page's background and make its resting border the same color. ttk
+        keeps style settings per theme, so this must be called on initialization and theme changes.
+        """
+        if self._borderless_style is None:
+            return
+        style = ttkb.Style()
+        page = style.colors.bg
+        style.configure(self._borderless_style, background=page, bordercolor=page, lightcolor=page, darkcolor=page)
 
     def _on_mousewheel(self, event: tk.Event) -> str | None:
         first, last = self.text.yview()

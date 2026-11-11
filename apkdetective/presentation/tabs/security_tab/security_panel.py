@@ -1,7 +1,6 @@
 """
 "Security" tab: the APK signature schemes (a table with the status of each),
-one card per signing certificate (identity, validity, key, fingerprints),
-trackers and third-party libraries.
+one card per signing certificate (identity, validity, key, fingerprints).
 
 Certificate values are selectable fields (with a copy icon) because a
 fingerprint is something to copy: VirusTotal, `apksigner` comparisons...
@@ -13,7 +12,6 @@ import ttkbootstrap as ttkb
 
 from apkdetective.domain.entities.analysis.sections.certificate import Certificate
 from apkdetective.domain.entities.analysis.sections.security_info import SecurityInfo
-from apkdetective.domain.entities.analysis.sections.third_party_info import ThirdPartyInfo
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkdetective.presentation.common.forms.form_panel import FormPanel
 from apkdetective.presentation.common.forms.form_section import FormSection
@@ -44,7 +42,7 @@ class SecurityPanel(FormPanel):
     ) -> None:
         super().__init__(parent, context_menu, palette, line_marker)
 
-    def render(self, security: SecurityInfo, third_party: ThirdPartyInfo) -> None:
+    def render(self, security: SecurityInfo) -> None:
         self.clear()
         self._render_schemes(security.signature_schemes)
 
@@ -54,10 +52,6 @@ class SecurityPanel(FormPanel):
             self._render_certificate(number, total, certificate, now)
         if not total:
             self.add_section("Signing certificate").add_entry("Certificate", "None found (unsigned APK)")
-
-        section = self.add_section("Third-party Code")
-        section.add_list("Libraries", third_party.libraries)
-        section.add_list("Trackers", third_party.trackers)
 
     # --- Signature schemes ----------------------------------------------------------------------
 

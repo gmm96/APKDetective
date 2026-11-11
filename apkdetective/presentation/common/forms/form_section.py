@@ -15,7 +15,6 @@ from typing import Any
 import ttkbootstrap as ttkb
 
 from apkdetective.presentation.common.forms.column_planner import ColumnPlanner
-from apkdetective.presentation.common.inputs.copyable_entry import CopyableEntry
 from apkdetective.presentation.common.forms.form_widget_factory import FormWidgetFactory
 from apkdetective.presentation.common.forms.label_width_meter import LabelWidthMeter
 from apkdetective.presentation.config.layout_config import LayoutConfig
@@ -62,7 +61,8 @@ class FormSection:
             side_margins=2 * self.OUTER_HORIZONTAL_PADDING_PX + self.GRID_BORDER_RESERVE_PX,
         )
         self._row: int = 0
-        self._entries: list[tuple[ttkb.Label, CopyableEntry, int]] = []  # (label, field, row it was added in)
+        # (label, field, row it was added in, how the field sticks to its cell)
+        self._entries: list[tuple[ttkb.Label, tk.Widget, int, str]] = []
         self._list_labels: list[ttkb.Label] = []
         self._has_non_entry_content: bool = False
         self._width: int = 0
@@ -87,7 +87,16 @@ class FormSection:
         self._label_meter.register(label_text)
         label = ttkb.Label(self.frame, text=label_text, anchor="w")
         field = self._widgets.create_copy_entry(self.frame, self._format_entry_value(value), monospace)
-        self._entries.append((label, field, self._row))
+        self._entries.append((label, field, self._row, "ew"))
+        self._row += 1
+        self._content_changed()
+
+    def add_flag(self, label_text: str, value: bool) -> None:
+        """Add a read-only check box, for a yes/no value."""
+        self._label_meter.register(label_text)
+        label = ttkb.Label(self.frame, text=label_text, anchor="w")
+        field = self._widgets.create_flag_check(self.frame, value)
+        self._entries.append((label, field, self._row, "w"))
         self._row += 1
         self._content_changed()
 
@@ -159,10 +168,10 @@ class FormSection:
         self.frame.columnconfigure(2, weight=0, minsize=self.LABEL_VALUE_GAP_PX)
         self.frame.columnconfigure(3, weight=1, minsize=0)
         self.frame.columnconfigure(4, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
-        for label, field, row in self._entries:
+        for label, field, row, sticky in self._entries:
             label.configure(wraplength=label_width)
             label.grid(row=row, column=1, sticky="w", pady=self.FIELD_VERTICAL_PADDING_PX)
-            field.grid(row=row, column=3, sticky="ew", pady=self.FIELD_VERTICAL_PADDING_PX)
+            field.grid(row=row, column=3, sticky=sticky, pady=self.FIELD_VERTICAL_PADDING_PX)
         for list_label in self._list_labels:
             list_label.configure(wraplength=label_width)
 
@@ -183,7 +192,7 @@ class FormSection:
                 self.frame.columnconfigure(value_column + 1, weight=0, minsize=self.COLUMN_GAP_PX)
         rows = self._planner.rows_for(columns, len(self._entries))
         last_row = rows - 1
-        for index, (label, field, _row) in enumerate(self._entries):
+        for index, (label, field, _row, sticky) in enumerate(self._entries):
             row, column = self._planner.cell_of(index, rows)
             label_column = 1 + 4 * column
             top_padding = 0 if row == 0 else self.FIELD_VERTICAL_PADDING_PX
@@ -191,7 +200,7 @@ class FormSection:
             vertical_padding = (top_padding, bottom_padding)
             label.configure(wraplength=label_width)
             label.grid(row=row, column=label_column, sticky="w", pady=vertical_padding)
-            field.grid(row=row, column=label_column + 2, sticky="ew", pady=vertical_padding)
+            field.grid(row=row, column=label_column + 2, sticky=sticky, pady=vertical_padding)
 
     @staticmethod
     def _display_text(items: Sequence[str], separator: str) -> tuple[str, int]:

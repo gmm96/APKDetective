@@ -1,6 +1,6 @@
 """
 Turns the DEX metrics into the (label, value) pairs the app shows and exports, so the
-Info tab and the text report always say the same thing.
+Code tab and the text report always say the same thing.
 """
 
 from apkdetective.domain.entities.analysis.sections.dex_metrics import DexMetrics

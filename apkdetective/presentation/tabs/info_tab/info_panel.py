@@ -1,15 +1,11 @@
 """
-"Info" tab: app identity, versions, SDK range, configuration and the
-content embedded in the code.
+"Info" tab: app identity, versions, SDK range, file data, flags and configuration.
 """
 
 import ttkbootstrap as ttkb
 
-from apkdetective.application.analysis.dex_metrics_formatter import DexMetricsFormatter
 from apkdetective.domain.entities.analysis.sections.application_info import ApplicationInfo
 from apkdetective.domain.entities.analysis.sections.configuration_info import ConfigurationInfo
-from apkdetective.domain.entities.analysis.sections.dex_metrics import DexMetrics
-from apkdetective.domain.entities.analysis.sections.embedded_content import EmbeddedContent
 from apkdetective.ports.formatting.date_formatter_port import DateFormatterPort
 from apkdetective.ports.formatting.size_formatter_port import SizeFormatterPort
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
@@ -33,14 +29,11 @@ class InfoPanel(FormPanel):
         super().__init__(parent, context_menu, palette, line_marker)
         self._size_formatter: SizeFormatterPort = size_formatter or HumanReadableSizeFormatter()
         self._date_formatter: DateFormatterPort = date_formatter or EnglishLongDateFormatter()
-        self._dex_metrics_formatter: DexMetricsFormatter = DexMetricsFormatter(self._size_formatter)
 
     def render(
         self,
         application: ApplicationInfo,
         configuration: ConfigurationInfo,
-        embedded_content: EmbeddedContent,
-        dex_metrics: DexMetrics,
     ) -> None:
         self.clear()
         app_section = self.add_section("Application", responsive=True, max_columns=2)
@@ -60,27 +53,20 @@ class InfoPanel(FormPanel):
         file_section.add_entry("Last Modified", self._format_date(application))
 
         flags_section = self.add_section("Flags", responsive=True, max_columns=2)
-        flags_section.add_entry("Debuggable", application.debuggable)
-        flags_section.add_entry("Allow Backup", application.allow_backup)
-        flags_section.add_entry("Test Only", application.test_only)
-        flags_section.add_entry("Hardware Accelerated", application.hardware_accelerated)
-        flags_section.add_entry("Extract Native Libs", application.extract_native_libs)
-        flags_section.add_entry("Cleartext Traffic Permitted", application.cleartext_traffic_permitted)
-        flags_section.add_entry("Trusts User Certificates", application.trust_user_certificates)
-        flags_section.add_entry("Certificate Pinning Enforced", application.certificate_pinning_enforced)
+        flags_section.add_flag("Debuggable", application.debuggable or False)
+        flags_section.add_flag("Allow Backup", application.allow_backup or False)
+        flags_section.add_flag("Test Only", application.test_only or False)
+        flags_section.add_flag("Hardware Accelerated", application.hardware_accelerated or False)
+        flags_section.add_flag("Extract Native Libs", application.extract_native_libs or False)
+        flags_section.add_flag("Cleartext Traffic Permitted", application.cleartext_traffic_permitted or False)
+        flags_section.add_flag("Trusts User Certificates", application.trust_user_certificates or False)
+        flags_section.add_flag("Certificate Pinning Enforced", application.certificate_pinning_enforced or False)
 
         section = self.add_section("Configuration")
         section.add_list("Architectures", configuration.architectures or ("None / Unknown (Java only)",))
         section.add_list("Hardware Requirements", [feature.as_text() for feature in configuration.hardware_requirements])
         section.add_list("Supported Locales", configuration.locales)
         section.add_list("Screen Densities", configuration.screen_densities)
-
-        section = self.add_section("DEX Metrics", responsive=True, max_columns=2)
-        for label, value in self._dex_metrics_formatter.fields(dex_metrics):
-            section.add_entry(label, value)
-
-        section = self.add_section("Embedded Content")
-        section.add_list("Discovered URLs", embedded_content.urls)
 
     def _format_size(self, size: int | None) -> str:
         return "Unknown" if size is None else self._size_formatter.format(size, True)

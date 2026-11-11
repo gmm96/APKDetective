@@ -7,11 +7,16 @@ is selected: the same that the icon copies.
 
 import tkinter as tk
 
+import ttkbootstrap as ttkb
+
 from apkdetective.presentation.common.overlays.copy_icon_overlay import CopyIconOverlay
 from apkdetective.presentation.common.inputs.icon_entry import IconEntry
 
 
 class CopyableEntry(IconEntry):
+    # Its own style, so that dropping the border here leaves the editable fields (IconEntry.TEntry) as they were.
+    ENTRY_STYLE: str = "Copyable.IconEntry.TEntry"
+
     def __init__(
         self,
         parent: tk.Misc,
@@ -43,6 +48,27 @@ class CopyableEntry(IconEntry):
             return None  # Tk's own binding copies the selection
         self.overlay.copy()
         return "break"
+
+    @classmethod
+    def configure_entry_style(cls) -> None:
+        """
+        No resting border and the page's own background, so the text looks written on the page. The focus ring (a
+        ttkbootstrap map) stays. ttkbootstrap draws an inner rim with `lightcolor` and `darkcolor`: it needs the
+        same color too, or it shows as a line.
+        """
+        super().configure_entry_style()
+        style = ttkb.Style()
+        page = style.colors.bg
+        style.configure(cls.ENTRY_STYLE, bordercolor=page, lightcolor=page, darkcolor=page, fieldbackground=page)
+        # ttkbootstrap's own maps paint a read-only field with the input color, and the first entry that matches
+        # wins, so the focus ring is repeated ahead of the read-only one.
+        ring = style.colors.primary
+        style.map(
+            cls.ENTRY_STYLE,
+            fieldbackground=[("readonly", page)],
+            lightcolor=[("focus !disabled", ring), ("readonly", page)],
+            darkcolor=[("focus !disabled", ring), ("readonly", page)],
+        )
 
     @property
     def entry(self) -> "CopyableEntry":

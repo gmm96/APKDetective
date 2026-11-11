@@ -121,7 +121,7 @@ python main.py path/to/app.apk
 ### Info
 
 <details>
-<summary>Identity, SDK range, file data, security flags, device configuration and a code-size report.</summary>
+<summary>Identity, SDK range, file data, security flags and device configuration.</summary>
 <br>
 
 Organised in sections; values are read-only fields with a copy button.
@@ -131,13 +131,9 @@ Organised in sections; values are read-only fields with a copy button.
 - **Flags**: `Debuggable`, `Allow Backup`, `Test Only`, `Hardware Accelerated`, `Extract Native Libs`,
   `Cleartext Traffic Permitted`, `Trusts User Certificates`, `Certificate Pinning Enforced`.
 - **Configuration**: CPU architectures, hardware requirements, supported locales and screen densities.
-- **DEX Metrics**: a size report of the app's compiled code: DEX files and size, packages, classes, methods,
-  method references, native methods, fields, strings, instructions, bytecode size, cyclomatic complexity
-  (total and average), the most complex method and the longest method.
-- **Embedded content**: every URL discovered inside the app.
 
 The layout is **responsive**: sections reflow into several columns when the window is wide. Long lists (such as
-locales or URLs) show a limited number of lines and scroll inside their box.
+locales) show a limited number of lines and scroll inside their box.
 
 </details>
 
@@ -145,7 +141,7 @@ locales or URLs) show a limited number of lines and scroll inside their box.
 ### Security
 
 <details>
-<summary>Signature schemes, signing certificates with fingerprints, trackers and third-party libraries.</summary>
+<summary>Signature schemes and signing certificates with fingerprints.</summary>
 <br>
 
 - **Signature schemes**: a table showing which of **v1 (JAR), v2, v3, v3.1 and v4** the APK uses, the first
@@ -154,10 +150,6 @@ locales or URLs) show a limited number of lines and scroll inside their box.
 - **Certificates**: one card per signing certificate: subject, issuer, serial number, validity dates
   (with an *expired* indicator), public key, signature algorithm and **SHA-256 / SHA-1 / MD5 fingerprints**,
   all copyable (handy for VirusTotal or comparing against `apksigner`).
-- **Trackers**: detects well-known analytics, crash-reporting, advertising and push-notification SDKs by their
-  package names (Firebase/Google Analytics, AdMob, Facebook, AppsFlyer, Adjust, Mixpanel, Sentry, OneSignal and
-  many more), and tells you in which package each one was found.
-- **Third-party libraries**: the external libraries the app declares it uses in its manifest.
 
 </details>
 
@@ -223,6 +215,27 @@ another app. Columns: **Action, Component, Type, Categories, Data, Auto-verify**
 Android stores `AndroidManifest.xml` in a binary format nobody can read. APKDetective decodes it back to normal
 XML and shows it read-only with **syntax highlighting** (tags, attributes, values and comments in different
 colours that adapt to the active theme). Right-click offers **Copy Text**.
+
+</details>
+
+
+### Code
+
+<details>
+<summary>Third-party libraries, trackers, a size report of the compiled code and the URLs embedded in it.</summary>
+<br>
+
+Organised in sections; long lists show a limited number of lines and scroll inside their box.
+
+- **Third-party Code**:
+  - **Libraries**: the external libraries the app declares it uses in its manifest.
+  - **Trackers**: detects well-known analytics, crash-reporting, advertising and push-notification SDKs by their
+    package names (Firebase/Google Analytics, AdMob, Facebook, AppsFlyer, Adjust, Mixpanel, Sentry, OneSignal and
+    many more), and tells you in which package each one was found.
+- **DEX Metrics**: a size report of the app's compiled code: DEX files and size, packages, classes, methods,
+  method references, native methods, fields, strings, instructions, bytecode size, cyclomatic complexity
+  (total and average), the most complex method and the longest method.
+- **Embedded content**: every URL discovered inside the app.
 
 </details>
 
@@ -407,7 +420,7 @@ sequenceDiagram
     AR-->>UC: archive entries
     Note over UC: builds the file tree
     UC-->>UI: AnalysisResult
-    UI-->>U: Info, Security, Permissions, Components, Intents, Manifest and Files tabs
+    UI-->>U: Info, Security, Permissions, Components, Intents, Manifest, Code and Files tabs
 ```
 
 `AnalyzeApk` only knows `IN` and `AR` through their ports (`ApkInspectorPort` and `ArchiveReaderPort`);
