@@ -6,14 +6,18 @@ import ttkbootstrap as ttkb
 class WrapFrame(ttkb.Frame):
     """
     A frame that arranges its children like text, wrapping them to the next
-    line when they reach the right edge.
+    line when they reach the right edge. Each row is centered, or starts at
+    the left edge if `centered` is False.
 
     The children are placed by this frame, which lays them out again whenever
     its own width or the size of any child changes (e.g. the text of a button
     grows), so they never end up on top of each other.
     """
-    def __init__(self, parent: tk.Misc, padding_x: int = 5, padding_y: int = 5, **kwargs) -> None:
+    def __init__(
+        self, parent: tk.Misc, padding_x: int = 5, padding_y: int = 5, centered: bool = True, **kwargs
+    ) -> None:
         super().__init__(parent, **kwargs)
+        self._centered = centered
         self._padding_x = padding_x
         self._padding_y = padding_y
         self._pending_layout: str | None = None
@@ -70,14 +74,13 @@ class WrapFrame(ttkb.Frame):
         if current_row:
             rows.append(current_row)
 
-        # 2. Place children row by row, calculating the starting X to center them
+        # 2. Place children row by row, calculating the starting X (to center them, if asked)
         y = 0
         for row in rows:
             # Calculate the exact width of the items in the current row
             row_width = sum(child.winfo_reqwidth() for child in row) + self._padding_x * (len(row) - 1)
 
-            # Center the row by dividing the remaining space by 2
-            x = max(0, (available_width - row_width) // 2)
+            x = max(0, (available_width - row_width) // 2) if self._centered else 0
             row_max_height = 0
 
             for child in row:

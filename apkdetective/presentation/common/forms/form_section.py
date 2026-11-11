@@ -17,6 +17,7 @@ import ttkbootstrap as ttkb
 from apkdetective.presentation.common.forms.column_planner import ColumnPlanner
 from apkdetective.presentation.common.forms.form_widget_factory import FormWidgetFactory
 from apkdetective.presentation.common.forms.label_width_meter import LabelWidthMeter
+from apkdetective.presentation.common.layout.wrap_frame import WrapFrame
 from apkdetective.presentation.config.layout_config import LayoutConfig
 
 
@@ -34,6 +35,7 @@ class FormSection:
     GROUP_TOP_PADDING_PX = 10
     LIST_HORIZONTAL_PADDING_PX = 10
     LIST_VERTICAL_PADDING_PX = 5
+    TOGGLE_GAP_PX = 6
 
     _MIXED_LAYOUT: int = 0  # the layout of sections that contain groups or lists
 
@@ -63,7 +65,9 @@ class FormSection:
         self._row: int = 0
         # (label, field, row it was added in, how the field sticks to its cell)
         self._entries: list[tuple[ttkb.Label, tk.Widget, int, str]] = []
-        self._list_labels: list[ttkb.Label] = []
+        # (caption, row) of each group and (label, frame, row) of each block row (a list, some toggles)
+        self._groups: list[tuple[ttkb.Label, int]] = []
+        self._blocks: list[tuple[ttkb.Label, ttkb.Frame, int]] = []
         self._has_non_entry_content: bool = False
         self._width: int = 0
         self._dirty: bool = True  # rows were added since the last layout
@@ -75,10 +79,7 @@ class FormSection:
     def add_group(self, title: str) -> None:
         """Add a small caption that starts a group of rows."""
         self._has_non_entry_content = True
-        # Spans the label (1), gap (2) and value (3) columns
-        self._widgets.create_muted_label(self.frame, title.upper()).grid(
-            row=self._row, column=1, columnspan=3, sticky="w", pady=(self.GROUP_TOP_PADDING_PX, 0)
-        )
+        self._groups.append((self._widgets.create_muted_label(self.frame, title.upper()), self._row))
         self._row += 1
         self._content_changed()
 
@@ -101,23 +102,41 @@ class FormSection:
         self._content_changed()
 
     def add_list(self, label_text: str, items: Sequence[str], separator: str = "\n") -> None:
-        self._has_non_entry_content = True
-        text_label = f"{label_text} ({len(items)})"
-        self._label_meter.register(text_label)
-        # The label goes in column 1 and the box in column 3, aligned with the entries
-        label = ttkb.Label(self.frame, text=text_label, anchor="w")
-        label.grid(row=self._row, column=1, sticky="nw", pady=self.LIST_VERTICAL_PADDING_PX)
-        self._list_labels.append(label)
+        container = self._add_block_row(f"{label_text} ({len(items)})")
         text, line_count = self._display_text(items, separator)
-        container = ttkb.Frame(self.frame)
-        container.grid(row=self._row, column=3, sticky="ew", pady=self.LIST_VERTICAL_PADDING_PX)
-        container.columnconfigure(0, weight=1)
-        container.rowconfigure(0, weight=1)
         self._widgets.build_list_widget(
             container, text, line_count, copy_text=separator.join(items) if items else None
         )
+
+    def add_toggles(self, label_text: str, texts: Sequence[str]) -> None:
+        """
+        Add a row with one read-only toggle (on) per text, each as wide as its text, wrapped to the next
+        line when the section is too narrow. The label shows how many there are.
+        """
+        container = self._add_block_row(f"{label_text} ({len(texts)})")
+        if not texts:
+            self._widgets.create_muted_label(container, "None found").grid(row=0, column=0, sticky="w")
+            return
+        toggles = WrapFrame(container, padding_x=self.TOGGLE_GAP_PX, padding_y=self.TOGGLE_GAP_PX, centered=False)
+        toggles.grid(row=0, column=0, sticky="ew")
+        for text in texts:
+            self._widgets.create_read_only_toggle(toggles, text, True)
+
+    def _add_block_row(self, label_text: str) -> ttkb.Frame:
+        """
+        Add a row with a label and, beside it, an empty frame for a widget taller than a field (a list, a block
+        of toggles). The label goes in column 1 and the frame in column 3, aligned with the entries.
+        """
+        self._has_non_entry_content = True
+        self._label_meter.register(label_text)
+        label = ttkb.Label(self.frame, text=label_text, anchor="w")
+        container = ttkb.Frame(self.frame)
+        container.columnconfigure(0, weight=1)
+        container.rowconfigure(0, weight=1)
+        self._blocks.append((label, container, self._row))
         self._row += 1
         self._content_changed()
+        return container
 
     def _content_changed(self) -> None:
         self._dirty = True
@@ -168,12 +187,19 @@ class FormSection:
         self.frame.columnconfigure(2, weight=0, minsize=self.LABEL_VALUE_GAP_PX)
         self.frame.columnconfigure(3, weight=1, minsize=0)
         self.frame.columnconfigure(4, weight=0, minsize=self.OUTER_HORIZONTAL_PADDING_PX)
+        last_row = self._row - 1
+        for caption, row in self._groups:
+            # Spans the label (1), gap (2) and value (3) columns
+            top_padding = 0 if row == 0 else self.GROUP_TOP_PADDING_PX
+            caption.grid(row=row, column=1, columnspan=3, sticky="w", pady=(top_padding, 0))
         for label, field, row, sticky in self._entries:
             label.configure(wraplength=label_width)
-            label.grid(row=row, column=1, sticky="w", pady=self.FIELD_VERTICAL_PADDING_PX)
-            field.grid(row=row, column=3, sticky=sticky, pady=self.FIELD_VERTICAL_PADDING_PX)
-        for list_label in self._list_labels:
-            list_label.configure(wraplength=label_width)
+            label.grid(row=row, column=1, sticky="w", pady=self._vertical_padding(row, last_row))
+            field.grid(row=row, column=3, sticky=sticky, pady=self._vertical_padding(row, last_row))
+        for label, container, row in self._blocks:
+            label.configure(wraplength=label_width)
+            label.grid(row=row, column=1, sticky="nw", pady=self._vertical_padding(row, last_row))
+            container.grid(row=row, column=3, sticky="ew", pady=self._vertical_padding(row, last_row))
 
     def _apply_columns_layout(self, columns: int, label_width: int) -> None:
         """
@@ -195,12 +221,19 @@ class FormSection:
         for index, (label, field, _row, sticky) in enumerate(self._entries):
             row, column = self._planner.cell_of(index, rows)
             label_column = 1 + 4 * column
-            top_padding = 0 if row == 0 else self.FIELD_VERTICAL_PADDING_PX
-            bottom_padding = self.FIELD_VERTICAL_PADDING_PX * (2 if row == last_row else 1)
-            vertical_padding = (top_padding, bottom_padding)
+            vertical_padding = self._vertical_padding(row, last_row)
             label.configure(wraplength=label_width)
             label.grid(row=row, column=label_column, sticky="w", pady=vertical_padding)
             field.grid(row=row, column=label_column + 2, sticky=sticky, pady=vertical_padding)
+
+    def _vertical_padding(self, row: int, last_row: int) -> tuple[int, int]:
+        """
+        The padding above and below a row, the same in every layout: the title of the frame already leaves a gap
+        above the first row, and the last one gets the doubled padding below that closes the section.
+        """
+        top_padding = 0 if row == 0 else self.FIELD_VERTICAL_PADDING_PX
+        bottom_padding = self.FIELD_VERTICAL_PADDING_PX * (2 if row == last_row else 1)
+        return top_padding, bottom_padding
 
     @staticmethod
     def _display_text(items: Sequence[str], separator: str) -> tuple[str, int]:

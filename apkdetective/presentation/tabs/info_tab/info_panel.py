@@ -2,8 +2,11 @@
 "Info" tab: app identity, versions, SDK range, file data, flags and configuration.
 """
 
+from collections.abc import Sequence
+
 import ttkbootstrap as ttkb
 
+from apkdetective.domain.entities.analysis.sections.android_abi_enum import AndroidAbiEnum
 from apkdetective.domain.entities.analysis.sections.application_info import ApplicationInfo
 from apkdetective.domain.entities.analysis.sections.configuration_info import ConfigurationInfo
 from apkdetective.ports.formatting.date_formatter_port import DateFormatterPort
@@ -73,10 +76,21 @@ class InfoPanel(FormPanel):
         flags_section.add_flag("Certificate Pinning Enforced", application.certificate_pinning_enforced or False)
 
         section = self.add_section("Configuration")
-        section.add_list("Architectures", configuration.architectures or ("None / Unknown (Java only)",))
+        section.add_toggles("Architectures", self._architecture_names(configuration.architectures))
         section.add_list("Hardware Requirements", [feature.as_text() for feature in configuration.hardware_requirements])
         section.add_list("Supported Locales", configuration.locales)
-        section.add_list("Screen Densities", configuration.screen_densities)
+        section.add_toggles("Screen Densities", configuration.screen_densities)
+
+    @staticmethod
+    def _architecture_names(supported: Sequence[str]) -> list[str]:
+        """
+        The architectures the APK supports, the known ones in the order of AndroidAbiEnum and then any other.
+        An APK without native code runs on every architecture.
+        """
+        known = [abi.value for abi in AndroidAbiEnum]
+        if not supported:
+            return known
+        return sorted(supported, key=lambda name: known.index(name) if name in known else len(known))
 
     def _format_size(self, size: int | None) -> str:
         return "Unknown" if size is None else self._size_formatter.format(size, True)
