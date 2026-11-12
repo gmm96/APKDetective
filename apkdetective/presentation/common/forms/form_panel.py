@@ -35,13 +35,13 @@ class FormPanel(ttkb.Frame):
     # Chip kinds: "success", "danger", "neutral" and "muted"; all of them are filled.
     CHIP_KINDS: tuple[str, ...] = ("success", "danger", "neutral", "muted")
 
-    SECTION_PAD_X = 15
-    SECTION_PAD_Y = 10
-    BADGE_OFFSET_X = -14
-    BADGE_OFFSET_Y = -4
-    LABEL_EXTRA_WIDTH_PX = 30
-    CHIP_PAD_X = 8
-    CHIP_PAD_Y = 1
+    SECTION_PADDING_X: int = 15
+    SECTION_PADDING_Y: int = 10
+    BADGE_OFFSET_X: int = -14
+    BADGE_OFFSET_Y: int = -4
+    LABEL_EXTRA_WIDTH_PX: int = 30
+    CHIP_PADDING_X: int = 8
+    CHIP_PADDING_Y: int = 1
 
     def __init__(
         self,
@@ -124,8 +124,8 @@ class FormPanel(ttkb.Frame):
         `responsive`: lay the entries out in up to `max_columns` columns, as many as fit while
         each value field keeps `min_field_width` pixels (sections with groups or lists use one).
         """
-        frame = ttkb.LabelFrame(self.scroll_frame.inner_frame, text=title)
-        frame.grid(row=self._next_row, column=0, sticky="ew", padx=self.SECTION_PAD_X, pady=self.SECTION_PAD_Y)
+        frame = ttkb.LabelFrame(self.scroll_frame.inner_frame, text=title, padding=(self.SECTION_PADDING_X, self.SECTION_PADDING_Y))
+        frame.grid(row=self._next_row, column=0, sticky="ew", padx=self.SECTION_PADDING_X, pady=self.SECTION_PADDING_Y)
         self._next_row += 1
         section = FormSection(
             frame,
@@ -171,7 +171,7 @@ class FormPanel(ttkb.Frame):
         """`kind`: one of CHIP_KINDS. `description`: a tooltip that explains what the chip means."""
         if kind not in self.CHIP_KINDS:
             raise ValueError(f"Unknown chip kind {kind!r}; expected one of {self.CHIP_KINDS}")
-        chip = ttkb.Label(parent, text=text, padding=(self.CHIP_PAD_X, self.CHIP_PAD_Y), borderwidth=0)
+        chip = ttkb.Label(parent, text=text, padding=(self.CHIP_PADDING_X, self.CHIP_PADDING_Y), borderwidth=0)
         self._chips.append((chip, kind))
         self._style_chip(chip, kind)
         if description:

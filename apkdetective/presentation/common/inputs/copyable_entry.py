@@ -58,11 +58,11 @@ class CopyableEntry(IconEntry):
         """
         super().configure_entry_style()
         style = ttkb.Style()
-        page = style.colors.bg
+        page = style.colors.bg  # type: ignore
         style.configure(cls.ENTRY_STYLE, bordercolor=page, lightcolor=page, darkcolor=page, fieldbackground=page)
         # ttkbootstrap's own maps paint a read-only field with the input color, and the first entry that matches
         # wins, so the focus ring is repeated ahead of the read-only one.
-        ring = style.colors.primary
+        ring = style.colors.primary # type: ignore
         style.map(
             cls.ENTRY_STYLE,
             fieldbackground=[("readonly", page)],

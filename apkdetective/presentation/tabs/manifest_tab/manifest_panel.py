@@ -30,7 +30,7 @@ class ManifestPanel(ttkb.Frame):
         self.columnconfigure(0, weight=1)
 
         # ttkbootstrap styles the inner Text (colors, selection) and follows the theme by itself.
-        scrolled_text = AutoScrolledText(self, wrap=tk.NONE, font=FontConfig.FONT_MONO)
+        scrolled_text = AutoScrolledText(self, wrap=tk.NONE, font=FontConfig.FONT_MONO_SMALL)
         scrolled_text.grid(row=0, column=0, sticky="nsew")
         self.text: tk.Text = scrolled_text.text
 

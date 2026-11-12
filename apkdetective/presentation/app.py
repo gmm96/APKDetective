@@ -11,6 +11,7 @@ import threading
 import tkinter as tk
 from functools import partial
 from tkinter import filedialog, messagebox
+import tkinter.font as tk_font
 
 from PIL import ImageTk
 import ttkbootstrap as ttkb
@@ -33,6 +34,7 @@ from apkdetective.ports.formatting.size_formatter_port import SizeFormatterPort
 from apkdetective.ports.formatting.date_formatter_port import DateFormatterPort
 from apkdetective.presentation.appearance.theme_manager import ThemeManager
 from apkdetective.presentation.common.dialogs.extract_to_dialog import ExtractToDialog
+from apkdetective.presentation.config.font_config import FontConfig
 from apkdetective.presentation.status_bar.status_bar import StatusBar
 from apkdetective.presentation.viewmodels.status_bar.status_level_enum import StatusLevelEnum
 from apkdetective.presentation.common.menus.text_context_menu import TextContextMenu
@@ -123,6 +125,7 @@ class ApkAnalyzerApp:
         self.root.protocol("WM_DELETE_WINDOW", self.exit_app)
         self.app_icon: ImageTk.PhotoImage | None = None
         self._set_icon()
+        self._configure_font()
 
         # Activates the ttk theme (AUTO = follow the OS) before any widget exists.
         self._theme: ThemeManager = ThemeManager(root, resolve_color_scheme)
@@ -148,6 +151,14 @@ class ApkAnalyzerApp:
         self._build_menu()  # first: the menu bar must be packed at the very top of the window
         self._build_layout()
         self._subscribe_to_theme_changes()
+
+    def _configure_font(self) -> None:
+        default_font: tk_font.Font = tk_font.nametofont("TkDefaultFont")
+        text_font: tk_font.Font = tk_font.nametofont("TkTextFont")
+        default_font.configure(size=FontConfig.FONT_SIZE)
+        text_font.configure(size=FontConfig.FONT_SIZE)
+        self.root.style.configure(".", font=(default_font.cget("family"), FontConfig.FONT_SIZE))
+        self.root.style.configure("TEntry", font=(text_font.cget("family"), FontConfig.FONT_SIZE))
 
     def _set_icon(self) -> None:
         # Tk's own icon, the same PNG on every platform: it is what Linux and macOS show everywhere, and what

@@ -24,18 +24,18 @@ from apkdetective.presentation.config.layout_config import LayoutConfig
 class FormSection:
     """One LabelFrame of a FormPanel; each call adds a row to it."""
 
-    LABEL_VALUE_GAP_PX = 8
-    COLUMN_GAP_PX = 128
-    OUTER_HORIZONTAL_PADDING_PX = 10
-    GRID_BORDER_RESERVE_PX = 6
-    DEFAULT_MIN_FIELD_WIDTH_PX = 200
-    FIELD_VERTICAL_PADDING_PX = 5
-    DEFAULT_LAYOUT_HORIZONTAL_PADDING_PX = 10
-    GROUP_HORIZONTAL_PADDING_PX = 10
-    GROUP_TOP_PADDING_PX = 10
-    LIST_HORIZONTAL_PADDING_PX = 10
-    LIST_VERTICAL_PADDING_PX = 5
-    TOGGLE_GAP_PX = 6
+    LABEL_VALUE_GAP_PX: int = 8
+    COLUMN_GAP_PX: int = 128
+    OUTER_HORIZONTAL_PADDING_PX: int = 10
+    GRID_BORDER_RESERVE_PX: int = 6
+    DEFAULT_MIN_FIELD_WIDTH_PX: int = 200
+    FIELD_VERTICAL_PADDING_PX: int = 5
+    DEFAULT_LAYOUT_HORIZONTAL_PADDING_PX: int = 10
+    GROUP_HORIZONTAL_PADDING_PX: int = 10
+    GROUP_TOP_PADDING_PX: int = 10
+    LIST_HORIZONTAL_PADDING_PX: int = 10
+    LIST_VERTICAL_PADDING_PX: int = 5
+    TOGGLE_GAP_PX: int = 6
 
     _MIXED_LAYOUT: int = 0  # the layout of sections that contain groups or lists
 
