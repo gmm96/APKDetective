@@ -35,8 +35,15 @@ class ConfigurationExtractor:
     }
 
     _DENSITY_NAMES: dict[int, str] = {
-        120: "ldpi", 160: "mdpi", 213: "tvdpi", 240: "hdpi", 320: "xhdpi",
-        480: "xxhdpi", 640: "xxxhdpi", 65534: "anydpi", 65535: "nodpi",
+        120: "ldpi",
+        160: "mdpi",
+        213: "tvdpi",
+        240: "hdpi",
+        320: "xhdpi",
+        480: "xxhdpi",
+        640: "xxxhdpi",
+        65534: "anydpi",
+        65535: "nodpi",
     }
 
     _DENSITY_MEANINGS: dict[str, str] = {

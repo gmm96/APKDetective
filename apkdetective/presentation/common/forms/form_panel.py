@@ -11,12 +11,12 @@ change only schedules ONE layout pass for when the UI is idle.
 import tkinter as tk
 
 import ttkbootstrap as ttkb
-from ttkbootstrap import constants as ttkb_constants
 
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkdetective.presentation.common.inputs.auto_scrolled_text import AutoScrolledText
 from apkdetective.presentation.common.overlays.copy_icon_overlay import CopyIconOverlay
 from apkdetective.presentation.common.inputs.copyable_entry import CopyableEntry
+from apkdetective.presentation.common.inputs.read_only_toggle import ReadOnlyToggle
 from apkdetective.presentation.common.forms.form_section import FormSection
 from apkdetective.presentation.common.forms.label_width_meter import LabelWidthMeter
 from apkdetective.presentation.common.scrolling.scrollable_frame import ScrollableFrame
@@ -52,13 +52,13 @@ class FormPanel(ttkb.Frame):
     ) -> None:
         super().__init__(parent)
         self._palette: ThemePalette = palette
+        ReadOnlyToggle.configure_styles(palette)
         self._context_menu: TextContextMenu = context_menu
         self._line_marker: TextLineMarker = line_marker or TextLineMarker()
         self._label_meter: LabelWidthMeter = LabelWidthMeter(self, self.LABEL_EXTRA_WIDTH_PX)
         self._layout_job: str | None = None
         self._list_widgets: list[AutoScrolledText] = []
         self._copy_entries: list[CopyableEntry] = []
-        self._toggle_variables: list[tk.BooleanVar] = []  # Tk forgets a variable nobody refers to
         self._list_copy_icons: list[CopyIconOverlay] = []
         self._chips: list[tuple[ttkb.Label, str]] = []
         self._muted_labels: list[ttkb.Label] = []
@@ -72,6 +72,7 @@ class FormPanel(ttkb.Frame):
 
     def apply_palette(self, palette: ThemePalette) -> None:
         self._palette = palette
+        ReadOnlyToggle.configure_styles(palette)
         self._banner.apply_palette(palette)
         icon_colors: dict[str, str] = {
             "icon_color": palette.primary_icon,
@@ -101,7 +102,6 @@ class FormPanel(ttkb.Frame):
         self._label_meter.reset()
         self._list_widgets.clear()
         self._copy_entries.clear()
-        self._toggle_variables.clear()
         self._list_copy_icons.clear()
         self._chips.clear()
         self._muted_labels.clear()
@@ -163,22 +163,9 @@ class FormPanel(ttkb.Frame):
         """A toggle that shows a yes/no `value` as "true" or "false"; see `create_read_only_toggle`."""
         return self.create_read_only_toggle(parent, "true" if value else "false", value)
 
-    def create_read_only_toggle(self, parent: tk.Misc, text: str, value: bool) -> ttkb.Checkbutton:
-        """
-        A toggle button with `text` that only shows `value` (green when on, neutral when off): it can't be
-        toggled, pressed, focused or highlighted.
-        """
-        variable = tk.BooleanVar(master=parent, value=value)
-        self._toggle_variables.append(variable)
-        toggle = ttkb.Checkbutton(
-            parent,
-            text=text,
-            takefocus=False,
-            bootstyle=f"{ttkb_constants.SUCCESS if value else ''} {ttkb_constants.OUTLINE} {ttkb_constants.TOOLBUTTON}"
-        )
-        # The class bindings are what make a Checkbutton react to the mouse and the keyboard.
-        toggle.bindtags(tuple(tag for tag in toggle.bindtags() if tag != toggle.winfo_class()))
-        return toggle
+    def create_read_only_toggle(self, parent: tk.Misc, text: str, value: bool) -> ReadOnlyToggle:
+        """A toggle button with `text` that only shows `value`; see ReadOnlyToggle."""
+        return ReadOnlyToggle(parent, text, value)
 
     def create_chip(self, parent: tk.Misc, text: str, kind: str, description: str | None = None) -> ttkb.Label:
         """`kind`: one of CHIP_KINDS. `description`: a tooltip that explains what the chip means."""
