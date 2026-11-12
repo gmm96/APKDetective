@@ -16,11 +16,13 @@ class ReadOnlyToggle(ttkb.Checkbutton):
     _ON_STYLE: str = "ReadOnlyOn.Toolbutton"
     _OFF_STYLE: str = "ReadOnlyOff.Toolbutton"
 
-    def __init__(self, parent: tk.Misc, text: str, value: bool) -> None:
-        """`value`: on (accent border) or off (quiet); see `configure_styles`."""
+    def __init__(self, parent: tk.Misc, text: str, value: bool, description: str | None = None) -> None:
+        """`value`: on (accent border) or off (quiet); see `configure_styles`. `description`: an optional tooltip."""
         super().__init__(parent, text=text, takefocus=False, style=self._ON_STYLE if value else self._OFF_STYLE)
         # The class bindings are what make a Checkbutton react to the mouse and the keyboard.
         self.bindtags(tuple(tag for tag in self.bindtags() if tag != self.winfo_class()))
+        if description:
+            ttkb.ToolTip(self, text=description)  # it binds on the widget itself, which the line above leaves alone
 
     @classmethod
     def configure_styles(cls, palette: ThemePalette) -> None:

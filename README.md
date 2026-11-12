@@ -130,7 +130,9 @@ Organised in sections; values are read-only fields with a copy button.
 - **File**: file name, path, size (human-readable) and last-modified date.
 - **Flags**: `Debuggable`, `Allow Backup`, `Test Only`, `Hardware Accelerated`, `Extract Native Libs`,
   `Cleartext Traffic Permitted`, `Trusts User Certificates`, `Certificate Pinning Enforced`.
-- **Configuration**: CPU architectures, hardware requirements, supported locales and screen densities.
+- **Configuration**: CPU architectures, hardware requirements, supported locales and screen densities. The
+  densities are every one the resources are qualified with, the standard ones (`hdpi (240dpi)`, `anydpi`...) and
+  any other (`420dpi`), from lowest to highest; hover over one to read what it means.
 
 The layout is **responsive**: sections reflow into several columns when the window is wide. Long lists (such as
 locales) show a limited number of lines and scroll inside their box.

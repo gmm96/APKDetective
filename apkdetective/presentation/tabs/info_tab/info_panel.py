@@ -17,6 +17,7 @@ from apkdetective.presentation.common.menus.text_context_menu import TextContext
 from apkdetective.presentation.common.forms.text_line_marker import TextLineMarker
 from apkdetective.presentation.formatting.english_long_date_formatter import EnglishLongDateFormatter
 from apkdetective.presentation.formatting.human_readable_size_formatter import HumanReadableSizeFormatter
+from apkdetective.presentation.viewmodels.forms.toggle_spec import ToggleSpec
 
 
 class InfoPanel(FormPanel):
@@ -76,10 +77,16 @@ class InfoPanel(FormPanel):
         flags_section.add_flag("Certificate Pinning Enforced", application.certificate_pinning_enforced or False)
 
         section = self.add_section("Configuration")
-        section.add_toggles("Architectures", self._architecture_names(configuration.architectures))
+        section.add_toggles(
+            "Architectures",
+            [ToggleSpec(name) for name in self._architecture_names(configuration.architectures)],
+        )
         section.add_list("Hardware Requirements", [feature.as_text() for feature in configuration.hardware_requirements])
         section.add_list("Supported Locales", configuration.locales)
-        section.add_toggles("Screen Densities", configuration.screen_densities)
+        section.add_toggles(
+            "Screen Densities",
+            [ToggleSpec(density.name, density.description) for density in configuration.screen_densities],
+        )
 
     @staticmethod
     def _architecture_names(supported: Sequence[str]) -> list[str]:

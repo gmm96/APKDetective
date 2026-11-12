@@ -163,11 +163,23 @@ class FormPanel(ttkb.Frame):
         """A toggle that shows a yes/no `value` as "true" or "false"; see `create_read_only_toggle`."""
         return self.create_read_only_toggle(parent, "true" if value else "false", value)
 
-    def create_read_only_toggle(self, parent: tk.Misc, text: str, value: bool) -> ReadOnlyToggle:
+    def create_read_only_toggle(
+        self,
+        parent: tk.Misc,
+        text: str,
+        value: bool,
+        description: str | None = None
+    ) -> ReadOnlyToggle:
         """A toggle button with `text` that only shows `value`; see ReadOnlyToggle."""
-        return ReadOnlyToggle(parent, text, value)
+        return ReadOnlyToggle(parent, text, value, description)
 
-    def create_chip(self, parent: tk.Misc, text: str, kind: str, description: str | None = None) -> ttkb.Label:
+    def create_chip(
+        self,
+        parent: tk.Misc,
+        text: str,
+        kind: str,
+        description: str | None = None
+    ) -> ttkb.Label:
         """`kind`: one of CHIP_KINDS. `description`: a tooltip that explains what the chip means."""
         if kind not in self.CHIP_KINDS:
             raise ValueError(f"Unknown chip kind {kind!r}; expected one of {self.CHIP_KINDS}")

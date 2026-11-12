@@ -22,7 +22,7 @@ class FormWidgetFactory(Protocol):
     def create_flag_check(self, parent: tk.Misc, value: bool) -> ttkb.Checkbutton:
         ...
 
-    def create_read_only_toggle(self, parent: tk.Misc, text: str, value: bool) -> ttkb.Checkbutton:
+    def create_read_only_toggle(self, parent: tk.Misc, text: str, value: bool, description: str | None = None) -> ttkb.Checkbutton:
         ...
 
     def build_list_widget(self, container: ttkb.Frame, text: str, line_count: int, copy_text: str | None = None) -> None:

@@ -19,6 +19,7 @@ from apkdetective.presentation.common.forms.form_widget_factory import FormWidge
 from apkdetective.presentation.common.forms.label_width_meter import LabelWidthMeter
 from apkdetective.presentation.common.layout.wrap_frame import WrapFrame
 from apkdetective.presentation.config.layout_config import LayoutConfig
+from apkdetective.presentation.viewmodels.forms.toggle_spec import ToggleSpec
 
 
 class FormSection:
@@ -108,19 +109,19 @@ class FormSection:
             container, text, line_count, copy_text=separator.join(items) if items else None
         )
 
-    def add_toggles(self, label_text: str, texts: Sequence[str]) -> None:
+    def add_toggles(self, label_text: str, toggles: Sequence[ToggleSpec]) -> None:
         """
-        Add a row with one read-only toggle (on) per text, each as wide as its text, wrapped to the next
-        line when the section is too narrow. The label shows how many there are.
+        Add a row with one read-only toggle (on) per spec, each as wide as its text and with its description as a
+        tooltip, wrapped to the next line when the section is too narrow. The label shows how many there are.
         """
-        container = self._add_block_row(f"{label_text} ({len(texts)})")
-        if not texts:
+        container = self._add_block_row(f"{label_text} ({len(toggles)})")
+        if not toggles:
             self._widgets.create_muted_label(container, "None found").grid(row=0, column=0, sticky="w")
             return
-        toggles = WrapFrame(container, padding_x=self.TOGGLE_GAP_PX, padding_y=self.TOGGLE_GAP_PX, centered=False)
-        toggles.grid(row=0, column=0, sticky="ew")
-        for text in texts:
-            self._widgets.create_read_only_toggle(toggles, text, True)
+        wrapper = WrapFrame(container, padding_x=self.TOGGLE_GAP_PX, padding_y=self.TOGGLE_GAP_PX, centered=False)
+        wrapper.grid(row=0, column=0, sticky="ew")
+        for toggle in toggles:
+            self._widgets.create_read_only_toggle(wrapper, toggle.text, True, toggle.description)
 
     def _add_block_row(self, label_text: str) -> ttkb.Frame:
         """

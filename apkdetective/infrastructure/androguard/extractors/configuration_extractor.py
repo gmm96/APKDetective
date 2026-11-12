@@ -18,44 +18,21 @@ from babel.core import UnknownLocaleError
 from apkdetective.domain.entities.analysis.analysis_section_enum import AnalysisSectionEnum
 from apkdetective.domain.entities.analysis.sections.configuration_info import ConfigurationInfo
 from apkdetective.domain.entities.analysis.sections.hardware_feature import HardwareFeature
+from apkdetective.domain.entities.analysis.sections.screen_density import ScreenDensity
 from apkdetective.infrastructure.androguard.analysis_warnings import AnalysisWarningCollector
 from apkdetective.infrastructure.androguard.config.android import ANDROID_NS
+from apkdetective.infrastructure.androguard.extractors.screen_density_catalog import ScreenDensityCatalog
 from apkdetective.infrastructure.androguard.manifest.manifest_value_formatter import ManifestValueFormatter
 from apkdetective.infrastructure.androguard.manifest.resource_reference_resolver import ResourceReferenceResolver
 
 
 class ConfigurationExtractor:
-    _DENSITY_PATTERN: re.Pattern = re.compile(r"-(ldpi|mdpi|hdpi|xhdpi|xxhdpi|xxxhdpi|tvdpi|anydpi|nodpi)")
     _REGION_PREFIX_PATTERN: re.Pattern = re.compile(r"-r([A-Z]{2,3})$")
 
     _LEGACY_LOCALES: dict[str, str] = {
         "in": "id",  # Indonesian
         "iw": "he",  # Hebrew
         "ji": "yi",  # Yiddish
-    }
-
-    _DENSITY_NAMES: dict[int, str] = {
-        120: "ldpi",
-        160: "mdpi",
-        213: "tvdpi",
-        240: "hdpi",
-        320: "xhdpi",
-        480: "xxhdpi",
-        640: "xxxhdpi",
-        65534: "anydpi",
-        65535: "nodpi",
-    }
-
-    _DENSITY_MEANINGS: dict[str, str] = {
-        "ldpi": "~120dpi (Low)",
-        "mdpi": "~160dpi (Medium)",
-        "hdpi": "~240dpi (High)",
-        "xhdpi": "~320dpi (X-High)",
-        "xxhdpi": "~480dpi (XX-High)",
-        "xxxhdpi": "~640dpi (XXX-High)",
-        "tvdpi": "~213dpi (TV)",
-        "anydpi": "Scales automatically",
-        "nodpi": "No scaling",
     }
 
     def extract(
@@ -184,17 +161,24 @@ class ConfigurationExtractor:
             return fixed_loc
 
     @classmethod
-    def _extract_densities(cls, apk: APK) -> tuple[str, ...]:
-        names = set()
+    def _extract_densities(cls, apk: APK) -> tuple[ScreenDensity, ...]:
+        """Every density the resources are qualified with, the standard ones and any other, from lowest to highest."""
+        densities: set[int] = set()
         for type_configs in cls._per_package(apk, lambda arsc, package: arsc.get_type_configs(package)):
             for configs in type_configs.values():
                 for config in configs:
-                    name = cls._DENSITY_NAMES.get(config.get_density())
-                    if name:
-                        names.add(name)
-        if not names:  # no resource table: fall back to the folder names
+                    densities.add(cls._density_of(config))
+        densities.discard(0)  # the configuration has no density qualifier
+        if not densities:  # no resource table: fall back to the folder names
             for filename in apk.get_files():
-                match = cls._DENSITY_PATTERN.search(filename) if filename.startswith("res/") else None
-                if match:
-                    names.add(match.group(1))
-        return tuple(sorted(f"{name} ({cls._DENSITY_MEANINGS.get(name, 'Unknown')})" for name in names))
+                density = ScreenDensityCatalog.density_in_path(filename) if filename.startswith("res/") else None
+                if density:
+                    densities.add(density)
+        return tuple(ScreenDensityCatalog.describe(density) for density in sorted(densities))
+
+    @staticmethod
+    def _density_of(config: Any) -> int:
+        try:
+            return int(config.get_density())
+        except (AttributeError, TypeError, ValueError):
+            return 0

@@ -87,7 +87,7 @@ class AppInfoSerializer:
             "Hardware Requirements", [feature.as_text() for feature in info.hardware_requirements]
         )
         lines += self._list("Supported Locales", info.locales)
-        lines += self._list("Screen Densities", info.screen_densities)
+        lines += self._list("Screen Densities", [density.as_text() for density in info.screen_densities])
         return self._block("Configuration", lines)
 
     def _dex_metrics(self, metrics: DexMetrics) -> str:
