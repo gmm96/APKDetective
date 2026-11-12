@@ -19,7 +19,7 @@ class FormWidgetFactory(Protocol):
     def create_copy_entry(self, parent: tk.Misc, text: str, monospace: bool = False) -> CopyableEntry:
         ...
 
-    def create_flag_check(self, parent: tk.Misc, value: bool) -> ttkb.Checkbutton:
+    def create_flag_check(self, parent: tk.Misc, value: bool, description: str | None = None) -> ttkb.Checkbutton:
         ...
 
     def create_read_only_toggle(self, parent: tk.Misc, text: str, value: bool, description: str | None = None) -> ttkb.Checkbutton:

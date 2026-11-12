@@ -14,6 +14,7 @@ from apkdetective.ports.formatting.size_formatter_port import SizeFormatterPort
 from apkdetective.presentation.viewmodels.appearance.theme_palette import ThemePalette
 from apkdetective.presentation.common.forms.form_panel import FormPanel
 from apkdetective.presentation.common.menus.text_context_menu import TextContextMenu
+from apkdetective.presentation.tabs.info_tab.flag_descriptions import FlagDescriptions
 from apkdetective.presentation.common.forms.text_line_marker import TextLineMarker
 from apkdetective.presentation.formatting.english_long_date_formatter import EnglishLongDateFormatter
 from apkdetective.presentation.formatting.human_readable_size_formatter import HumanReadableSizeFormatter
@@ -25,6 +26,14 @@ class InfoPanel(FormPanel):
     # (FormSection.DEFAULT_MIN_FIELD_WIDTH_PX); with that default the flags would stay in one column in windows
     # that have room for two.
     _FLAG_MIN_FIELD_WIDTH_PX: int = 100
+
+    # What an APK without native libraries is called: it has no architecture of its own because it has none to
+    # choose from. The label counts the architectures it has (none) and this toggle stands for all of them.
+    _UNIVERSAL_TOGGLE: ToggleSpec = ToggleSpec(
+        "Universal",
+        "Pure Java/Kotlin application. Contains no native libraries (.so) and runs on any CPU architecture via the "
+        "Android Runtime (ART/Dalvik).",
+    )
 
     def __init__(
         self,
@@ -67,19 +76,32 @@ class InfoPanel(FormPanel):
             max_columns=2,
             min_field_width=InfoPanel._FLAG_MIN_FIELD_WIDTH_PX,
         )
-        flags_section.add_flag("Debuggable", application.debuggable or False)
-        flags_section.add_flag("Allow Backup", application.allow_backup or False)
-        flags_section.add_flag("Test Only", application.test_only or False)
-        flags_section.add_flag("Hardware Accelerated", application.hardware_accelerated or False)
-        flags_section.add_flag("Extract Native Libs", application.extract_native_libs or False)
-        flags_section.add_flag("Cleartext Traffic Permitted", application.cleartext_traffic_permitted or False)
-        flags_section.add_flag("Trusts User Certificates", application.trust_user_certificates or False)
-        flags_section.add_flag("Certificate Pinning Enforced", application.certificate_pinning_enforced or False)
+        flags = (
+            ("Debuggable", application.debuggable, FlagDescriptions.DEBUGGABLE),
+            ("Allow Backup", application.allow_backup, FlagDescriptions.ALLOW_BACKUP),
+            ("Test Only", application.test_only, FlagDescriptions.TEST_ONLY),
+            ("Hardware Accelerated", application.hardware_accelerated, FlagDescriptions.HARDWARE_ACCELERATED),
+            ("Extract Native Libs", application.extract_native_libs, FlagDescriptions.EXTRACT_NATIVE_LIBS),
+            (
+                "Cleartext Traffic Permitted",
+                application.cleartext_traffic_permitted,
+                FlagDescriptions.CLEARTEXT_TRAFFIC_PERMITTED,
+            ),
+            ("Trusts User Certificates", application.trust_user_certificates, FlagDescriptions.TRUSTS_USER_CERTIFICATES),
+            (
+                "Certificate Pinning Enforced",
+                application.certificate_pinning_enforced,
+                FlagDescriptions.CERTIFICATE_PINNING_ENFORCED,
+            ),
+        )
+        for label, value, description in flags:
+            flags_section.add_flag(label, value or False, description)
 
         section = self.add_section("Configuration")
         section.add_toggles(
             "Architectures",
-            [ToggleSpec(name) for name in self._architecture_names(configuration.architectures)],
+            self._architecture_toggles(configuration.architectures),
+            count=len(configuration.architectures),
         )
         section.add_list("Hardware Requirements", [feature.as_text() for feature in configuration.hardware_requirements])
         section.add_list("Supported Locales", configuration.locales)
@@ -89,15 +111,16 @@ class InfoPanel(FormPanel):
         )
 
     @staticmethod
-    def _architecture_names(supported: Sequence[str]) -> list[str]:
+    def _architecture_toggles(supported: Sequence[str]) -> list[ToggleSpec]:
         """
         The architectures the APK supports, the known ones in the order of AndroidAbiEnum and then any other.
-        An APK without native code runs on every architecture.
+        An APK without native libraries is universal: one toggle that says so.
         """
-        known = [abi.value for abi in AndroidAbiEnum]
         if not supported:
-            return known
-        return sorted(supported, key=lambda name: known.index(name) if name in known else len(known))
+            return [InfoPanel._UNIVERSAL_TOGGLE]
+        known = [abi.value for abi in AndroidAbiEnum]
+        ordered = sorted(supported, key=lambda name: known.index(name) if name in known else len(known))
+        return [ToggleSpec(name, AndroidAbiEnum.describe(name)) for name in ordered]
 
     def _format_size(self, size: int | None) -> str:
         return "Unknown" if size is None else self._size_formatter.format(size, True)

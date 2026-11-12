@@ -93,11 +93,11 @@ class FormSection:
         self._row += 1
         self._content_changed()
 
-    def add_flag(self, label_text: str, value: bool) -> None:
-        """Add a read-only check box, for a yes/no value."""
+    def add_flag(self, label_text: str, value: bool, description: str | None = None) -> None:
+        """Add a read-only check box, for a yes/no value. `description`: a tooltip that explains what it controls."""
         self._label_meter.register(label_text)
         label = ttkb.Label(self.frame, text=label_text, anchor="w")
-        field = self._widgets.create_flag_check(self.frame, value)
+        field = self._widgets.create_flag_check(self.frame, value, description)
         self._entries.append((label, field, self._row, "w"))
         self._row += 1
         self._content_changed()
@@ -109,12 +109,13 @@ class FormSection:
             container, text, line_count, copy_text=separator.join(items) if items else None
         )
 
-    def add_toggles(self, label_text: str, toggles: Sequence[ToggleSpec]) -> None:
+    def add_toggles(self, label_text: str, toggles: Sequence[ToggleSpec], count: int | None = None) -> None:
         """
         Add a row with one read-only toggle (on) per spec, each as wide as its text and with its description as a
-        tooltip, wrapped to the next line when the section is too narrow. The label shows how many there are.
+        tooltip, wrapped to the next line when the section is too narrow. The label shows `count`, by default how
+        many toggles there are.
         """
-        container = self._add_block_row(f"{label_text} ({len(toggles)})")
+        container = self._add_block_row(f"{label_text} ({len(toggles) if count is None else count})")
         if not toggles:
             self._widgets.create_muted_label(container, "None found").grid(row=0, column=0, sticky="w")
             return
